@@ -1,0 +1,16 @@
+export enum ErrorEnum {
+    RECORD_NOT_FOUND = '404|Record not found',
+    RECORD_ALREADY_EXISTS = '409|Record already exists',
+    RECORD_CREATE_FAILED = '500|Record create failed',
+    RECORD_UPDATE_FAILED = '500|Record update failed',
+    RECORD_DELETE_FAILED = '500|Record delete failed',
+
+    ACCESS_DENIED = '403|Access denied',
+
+    REQUEST_VALIDATION_ERROR = '400|Request validation error',
+
+    REQUIRED_FIELD_MISSING = '400|Required field missing',
+    TOKEN_IS_REQUIRED = '401|Token is required',
+    TOKEN_IS_INVALID = '401|Token is invalid',
+}
+

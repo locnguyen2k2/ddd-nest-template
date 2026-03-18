@@ -1,0 +1,108 @@
+generator client {
+  provider = "prisma-client-js"
+  engineType = "node"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+    id          String   @id @default(uuid(7)) @db.Uuid
+    email       String   @unique
+    username    String  @unique
+    password    String
+    first_name  String
+    last_name   String
+    is_deleted  Boolean  @default(false)
+    status      UserStatus @default(UNVERIFIED)
+    createdAt   DateTime @default(now())
+    updatedAt   DateTime @updatedAt
+
+    @@index([email])
+    @@index([username])
+}
+
+model Permission {
+    id          String   @id @default(uuid(7)) @db.Uuid
+    name        String
+    slug        String   @unique
+    description String?
+    createdAt   DateTime @default(now())
+    updatedAt   DateTime @updatedAt
+
+    @@index([slug])
+}
+
+model Organization {
+    id          String   @id @default(uuid(7)) @db.Uuid
+    name        String
+    slug        String   @unique
+    description String?
+    createdAt   DateTime @default(now())
+    updatedAt   DateTime @updatedAt
+}
+
+model Role {
+    id          String   @id @default(uuid(7)) @db.Uuid
+    name        String
+    slug        String   @unique
+    description String?
+    createdAt   DateTime @default(now())
+    updatedAt   DateTime @updatedAt
+
+    @@index([slug])
+}
+
+model OrganizationRole {
+    organizationId String @db.Uuid
+    roleId String @db.Uuid
+    createdAt DateTime @default(now())
+    
+    @@id([organizationId, roleId])
+}
+
+model UserOrganization {
+    userId String @db.Uuid
+    organizationId String @db.Uuid
+    roleId String? @db.Uuid
+    createdAt DateTime @default(now())
+    
+    @@id([userId, organizationId])
+}
+
+model RoleFeaturePermission {
+    roleId String @db.Uuid
+    featureId String @db.Uuid
+    permissionId String @db.Uuid
+    createdAt DateTime @default(now())
+    
+    @@id([roleId, featureId, permissionId])
+}
+
+model UserRole {
+    userId String @db.Uuid
+    roleId String @db.Uuid
+    createdAt DateTime @default(now())
+    
+    @@id([userId, roleId])
+}
+
+model Feature {
+    id          String   @id @default(uuid(7)) @db.Uuid
+    name        String   @unique
+    slug        String   @unique
+    description String?
+    isEnabled   Boolean  @default(true)
+    createdAt   DateTime @default(now())
+    updatedAt   DateTime @updatedAt
+
+    @@index([slug])
+    @@index([isEnabled])
+}
+
+enum UserStatus {
+    ACTIVE
+    INACTIVE
+    UNVERIFIED
+}
