@@ -4,6 +4,7 @@ import { Feature } from '@/modules/iam/domain/entities/feature.entity';
 import { Slug } from '@/modules/iam/domain/vo/slug.vo';
 import { CreateFeatureArgs, UpdateFeatureArgs, DeleteFeatureArgs } from '@/modules/iam/application/dtos/commands/feature-cmd.dto';
 import { FEATURE_REPO } from '@/modules/iam/domain/repositories/feature.repository';
+import { uuidv7 } from 'uuidv7';
 
 @Injectable()
 export class FeatureCommandHandler {
@@ -15,10 +16,11 @@ export class FeatureCommandHandler {
             throw new Error(`Feature with slug '${command.slug}' already exists`);
         }
 
+        const id = uuidv7();
         const featureId = {
-            value: crypto.randomUUID(),
-            _id: crypto.randomUUID(),
-            get: () => crypto.randomUUID()
+            value: id,
+            _id: id,
+            get: () => id
         };
         const slug = Slug.create(command.slug);
 

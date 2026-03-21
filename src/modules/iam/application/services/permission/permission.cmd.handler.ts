@@ -6,6 +6,7 @@ import { PermissionEntity } from "@/modules/iam/domain/entities/permission.entit
 import { IEntityID } from "@/shared/domain/entities/base.entity";
 import { Logger } from "@nestjs/common";
 import { LogExecutionTime } from "@/common/decorators/log-execution.decorator";
+import { uuidv7 } from 'uuidv7';
 
 
 export class PermissionCmdHandler {
@@ -18,14 +19,15 @@ export class PermissionCmdHandler {
         if (isExist) {
             throw new Error(`Permission with slug '${permission.slug}' already exists`);
         }
-        const id: IEntityID<string> = {
-            value: crypto.randomUUID(),
-            _id: crypto.randomUUID(),
-            get: () => crypto.randomUUID()
+        const id = uuidv7();
+        const permissionId: IEntityID<string> = {
+            value: id,
+            _id: id,
+            get: () => id
         }
 
         const permissionEntity = PermissionEntity.create({
-            id,
+            id: permissionId,
             slug: permission.slug,
             name: permission.name,
             description: permission.description,

@@ -1,5 +1,7 @@
 import { IsString, IsOptional, IsNotEmpty, IsNumber, Min, Max } from 'class-validator';
 import { Type } from 'class-transformer';
+import { BaseCursorPageOptionDto } from "@/common/pagination";
+import { BasePageOptionDto } from "@/common/pagination/dtos/page-options.dto";
 
 // Get Feature By ID Query
 export class GetFeatureByIdQuery {
@@ -48,3 +50,7 @@ export class ListFeaturesQuery {
         this.search = data.search;
     }
 }
+
+export class PaginateFeaturesQuery extends BasePageOptionDto { }
+
+export class CursorFeaturesQuery extends BaseCursorPageOptionDto { }

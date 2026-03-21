@@ -62,7 +62,7 @@ export const cursorHelper = async <T>({
                 gte: cursorDate,
             };
             where['id'] = {
-                lt: id,
+                gt: id,
             };
         } else {
             // Next page (default), records before the cursor (older records)
@@ -70,12 +70,10 @@ export const cursorHelper = async <T>({
                 lte: cursorDate,
             };
             where['id'] = {
-                gt: id,
+                lt: id,
             };
         }
     }
-
-    console.log(where)
 
     try {
         // Get one extra record to check if there's a next page
@@ -151,8 +149,6 @@ export const cursorHelper = async <T>({
             nextCursor,
             prevCursor,
         });
-
-        console.log(pageMetaDto)
 
         return new CursorPageDto(resultEntities, pageMetaDto);
     } catch (e: any) {

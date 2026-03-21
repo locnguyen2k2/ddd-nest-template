@@ -16,7 +16,10 @@ export class FeatureMapper {
             id: featureId,
             name: prismaFeature.name,
             slug: slug,
-            description: prismaFeature.description || undefined
+            description: prismaFeature.description || undefined,
+            is_enabled: prismaFeature.is_enabled,
+            created_at: prismaFeature.created_at,
+            updated_at: prismaFeature.updated_at,
         });
     }
 
@@ -26,8 +29,9 @@ export class FeatureMapper {
             name: feature.getName(),
             slug: feature.getSlug().value,
             description: feature.getDescription(),
-            createdAt: new Date(),
-            updatedAt: new Date(),
+            is_enabled: feature.getIsEnabled(),
+            created_at: new Date(),
+            updated_at: new Date(),
         };
     }
 
@@ -36,7 +40,8 @@ export class FeatureMapper {
             name: feature.getName(),
             slug: feature.getSlug().value,
             description: feature.getDescription(),
-            updatedAt: new Date(),
+            is_enabled: feature.getIsEnabled(),
+            updated_at: new Date(),
         };
     }
 
@@ -46,8 +51,9 @@ export class FeatureMapper {
             name: feature.getName(),
             slug: feature.getSlug().value,
             description: feature.getDescription(),
-            createdAt: new Date(),
-            updatedAt: new Date(),
+            is_enabled: feature.getIsEnabled(),
+            created_at: feature.getCreatedAt(),
+            updated_at: feature.getUpdatedAt(),
         };
     }
 }

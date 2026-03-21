@@ -6,6 +6,7 @@ export interface IRoleCreatedEvent {
     slug: string;
     description?: string;
     createdAt: Date;
+    updatedAt: Date;
 }
 
 export interface IRoleUpdatedEvent {
@@ -50,6 +51,7 @@ export class RoleCreatedEvent extends BaseDomainEvent<string> {
             slug: this.event.slug,
             description: this.event.description,
             createdAt: this.event.createdAt,
+            updatedAt: this.event.updatedAt,
         };
     }
 }
