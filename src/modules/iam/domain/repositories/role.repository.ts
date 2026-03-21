@@ -1,8 +1,10 @@
+import { Prisma } from '@prisma/client';
 import { RoleEntity } from '../entities/role.entity';
+import { IPaginate, ICursor } from '@/shared/domain/repositories/base.repository';
 
 export const ROLE_REPO = 'ROLE_REPO';
 
-export interface IRoleRepository {
+export interface IRoleRepository extends IPaginate<Prisma.RoleCreateInput>, ICursor<Prisma.RoleCreateInput> {
     create(role: RoleEntity): Promise<RoleEntity>;
     findById(id: string): Promise<RoleEntity | null>;
     findBySlug(slug: string): Promise<RoleEntity | null>;

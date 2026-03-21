@@ -20,7 +20,7 @@ export interface UpdateFeatureProps {
 
 // Feature Aggregate Root
 export class Feature extends AggregateRoot<Feature, string> {
-    constructor(
+    private constructor(
         public readonly id: IEntityID<string>,
         private name: string,
         private slug: Slug,

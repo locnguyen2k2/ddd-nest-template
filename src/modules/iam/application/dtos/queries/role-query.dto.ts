@@ -1,3 +1,5 @@
+import { BaseCursorPageOptionDto } from "@/common/pagination";
+import { BasePageOptionDto } from "@/common/pagination/dtos/page-options.dto";
 import { IsNotEmpty, IsString, IsOptional, IsNumber } from "class-validator";
 
 export class GetRoleByIdQuery {
@@ -20,24 +22,8 @@ export class GetRoleBySlugQuery {
     }
 }
 
-export class ListRolesQuery {
-    @IsOptional()
-    @IsNumber()
-    page?: number;
+export class PaginateRolesQuery extends BasePageOptionDto { }
 
-    @IsOptional()
-    @IsNumber()
-    limit?: number;
-
-    @IsOptional()
-    @IsString()
-    search?: string;
-
-    constructor(data: any = {}) {
-        this.page = data.page;
-        this.limit = data.limit;
-        this.search = data.search;
-    }
-}
+export class CursorRolesQuery extends BaseCursorPageOptionDto { }
 
 

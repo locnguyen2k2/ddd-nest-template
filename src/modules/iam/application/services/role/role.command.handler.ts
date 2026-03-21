@@ -1,14 +1,16 @@
 import { Inject, Injectable } from "@nestjs/common";
-import { ROLE_REPO } from "@/modules/iam/domain/repositories/role.entity";
+import { ROLE_REPO } from "@/modules/iam/domain/repositories/role.repository";
 import { CreateRoleArgs, UpdateRoleArgs, DeleteRoleArgs } from "../../dtos/commands/role-cmd.dto";
 import { RoleEntity } from "@/modules/iam/domain/entities/role.entity";
 import { Slug } from "@/modules/iam/domain/vo/slug.vo";
-import { IRoleRepository } from "@/modules/iam/domain/repositories/role.entity";
+import { IRoleRepository } from "@/modules/iam/domain/repositories/role.repository";
+import { LogExecutionTime } from "@/common/decorators/log-execution.decorator";
 
 @Injectable()
 export class RoleCommandHandler {
     constructor(@Inject(ROLE_REPO) private readonly roleRepo: IRoleRepository) { }
 
+    @LogExecutionTime()
     async handleCreateRole(command: CreateRoleArgs): Promise<RoleEntity> {
         const existingRole = await this.roleRepo.findBySlug(command.slug);
         if (existingRole) {
@@ -32,6 +34,7 @@ export class RoleCommandHandler {
         return await this.roleRepo.create(role);
     }
 
+    @LogExecutionTime()
     async handleUpdateRole(command: UpdateRoleArgs): Promise<RoleEntity> {
         const existingRole = await this.roleRepo.findById(command.id);
         if (!existingRole) {
@@ -55,6 +58,7 @@ export class RoleCommandHandler {
         return await this.roleRepo.update(command.id, existingRole);
     }
 
+    @LogExecutionTime()
     async handleDeleteRole(command: DeleteRoleArgs): Promise<void> {
         const existingRole = await this.roleRepo.findById(command.id);
         if (!existingRole) {

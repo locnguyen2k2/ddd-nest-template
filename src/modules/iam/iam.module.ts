@@ -17,7 +17,10 @@ import { FeatureCommandHandler } from "./application/services/feature/feature.co
 import { PrismaService } from "@/shared/infrastructure/database/prisma.service";
 import { FEATURE_REPO } from "./domain/repositories/feature.repository";
 import { ORGANIZATION_REPO } from "./domain/repositories/organization.repository";
-import { ROLE_REPO } from "./domain/repositories/role.entity";
+import { ROLE_REPO } from "./domain/repositories/role.repository";
+import { PermissionRepository } from "./infrastructure/persistence/repositories/permission.repository";
+import { PermissionCmdHandler } from "./application/services/permission/permission.cmd.handler";
+import { PERMISSION_REPO } from "./domain/repositories/permission.repository";
 
 const featureProviders = [
     PrismaService,
@@ -30,7 +33,6 @@ const featureProviders = [
         useClass: FeatureRepository,
     }
 ];
-
 const roleProviders = [
     RoleCommandHandler,
     RoleQueryHandler,
@@ -41,7 +43,6 @@ const roleProviders = [
         useClass: RoleRepository,
     }
 ];
-
 const organizationProviders = [
     OrganizationCommandHandler,
     OrganizationQueryHandler,
@@ -52,20 +53,30 @@ const organizationProviders = [
         useClass: OrganizationRepository,
     }
 ];
+const permissionProviders = [
+    PermissionRepository,
+    PermissionCmdHandler,
+    {
+        provide: PERMISSION_REPO,
+        useClass: PermissionRepository,
+    }
+];
 
 const featureExports = [
     FeatureRepository,
     FeatureEventPublisher,
 ];
-
 const roleExports = [
     RoleRepository,
     RoleEventPublisher,
 ];
-
 const organizationExports = [
     OrganizationRepository,
     OrganizationEventPublisher,
+];
+const permissionExports = [
+    PermissionRepository,
+    PermissionCmdHandler,
 ];
 
 @Module({
@@ -75,11 +86,13 @@ const organizationExports = [
         ...featureProviders,
         ...roleProviders,
         ...organizationProviders,
+        ...permissionProviders,
     ],
     exports: [
         ...featureExports,
         ...roleExports,
         ...organizationExports,
+        ...permissionExports,
     ],
 })
 export class IamModule { }
