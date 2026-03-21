@@ -12,12 +12,12 @@ export class FeatureMapper {
 
         const slug = Slug.create(prismaFeature.slug);
 
-        return new Feature(
-            featureId,
-            prismaFeature.name,
-            slug,
-            prismaFeature.description || undefined
-        );
+        return Feature.create({
+            id: featureId,
+            name: prismaFeature.name,
+            slug: slug,
+            description: prismaFeature.description || undefined
+        });
     }
 
     static toPrisma(feature: Feature): any {

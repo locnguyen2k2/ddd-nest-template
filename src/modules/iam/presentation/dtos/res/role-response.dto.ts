@@ -1,4 +1,6 @@
+import { CursorPaginationDto, PaginationDto } from '@/common/pagination';
 import { ApiProperty } from '@nestjs/swagger';
+import { Type } from 'class-transformer';
 
 export class RoleResponseDto {
     @ApiProperty()
@@ -14,21 +16,25 @@ export class RoleResponseDto {
     description?: string;
 
     @ApiProperty()
-    createdAt!: Date;
+    created_at!: Date;
 
     @ApiProperty()
-    updatedAt!: Date;
+    updated_at!: Date;
 }
 
-export class ListRolesResponseDto {
+export class PaginateRolesResponseDto {
     @ApiProperty({ type: [RoleResponseDto] })
     roles!: RoleResponseDto[];
 
-    @ApiProperty()
-    pagination!: {
-        total: number;
-        page: number;
-        limit: number;
-        totalPages: number;
-    };
+    @ApiProperty({ type: PaginationDto })
+    @Type(() => PaginationDto)
+    paginated!: PaginationDto;
+}
+
+export class CursorRolesResponseDto {
+    @ApiProperty({ type: [RoleResponseDto] })
+    roles!: RoleResponseDto[];
+
+    @ApiProperty({ type: CursorPaginationDto })
+    paginated!: CursorPaginationDto;
 }

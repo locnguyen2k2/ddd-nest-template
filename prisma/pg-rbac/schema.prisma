@@ -16,8 +16,8 @@ model User {
     last_name   String
     is_deleted  Boolean  @default(false)
     status      UserStatus @default(UNVERIFIED)
-    createdAt   DateTime @default(now())
-    updatedAt   DateTime @updatedAt
+    created_at   DateTime @default(now())
+    updated_at   DateTime @updatedAt
 
     @@index([email])
     @@index([username])
@@ -28,8 +28,8 @@ model Permission {
     name        String
     slug        String   @unique
     description String?
-    createdAt   DateTime @default(now())
-    updatedAt   DateTime @updatedAt
+    created_at   DateTime @default(now())
+    updated_at   DateTime @updatedAt
 
     @@index([slug])
 }
@@ -39,8 +39,8 @@ model Organization {
     name        String
     slug        String   @unique
     description String?
-    createdAt   DateTime @default(now())
-    updatedAt   DateTime @updatedAt
+    created_at   DateTime @default(now())
+    updated_at   DateTime @updatedAt
 }
 
 model Role {
@@ -48,44 +48,44 @@ model Role {
     name        String
     slug        String   @unique
     description String?
-    createdAt   DateTime @default(now())
-    updatedAt   DateTime @updatedAt
+    created_at   DateTime @default(now())
+    updated_at   DateTime @updatedAt
 
     @@index([slug])
 }
 
 model OrganizationRole {
-    organizationId String @db.Uuid
-    roleId String @db.Uuid
-    createdAt DateTime @default(now())
+    organization_id String @db.Uuid
+    role_id String @db.Uuid
+    created_at DateTime @default(now())
     
-    @@id([organizationId, roleId])
+    @@id([organization_id, role_id])
 }
 
 model UserOrganization {
     userId String @db.Uuid
     organizationId String @db.Uuid
     roleId String? @db.Uuid
-    createdAt DateTime @default(now())
+    created_at DateTime @default(now())
     
     @@id([userId, organizationId])
 }
 
 model RoleFeaturePermission {
-    roleId String @db.Uuid
-    featureId String @db.Uuid
-    permissionId String @db.Uuid
-    createdAt DateTime @default(now())
+    role_id String @db.Uuid
+    feature_id String @db.Uuid
+    permission_id String @db.Uuid
+    created_at DateTime @default(now())
     
-    @@id([roleId, featureId, permissionId])
+    @@id([role_id, feature_id, permission_id])
 }
 
 model UserRole {
-    userId String @db.Uuid
-    roleId String @db.Uuid
-    createdAt DateTime @default(now())
+    user_id String @db.Uuid
+    role_id String @db.Uuid
+    created_at DateTime @default(now())
     
-    @@id([userId, roleId])
+    @@id([user_id, role_id])
 }
 
 model Feature {
@@ -93,12 +93,12 @@ model Feature {
     name        String   @unique
     slug        String   @unique
     description String?
-    isEnabled   Boolean  @default(true)
-    createdAt   DateTime @default(now())
-    updatedAt   DateTime @updatedAt
+    is_enabled   Boolean  @default(true)
+    created_at   DateTime @default(now())
+    updated_at   DateTime @updatedAt
 
     @@index([slug])
-    @@index([isEnabled])
+    @@index([is_enabled])
 }
 
 enum UserStatus {

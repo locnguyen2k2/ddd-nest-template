@@ -13,11 +13,11 @@ import {
 import { ApiTags, ApiOperation, ApiResponse, ApiParam, ApiQuery } from '@nestjs/swagger';
 import { CreateRoleDto } from '@/modules/iam/presentation/dtos/req/role.dto';
 import { UpdateRoleDto } from '@/modules/iam/presentation/dtos/req/role.dto';
-import { RoleResponseDto, ListRolesResponseDto } from '@/modules/iam/presentation/dtos/res/role-response.dto';
+import { RoleResponseDto, PaginateRolesResponseDto, CursorRolesResponseDto } from '@/modules/iam/presentation/dtos/res/role-response.dto';
 import { RoleCommandHandler } from '@/modules/iam/application/services/role/role.command.handler';
 import { RoleQueryHandler } from '@/modules/iam/application/services/role/role.query.handler';
 import { CreateRoleArgs, DeleteRoleArgs, UpdateRoleArgs } from '@/modules/iam/application/dtos/commands/role-cmd.dto';
-import { GetRoleByIdQuery, GetRoleBySlugQuery, ListRolesQuery } from '@/modules/iam/application/dtos/queries/role-query.dto';
+import { CursorRolesQuery, GetRoleByIdQuery, GetRoleBySlugQuery, PaginateRolesQuery } from '@/modules/iam/application/dtos/queries/role-query.dto';
 import { RoleMapper } from '@/modules/iam/infrastructure/persistence/mappers/role.mapper';
 
 @ApiTags('roles')
@@ -36,7 +36,7 @@ export class RoleController {
     async create(@Body() createRoleDto: CreateRoleDto): Promise<RoleResponseDto> {
         const command = new CreateRoleArgs(createRoleDto);
         const role = await this.commandHandler.handleCreateRole(command);
-        return RoleMapper.toResponseDto(role);
+        return RoleMapper.toResponseDto(RoleMapper.toPrisma(role));
     }
 
     @Get(':id')
@@ -52,7 +52,7 @@ export class RoleController {
             throw new Error('Role not found');
         }
 
-        return RoleMapper.toResponseDto(role);
+        return RoleMapper.toResponseDto(RoleMapper.toPrisma(role));
     }
 
     @Get('slug/:slug')
@@ -68,27 +68,30 @@ export class RoleController {
             throw new Error('Role not found');
         }
 
-        return RoleMapper.toResponseDto(role);
+        return RoleMapper.toResponseDto(RoleMapper.toPrisma(role));
     }
 
     @Get()
     @ApiOperation({ summary: 'List roles with pagination' })
-    @ApiQuery({ name: 'page', required: false, type: Number, description: 'Page number (default: 1)' })
-    @ApiQuery({ name: 'limit', required: false, type: Number, description: 'Items per page (default: 10, max: 100)' })
-    @ApiQuery({ name: 'search', required: false, type: String, description: 'Search term' })
-    @ApiResponse({ status: 200, description: 'Roles retrieved successfully', type: ListRolesResponseDto })
-    async list(@Query() listQuery: ListRolesQuery): Promise<ListRolesResponseDto> {
-        const query = new ListRolesQuery(listQuery);
-        const result = await this.queryHandler.handleListRoles(query);
+    @ApiResponse({ status: 200, description: 'Roles retrieved successfully', type: PaginateRolesResponseDto })
+    async pagination(@Query() listQuery: PaginateRolesQuery): Promise<PaginateRolesResponseDto> {
+        const result = await this.queryHandler.handlePaginate(listQuery);
 
         return {
-            roles: result.roles.map(role => RoleMapper.toResponseDto(role)),
-            pagination: {
-                total: result.total,
-                page: result.page,
-                limit: result.limit,
-                totalPages: result.totalPages,
-            },
+            roles: result.data.map(role => RoleMapper.toResponseDto(role)),
+            paginated: result.paginated,
+        };
+    }
+
+    @Get('cursor')
+    @ApiOperation({ summary: 'List roles with cursor pagination' })
+    @ApiResponse({ status: 200, description: 'Roles retrieved successfully', type: CursorRolesResponseDto })
+    async cursorPagination(@Query() listQuery: CursorRolesQuery): Promise<CursorRolesResponseDto> {
+        const result = await this.queryHandler.handleCursorPaginate(listQuery);
+
+        return {
+            roles: result.data.map(role => RoleMapper.toResponseDto(role)),
+            paginated: result.paginated,
         };
     }
 
@@ -105,7 +108,7 @@ export class RoleController {
     ): Promise<RoleResponseDto> {
         const command = new UpdateRoleArgs({ id, ...updateRoleDto });
         const role = await this.commandHandler.handleUpdateRole(command);
-        return RoleMapper.toResponseDto(role);
+        return RoleMapper.toResponseDto(RoleMapper.toPrisma(role));
     }
 
     @Delete(':id')

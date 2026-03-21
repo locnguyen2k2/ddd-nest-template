@@ -28,13 +28,19 @@ export interface IRoleDeletedEvent {
     updatedAt: Date;
 }
 
+export enum RoleEventType {
+    CREATED = 'role.created',
+    UPDATED = 'role.updated',
+    DELETED = 'role.deleted',
+}
+
 export class RoleCreatedEvent extends BaseDomainEvent<string> {
     constructor(public readonly event: IRoleCreatedEvent) {
         super(event.id);
     }
 
     get eventName(): string {
-        return 'role.created';
+        return RoleEventType.CREATED;
     }
 
     get eventData(): Record<string, unknown> {
@@ -54,7 +60,7 @@ export class RoleUpdatedEvent extends BaseDomainEvent<string> {
     }
 
     get eventName(): string {
-        return 'role.updated';
+        return RoleEventType.UPDATED;
     }
 
     get eventData(): Record<string, unknown> {
@@ -77,7 +83,7 @@ export class RoleDeletedEvent extends BaseDomainEvent<string> {
     }
 
     get eventName(): string {
-        return 'role.deleted';
+        return RoleEventType.DELETED;
     }
 
     get eventData(): Record<string, unknown> {
