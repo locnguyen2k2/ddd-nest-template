@@ -13,17 +13,19 @@ export class PermissionMapper {
             name: permissionPrisma.name,
             slug: permissionPrisma.slug,
             description: permissionPrisma.description,
+            created_at: permissionPrisma.created_at,
+            updated_at: permissionPrisma.updated_at,
         });
     }
 
-    toPrisma(permission: PermissionEntity): any {
+    static toPrisma(permission: PermissionEntity): any {
         return {
             id: permission.id.value,
             name: permission.name,
             slug: permission.slug,
             description: permission.description,
-            createdAt: new Date(),
-            updatedAt: new Date(),
+            created_at: new Date(),
+            updated_at: new Date(),
         };
     }
 
@@ -32,7 +34,7 @@ export class PermissionMapper {
             name: permission.name,
             slug: permission.slug,
             description: permission.description,
-            updatedAt: new Date(),
+            updated_at: new Date(),
         };
     }
 
@@ -42,6 +44,8 @@ export class PermissionMapper {
             name: permission.name,
             slug: permission.slug,
             description: permission.description,
+            created_at: permission.getCreatedAt(),
+            updated_at: permission.getUpdatedAt(),
         };
     }
 }

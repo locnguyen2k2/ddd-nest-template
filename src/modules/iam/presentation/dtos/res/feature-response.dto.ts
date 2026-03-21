@@ -1,4 +1,6 @@
+import { CursorPaginationDto, PaginationDto } from '@/common/pagination';
 import { ApiProperty } from '@nestjs/swagger';
+import { Type } from 'class-transformer';
 
 export class FeatureResponseDto {
     @ApiProperty()
@@ -14,10 +16,10 @@ export class FeatureResponseDto {
     description?: string;
 
     @ApiProperty()
-    createdAt!: Date;
+    created_at!: Date;
 
     @ApiProperty()
-    updatedAt!: Date;
+    updated_at!: Date;
 }
 
 export class ListFeaturesResponseDto {
@@ -31,4 +33,22 @@ export class ListFeaturesResponseDto {
         limit: number;
         totalPages: number;
     };
+}
+
+export class PaginateFeaturesResponseDto {
+    @ApiProperty({ type: [FeatureResponseDto] })
+    features!: FeatureResponseDto[];
+
+    @ApiProperty({ type: PaginationDto })
+    @Type(() => PaginationDto)
+    paginated!: PaginationDto;
+}
+
+export class CursorFeaturesResponseDto {
+    @ApiProperty({ type: [FeatureResponseDto] })
+    features!: FeatureResponseDto[];
+
+    @ApiProperty({ type: CursorPaginationDto })
+    @Type(() => CursorPaginationDto)
+    paginated!: CursorPaginationDto;
 }

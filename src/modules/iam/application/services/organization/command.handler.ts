@@ -4,6 +4,7 @@ import { CreateOrganizationArgs, UpdateOrganizationArgs, DeleteOrganizationArgs 
 import { Organization } from "@/modules/iam/domain/entities/organization.entity";
 import { Slug } from "@/modules/iam/domain/vo/slug.vo";
 import { IOrganizationRepository } from "@/modules/iam/domain/repositories/organization.repository";
+import { uuidv7 } from 'uuidv7';
 
 @Injectable()
 export class OrganizationCommandHandler {
@@ -15,10 +16,11 @@ export class OrganizationCommandHandler {
             throw new Error(`Organization with slug '${command.slug}' already exists`);
         }
 
+        const id = uuidv7();
         const organizationId = {
-            value: crypto.randomUUID(),
-            _id: crypto.randomUUID(),
-            get: () => crypto.randomUUID()
+            value: id,
+            _id: id,
+            get: () => id
         };
         const slug = Slug.create(command.slug);
 

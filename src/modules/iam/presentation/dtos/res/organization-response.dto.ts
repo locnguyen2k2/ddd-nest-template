@@ -14,10 +14,10 @@ export class OrganizationResponseDto {
     description?: string;
 
     @ApiProperty()
-    createdAt!: Date;
+    created_at!: Date;
 
     @ApiProperty()
-    updatedAt!: Date;
+    updated_at!: Date;
 }
 
 export class ListOrganizationsResponseDto {

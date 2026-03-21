@@ -17,6 +17,8 @@ export class OrganizationMapper {
             name: prismaOrganization.name,
             slug: slug,
             description: prismaOrganization.description || undefined,
+            created_at: prismaOrganization.created_at,
+            updated_at: prismaOrganization.updated_at,
         });
     }
 
@@ -26,8 +28,8 @@ export class OrganizationMapper {
             name: organization.getName(),
             slug: organization.getSlug().value,
             description: organization.getDescription(),
-            createdAt: new Date(),
-            updatedAt: new Date(),
+            created_at: new Date(),
+            updated_at: new Date(),
         };
     }
 
@@ -36,7 +38,7 @@ export class OrganizationMapper {
             name: organization.getName(),
             slug: organization.getSlug().value,
             description: organization.getDescription(),
-            updatedAt: new Date(),
+            updated_at: new Date(),
         };
     }
 
@@ -46,6 +48,8 @@ export class OrganizationMapper {
             name: organization.getName(),
             slug: organization.getSlug().value,
             description: organization.getDescription(),
+            created_at: organization.getCreatedAt(),
+            updated_at: organization.getUpdatedAt(),
         };
     }
 }

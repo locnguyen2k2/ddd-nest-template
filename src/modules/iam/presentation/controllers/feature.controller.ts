@@ -13,11 +13,11 @@ import {
 import { ApiTags, ApiOperation, ApiResponse, ApiParam, ApiQuery } from '@nestjs/swagger';
 import { CreateFeatureDto } from '@/modules/iam/presentation/dtos/req/feature.dto';
 import { UpdateFeatureDto } from '@/modules/iam/presentation/dtos/req/feature.dto';
-import { FeatureResponseDto, ListFeaturesResponseDto } from '@/modules/iam/presentation/dtos/res/feature-response.dto';
+import { FeatureResponseDto, ListFeaturesResponseDto, PaginateFeaturesResponseDto, CursorFeaturesResponseDto } from '@/modules/iam/presentation/dtos/res/feature-response.dto';
 import { FeatureCommandHandler } from '@/modules/iam/application/services/feature/feature.command.handler';
 import { FeatureQueryHandler } from '@/modules/iam/application/services/feature/feature.query.handler';
 import { CreateFeatureArgs, DeleteFeatureArgs, UpdateFeatureArgs } from '@/modules/iam/application/dtos/commands/feature-cmd.dto';
-import { GetFeatureByIdQuery, GetFeatureBySlugQuery, ListFeaturesQuery } from '@/modules/iam/application/dtos/queries/feature-query.dto';
+import { GetFeatureByIdQuery, GetFeatureBySlugQuery, ListFeaturesQuery, PaginateFeaturesQuery, CursorFeaturesQuery } from '@/modules/iam/application/dtos/queries/feature-query.dto';
 import { FeatureMapper } from '@/modules/iam/infrastructure/persistence/mappers/feature.mapper';
 
 @ApiTags('features')
@@ -73,22 +73,25 @@ export class FeatureController {
 
     @Get()
     @ApiOperation({ summary: 'List features with pagination' })
-    @ApiQuery({ name: 'page', required: false, type: Number, description: 'Page number (default: 1)' })
-    @ApiQuery({ name: 'limit', required: false, type: Number, description: 'Items per page (default: 10, max: 100)' })
-    @ApiQuery({ name: 'search', required: false, type: String, description: 'Search term' })
-    @ApiResponse({ status: 200, description: 'Features retrieved successfully', type: ListFeaturesResponseDto })
-    async list(@Query() listQuery: ListFeaturesQuery): Promise<ListFeaturesResponseDto> {
-        const query = new ListFeaturesQuery(listQuery);
-        const result = await this.queryHandler.handleListFeatures(query);
+    @ApiResponse({ status: 200, description: 'Features retrieved successfully', type: PaginateFeaturesResponseDto })
+    async pagination(@Query() listQuery: PaginateFeaturesQuery): Promise<PaginateFeaturesResponseDto> {
+        const result = await this.queryHandler.handlePaginate(listQuery);
 
         return {
-            features: result.features.map(feature => FeatureMapper.toResponseDto(feature)),
-            pagination: {
-                total: result.total,
-                page: result.page,
-                limit: result.limit,
-                totalPages: result.totalPages,
-            },
+            features: result.data.map(feature => FeatureMapper.toResponseDto(feature)),
+            paginated: result.paginated,
+        };
+    }
+
+    @Get('cursor')
+    @ApiOperation({ summary: 'List features with cursor pagination' })
+    @ApiResponse({ status: 200, description: 'Features retrieved successfully', type: CursorFeaturesResponseDto })
+    async cursorPagination(@Query() listQuery: CursorFeaturesQuery): Promise<CursorFeaturesResponseDto> {
+        const result = await this.queryHandler.handleCursorPaginate(listQuery);
+
+        return {
+            features: result.data.map(feature => FeatureMapper.toResponseDto(feature)),
+            paginated: result.paginated,
         };
     }
 

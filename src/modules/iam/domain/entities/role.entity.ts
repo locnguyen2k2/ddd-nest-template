@@ -6,6 +6,8 @@ export interface IRoleProps {
     name: string;
     slug: Slug;
     description?: string;
+    created_at?: Date;
+    updated_at?: Date;
 }
 
 export interface CreateRoleProps extends IRoleProps {
@@ -22,26 +24,34 @@ export class RoleEntity extends AggregateRoot<RoleEntity, string> {
     private name: string;
     private slug: Slug;
     private description?: string;
+    private created_at: Date;
+    private updated_at: Date;
 
     private constructor(readonly id: IEntityID<string>, props: IRoleProps) {
         super(id);
         this.name = props.name;
         this.slug = props.slug;
         this.description = props.description;
+        this.created_at = props.created_at ?? new Date();
+        this.updated_at = props.updated_at ?? new Date();
     }
 
     static create(props: CreateRoleProps): RoleEntity {
+        const now = new Date();
         const role = new RoleEntity(props.id, {
             name: props.name,
             slug: props.slug,
             description: props.description,
+            created_at: now,
+            updated_at: now,
         });
         role.addDomainEvent(new RoleCreatedEvent({
             id: props.id.value,
             name: props.name,
             slug: props.slug.value,
             description: props.description,
-            createdAt: new Date(),
+            createdAt: now,
+            updatedAt: now,
         }));
         return role;
     }
@@ -61,6 +71,8 @@ export class RoleEntity extends AggregateRoot<RoleEntity, string> {
             this.description = props.description;
         }
 
+        this.updated_at = new Date();
+
         this.addDomainEvent(new RoleUpdatedEvent({
             id: this.id.value,
             name: this.name,
@@ -69,18 +81,19 @@ export class RoleEntity extends AggregateRoot<RoleEntity, string> {
             oldName,
             oldSlug: oldSlug.value,
             oldDescription,
-            updatedAt: new Date(),
+            updatedAt: this.updated_at,
         }));
     }
 
     delete() {
+        const now = new Date();
         this.addDomainEvent(new RoleDeletedEvent({
             id: this.id.value,
             name: this.name,
             slug: this.slug.value,
             description: this.description,
             isDeleted: true,
-            updatedAt: new Date(),
+            updatedAt: now,
         }));
     }
 
@@ -94,5 +107,13 @@ export class RoleEntity extends AggregateRoot<RoleEntity, string> {
 
     getDescription(): string | undefined {
         return this.description;
+    }
+
+    getCreatedAt(): Date {
+        return this.created_at;
+    }
+
+    getUpdatedAt(): Date {
+        return this.updated_at;
     }
 }

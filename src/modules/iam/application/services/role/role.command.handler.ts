@@ -5,6 +5,7 @@ import { RoleEntity } from "@/modules/iam/domain/entities/role.entity";
 import { Slug } from "@/modules/iam/domain/vo/slug.vo";
 import { IRoleRepository } from "@/modules/iam/domain/repositories/role.repository";
 import { LogExecutionTime } from "@/common/decorators/log-execution.decorator";
+import { uuidv7 } from 'uuidv7';
 
 @Injectable()
 export class RoleCommandHandler {
@@ -17,10 +18,11 @@ export class RoleCommandHandler {
             throw new Error(`Role with slug '${command.slug}' already exists`);
         }
 
+        const id = uuidv7();
         const roleId = {
-            value: crypto.randomUUID(),
-            _id: crypto.randomUUID(),
-            get: () => crypto.randomUUID()
+            value: id,
+            _id: id,
+            get: () => id
         };
         const slug = Slug.create(command.slug);
 

@@ -5,6 +5,7 @@ interface FeatureBaseData {
     name: string;
     slug: string;
     description?: string;
+    is_enabled?: boolean;
 }
 
 // Feature Created Event
@@ -34,6 +35,7 @@ export class FeatureCreatedEvent extends BaseDomainEvent<string> {
             name: this.data.name,
             slug: this.data.slug,
             description: this.data.description,
+            is_enabled: this.data.is_enabled,
             createdAt: this.data.createdAt,
             updatedAt: this.data.updatedAt,
         };
@@ -45,6 +47,7 @@ export interface FeatureUpdatedEventData extends Omit<FeatureCreatedEventData, '
     oldName: string;
     oldSlug: string;
     oldDescription?: string;
+    oldIsEnabled?: boolean;
     updatedAt: Date;
 };
 
@@ -63,9 +66,11 @@ export class FeatureUpdatedEvent extends BaseDomainEvent<string> {
             name: this.data.name,
             slug: this.data.slug,
             description: this.data.description,
+            is_enabled: this.data.is_enabled,
             oldName: this.data.oldName,
             oldSlug: this.data.oldSlug,
             oldDescription: this.data.oldDescription,
+            oldIsEnabled: this.data.oldIsEnabled,
             updatedAt: this.data.updatedAt,
         };
     }
@@ -92,6 +97,7 @@ export class FeatureDeletedEvent extends BaseDomainEvent<string> {
             name: this.data.name,
             slug: this.data.slug,
             description: this.data.description,
+            is_enabled: this.data.is_enabled,
             updatedAt: this.data.updatedAt,
             isDeleted: this.data.isDeleted,
         };

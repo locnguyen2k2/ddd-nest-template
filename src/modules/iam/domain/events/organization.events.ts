@@ -6,6 +6,7 @@ export interface IOrganizationCreatedEvent {
     slug: string;
     description?: string;
     createdAt: Date;
+    updatedAt: Date;
 }
 
 export interface IOrganizationUpdatedEvent {
@@ -50,6 +51,7 @@ export class OrganizationCreatedEvent extends BaseDomainEvent<string> {
             slug: this.event.slug,
             description: this.event.description,
             createdAt: this.event.createdAt,
+            updatedAt: this.event.updatedAt,
         };
     }
 }

@@ -19,6 +19,8 @@ export class RoleMapper {
             name: prismaRole.name,
             slug: slug,
             description: prismaRole.description || undefined,
+            created_at: prismaRole.created_at,
+            updated_at: prismaRole.updated_at,
         });
     }
 

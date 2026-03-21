@@ -1,7 +1,8 @@
 import { Feature } from "../entities/feature.entity";
+import { IPaginate, ICursor } from '@/shared/domain/repositories/base.repository';
 
 export const FEATURE_REPO = Symbol('FEATURE_REPO');
-export interface IFeatureRepository {
+export interface IFeatureRepository extends IPaginate<Feature>, ICursor<Feature> {
     findOneById(id: string): Promise<Feature | null>;
     findOneBySlug(slug: string): Promise<Feature | null>;
     findAll(): Promise<Feature[]>;
