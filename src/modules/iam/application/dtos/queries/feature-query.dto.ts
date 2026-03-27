@@ -20,8 +20,13 @@ export class GetFeatureBySlugQuery {
     @IsNotEmpty()
     slug: string;
 
+    @IsString()
+    @IsNotEmpty()
+    organization_id: string;
+
     constructor(data: GetFeatureBySlugQuery) {
         this.slug = data.slug;
+        this.organization_id = data.organization_id;
     }
 }
 

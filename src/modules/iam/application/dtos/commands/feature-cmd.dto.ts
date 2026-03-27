@@ -17,10 +17,15 @@ export class CreateFeatureArgs {
     @MaxLength(500)
     description?: string;
 
+    @IsString()
+    @IsNotEmpty()
+    organization_id: string;
+
     constructor(data: CreateFeatureArgs) {
         this.name = data.name;
         this.slug = data.slug;
         this.description = data.description;
+        this.organization_id = data.organization_id;
     }
 }
 
@@ -45,11 +50,16 @@ export class UpdateFeatureArgs {
     @MaxLength(500)
     description?: string;
 
+    @IsString()
+    @IsNotEmpty()
+    organization_id: string;
+
     constructor(data: UpdateFeatureArgs) {
         this.id = data.id;
         this.name = data.name;
         this.slug = data.slug;
         this.description = data.description;
+        this.organization_id = data.organization_id;
     }
 }
 
@@ -59,7 +69,12 @@ export class DeleteFeatureArgs {
     @IsNotEmpty()
     id: string;
 
+    @IsString()
+    @IsNotEmpty()
+    organization_id: string;
+
     constructor(data: DeleteFeatureArgs) {
         this.id = data.id;
+        this.organization_id = data.organization_id;
     }
 }

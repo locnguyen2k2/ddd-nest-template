@@ -5,7 +5,7 @@ import { NestFastifyApplication } from '@nestjs/platform-fastify';
 import { ConfigKeyPaths, ISwaggerConfig, swaggerConfigKey } from '@/config/index';
 
 @Injectable()
-export class SwaggerService {
+export class SwaggerAdapter {
     constructor(private readonly configService: ConfigService<ConfigKeyPaths>) { }
 
     setup(app: NestFastifyApplication) {
@@ -17,7 +17,6 @@ export class SwaggerService {
             .setTitle('API Documentation')
             .setDescription('API documentation for the application')
             .setVersion('1.0')
-            // .addServer(config.serverUrl || '')
             .addBearerAuth()
             .build();
 

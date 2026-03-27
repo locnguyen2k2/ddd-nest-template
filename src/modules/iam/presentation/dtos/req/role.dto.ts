@@ -19,6 +19,11 @@ export class CreateRoleDto {
     @IsOptional()
     @MaxLength(500)
     description?: string;
+
+    @ApiProperty()
+    @IsString()
+    @IsNotEmpty()
+    organization_id!: string;
 }
 
 export class UpdateRoleDto {
@@ -39,4 +44,9 @@ export class UpdateRoleDto {
     @IsOptional()
     @MaxLength(500)
     description?: string;
+
+    @ApiProperty({ required: false })
+    @IsString()
+    @IsNotEmpty()
+    organization_id!: string;
 }

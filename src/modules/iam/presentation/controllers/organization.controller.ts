@@ -19,9 +19,10 @@ import { OrganizationQueryHandler } from '@/modules/iam/application/services/org
 import { CreateOrganizationArgs, DeleteOrganizationArgs, UpdateOrganizationArgs } from '@/modules/iam/application/dtos/commands/organization-cmd.dto';
 import { GetOrganizationByIdQuery, GetOrganizationBySlugQuery, ListOrganizationsQuery } from '@/modules/iam/application/dtos/queries/organization-query.dto';
 import { OrganizationMapper } from '@/modules/iam/infrastructure/persistence/mappers/organization.mapper';
+import { API_VERS } from '@/common/constant';
 
 @ApiTags('organizations')
-@Controller('organizations')
+@Controller(API_VERS.V1 + '/organizations')
 export class OrganizationController {
     constructor(
         private readonly commandHandler: OrganizationCommandHandler,

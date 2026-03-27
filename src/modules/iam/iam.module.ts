@@ -14,16 +14,23 @@ import { FeatureEventPublisher } from "./infrastructure/events/feature.event-pub
 import { RoleEventPublisher } from "./infrastructure/events/role.event-publisher";
 import { OrganizationEventPublisher } from "./infrastructure/events/organization.event-publisher";
 import { FeatureCommandHandler } from "./application/services/feature/feature.command.handler";
-import { PrismaService } from "@/shared/infrastructure/database/prisma.service";
+import { PrismaAdapter } from "@/shared/infrastructure/adapters/prisma.adapter";
 import { FEATURE_REPO } from "./domain/repositories/feature.repository";
 import { ORGANIZATION_REPO } from "./domain/repositories/organization.repository";
 import { ROLE_REPO } from "./domain/repositories/role.repository";
 import { PermissionRepository } from "./infrastructure/persistence/repositories/permission.repository";
 import { PermissionCmdHandler } from "./application/services/permission/permission.cmd.handler";
 import { PERMISSION_REPO } from "./domain/repositories/permission.repository";
+import { RoleDomainService } from "./domain/services/role.service";
+import { ProjectRepository } from "./infrastructure/persistence/repositories/project.repository";
+import { UserRepository } from "./infrastructure/persistence/repositories/user.repository";
+import { ProjectController } from "./presentation/controllers/project.controller";
+import { ProjectCmdHandler } from "./application/services/project/project.cmd.handler";
+import { ProjectQueryHandler } from "./application/services/project/project.query.handler";
+import { PROJECT_REPO } from "./domain/repositories/project.repository";
 
 const featureProviders = [
-    PrismaService,
+    PrismaAdapter,
     FeatureCommandHandler,
     FeatureRepository,
     FeatureQueryHandler,
@@ -38,6 +45,7 @@ const roleProviders = [
     RoleQueryHandler,
     RoleRepository,
     RoleEventPublisher,
+    RoleDomainService,
     {
         provide: ROLE_REPO,
         useClass: RoleRepository,
@@ -61,6 +69,22 @@ const permissionProviders = [
         useClass: PermissionRepository,
     }
 ];
+const projectProviders = [
+    ProjectCmdHandler,
+    ProjectQueryHandler,
+    ProjectRepository,
+    {
+        provide: PROJECT_REPO,
+        useClass: ProjectRepository,
+    }
+];
+const userProviders = [
+    UserRepository,
+    {
+        provide: "USER_REPO",
+        useClass: UserRepository,
+    }
+];
 
 const featureExports = [
     FeatureRepository,
@@ -78,21 +102,34 @@ const permissionExports = [
     PermissionRepository,
     PermissionCmdHandler,
 ];
+const projectExports = [
+    ProjectRepository,
+    ProjectCmdHandler,
+    ProjectQueryHandler,
+];
+const userExports = [
+    UserRepository
+];
 
 @Module({
     imports: [],
-    controllers: [FeatureController, RoleController, OrganizationController],
+    controllers: [FeatureController, RoleController, OrganizationController, ProjectController
+    ],
     providers: [
         ...featureProviders,
         ...roleProviders,
         ...organizationProviders,
         ...permissionProviders,
+        ...projectProviders,
+        ...userProviders,
     ],
     exports: [
         ...featureExports,
         ...roleExports,
         ...organizationExports,
         ...permissionExports,
+        ...projectExports,
+        ...userExports,
     ],
 })
 export class IamModule { }

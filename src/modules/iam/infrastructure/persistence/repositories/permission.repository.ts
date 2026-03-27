@@ -1,20 +1,21 @@
 import { IPermissionRepository } from "@/modules/iam/domain/repositories/permission.repository";
 import { PermissionEntity } from "@/modules/iam/domain/entities/permission.entity";
-import { PrismaService } from "@/shared/infrastructure/database/prisma.service";
+import { PrismaAdapter } from "@/shared/infrastructure/adapters/prisma.adapter";
 import { PermissionMapper } from "../mappers/permission.mapper";
 import { Logger } from "@nestjs/common";
 import { LogExecutionTime } from "@/common/decorators/log-execution.decorator";
+import { PermissionAction } from "@prisma/client";
 
 export class PermissionRepository implements IPermissionRepository {
     private readonly logger = new Logger(PermissionRepository.name);
-    constructor(private readonly rbacDBService: PrismaService) { }
+    constructor(private readonly rbacDBService: PrismaAdapter) { }
 
     @LogExecutionTime()
     async create(permission: PermissionEntity): Promise<PermissionEntity | null> {
         const permissionPrisma = await this.rbacDBService.permission.create({
             data: {
                 name: permission.name,
-                slug: permission.slug,
+                action: permission.action,
                 description: permission.description,
             },
         });
@@ -29,9 +30,10 @@ export class PermissionRepository implements IPermissionRepository {
         return PermissionMapper.toDomain(found);
     }
     @LogExecutionTime()
-    async findBySlug(slug: string): Promise<PermissionEntity | null> {
-        const found = await this.rbacDBService.permission.findUnique({
-            where: { slug },
+    async findByAction(action: string): Promise<PermissionEntity | null> {
+        const where = { action: action as PermissionAction };
+        const found = await this.rbacDBService.permission.findFirst({
+            where,
         });
         if (!found) return null;
         return PermissionMapper.toDomain(found);
@@ -47,7 +49,7 @@ export class PermissionRepository implements IPermissionRepository {
             where: { id },
             data: {
                 name: permission.name,
-                slug: permission.slug,
+                action: permission.action,
                 description: permission.description,
             },
         });

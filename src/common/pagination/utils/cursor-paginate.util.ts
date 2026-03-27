@@ -11,6 +11,10 @@ export const decodedCursor = (
 } => {
     const decodedCursor = Buffer.from(cursor, 'base64').toString('utf-8');
     const [id, created_at] = decodedCursor.split('|');
+    const timestamp = new Date(created_at).getTime();
+    if (isNaN(timestamp)) {
+        throw new BusinessException(`400|Invalid cursor: ${cursor}`);
+    }
     return { id, created_at };
 };
 
@@ -59,7 +63,7 @@ export const cursorHelper = async <T>({
 
         if (direction === 'prev') {
             where[cursorField] = {
-                gte: cursorDate,
+                gt: cursorDate,
             };
             where['id'] = {
                 gt: id,
@@ -90,7 +94,7 @@ export const cursorHelper = async <T>({
             query.findMany({
                 where,
                 orderBy: {
-                    [sort || cursorField]: actualSorted,
+                    [cursorField]: actualSorted,
                 },
                 ...(include ? { include } : select ? { select } : {}),
                 ...(!pageOptions.all && { take: requestLimit }),
@@ -130,12 +134,11 @@ export const cursorHelper = async <T>({
             const firstRecord = resultEntities[0];
             const lastRecord = resultEntities[resultEntities.length - 1];
 
-            if (hasNextPage) {
+            if (hasNextPage && lastRecord && lastRecord?.cursorField) {
                 nextCursor = encodeCursor(lastRecord.id, lastRecord[cursorField].toISOString());
-
             }
 
-            if (hasPrevPage) {
+            if (hasPrevPage && firstRecord && firstRecord?.cursorField) {
                 prevCursor = encodeCursor(firstRecord.id, firstRecord[cursorField].toISOString());
 
             }

@@ -7,6 +7,7 @@ export interface IRoleCreatedEvent {
     description?: string;
     createdAt: Date;
     updatedAt: Date;
+    organizationId: string;
 }
 
 export interface IRoleUpdatedEvent {
@@ -18,6 +19,7 @@ export interface IRoleUpdatedEvent {
     oldSlug: string;
     oldDescription?: string;
     updatedAt: Date;
+    organizationId: string;
 }
 
 export interface IRoleDeletedEvent {
@@ -27,12 +29,15 @@ export interface IRoleDeletedEvent {
     description?: string;
     isDeleted: boolean;
     updatedAt: Date;
+    organizationId: string;
 }
 
 export enum RoleEventType {
     CREATED = 'role.created',
     UPDATED = 'role.updated',
     DELETED = 'role.deleted',
+    PERMISSION_ASSIGNED = 'role.permission_assigned',
+    PERMISSION_ASSIGN_FAILED = 'role.permission_assign_failed',
 }
 
 export class RoleCreatedEvent extends BaseDomainEvent<string> {
@@ -52,6 +57,7 @@ export class RoleCreatedEvent extends BaseDomainEvent<string> {
             description: this.event.description,
             createdAt: this.event.createdAt,
             updatedAt: this.event.updatedAt,
+            organizationId: this.event.organizationId,
         };
     }
 }
@@ -75,6 +81,7 @@ export class RoleUpdatedEvent extends BaseDomainEvent<string> {
             oldSlug: this.event.oldSlug,
             oldDescription: this.event.oldDescription,
             updatedAt: this.event.updatedAt,
+            organizationId: this.event.organizationId,
         };
     }
 }
@@ -96,6 +103,55 @@ export class RoleDeletedEvent extends BaseDomainEvent<string> {
             description: this.event.description,
             isDeleted: this.event.isDeleted,
             updatedAt: this.event.updatedAt,
+            organizationId: this.event.organizationId,
+        };
+    }
+}
+
+export class PermissionAssignedEvent extends BaseDomainEvent<string> {
+    constructor(public readonly data: {
+        roleId: string;
+        permissionId: string;
+        assignedAt: Date;
+    }) {
+        super(data.roleId);
+    }
+
+    get eventName(): string {
+        return RoleEventType.PERMISSION_ASSIGNED;
+    }
+
+    get eventData(): Record<string, unknown> {
+        return {
+            roleId: this.data.roleId,
+            permissionId: this.data.permissionId,
+            assignedAt: this.data.assignedAt,
+        };
+    }
+}
+
+export class PermissionAssignFailedEvent extends BaseDomainEvent<string> {
+    constructor(public readonly data: {
+        roleId: string;
+        permissionId: string;
+        featureId: string;
+        reason: string;
+        failedAt: Date;
+    }) {
+        super(data.roleId);
+    }
+
+    get eventName(): string {
+        return RoleEventType.PERMISSION_ASSIGNED;
+    }
+
+    get eventData(): Record<string, unknown> {
+        return {
+            roleId: this.data.roleId,
+            permissionId: this.data.permissionId,
+            featureId: this.data.featureId,
+            reason: this.data.reason,
+            failedAt: this.data.failedAt,
         };
     }
 }

@@ -6,7 +6,7 @@ import { ConfigKeyPaths } from '@/config';
 import { PrismaClient } from '@prisma/client';
 
 @Injectable()
-export class PrismaService extends PrismaClient implements OnModuleInit, OnModuleDestroy {
+export class PrismaAdapter extends PrismaClient implements OnModuleInit, OnModuleDestroy {
     constructor(configService: ConfigService<ConfigKeyPaths>) {
         const rbacURL = configService.get<IDatabaseConfig>(databaseConfigKey)?.rbac?.url;
         super({

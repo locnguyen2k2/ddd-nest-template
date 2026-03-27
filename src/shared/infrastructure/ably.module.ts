@@ -1,10 +1,10 @@
 import { Module } from '@nestjs/common';
-import { AblyService } from './ably.service';
+import { AblyAdapter } from './adapters/ably.adapter';
 
 @Module({
   imports: [],
   controllers: [],
-  providers: [AblyService],
-  exports: [AblyService],
+  providers: [AblyAdapter],
+  exports: [AblyAdapter],
 })
 export class AblyModule { }

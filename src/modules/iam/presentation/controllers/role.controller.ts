@@ -19,9 +19,10 @@ import { RoleQueryHandler } from '@/modules/iam/application/services/role/role.q
 import { CreateRoleArgs, DeleteRoleArgs, UpdateRoleArgs } from '@/modules/iam/application/dtos/commands/role-cmd.dto';
 import { CursorRolesQuery, GetRoleByIdQuery, GetRoleBySlugQuery, PaginateRolesQuery } from '@/modules/iam/application/dtos/queries/role-query.dto';
 import { RoleMapper } from '@/modules/iam/infrastructure/persistence/mappers/role.mapper';
+import { API_VERS } from '@/common/constant';
 
 @ApiTags('roles')
-@Controller('roles')
+@Controller(API_VERS.V1 + '/roles')
 export class RoleController {
     constructor(
         private readonly commandHandler: RoleCommandHandler,

@@ -40,7 +40,7 @@ export class OrganizationCommandHandler {
             throw new Error(`Organization with id '${command.id}' not found`);
         }
 
-        if (command.slug && command.slug !== existingOrganization.getSlug().value) {
+        if (command.slug && command.slug !== existingOrganization.slug().value) {
             const slugConflict = await this.organizationRepo.findBySlug(command.slug);
             if (slugConflict) {
                 throw new Error(`Organization with slug '${command.slug}' already exists`);

@@ -19,9 +19,10 @@ import { FeatureQueryHandler } from '@/modules/iam/application/services/feature/
 import { CreateFeatureArgs, DeleteFeatureArgs, UpdateFeatureArgs } from '@/modules/iam/application/dtos/commands/feature-cmd.dto';
 import { GetFeatureByIdQuery, GetFeatureBySlugQuery, ListFeaturesQuery, PaginateFeaturesQuery, CursorFeaturesQuery } from '@/modules/iam/application/dtos/queries/feature-query.dto';
 import { FeatureMapper } from '@/modules/iam/infrastructure/persistence/mappers/feature.mapper';
+import { API_VERS } from '@/common/constant';
 
 @ApiTags('features')
-@Controller('features')
+@Controller(API_VERS.V1 + '/features')
 export class FeatureController {
     constructor(
         private readonly commandHandler: FeatureCommandHandler,
@@ -60,8 +61,8 @@ export class FeatureController {
     @ApiParam({ name: 'slug', description: 'Feature slug' })
     @ApiResponse({ status: 200, description: 'Feature found', type: FeatureResponseDto })
     @ApiResponse({ status: 404, description: 'Feature not found' })
-    async getBySlug(@Param('slug') slug: string): Promise<FeatureResponseDto> {
-        const query = new GetFeatureBySlugQuery({ slug });
+    async getBySlug(@Param('slug') slug: string, @Query('organization_id') organization_id: string): Promise<FeatureResponseDto> {
+        const query = new GetFeatureBySlugQuery({ slug, organization_id });
         const feature = await this.queryHandler.handleGetFeatureBySlug(query);
 
         if (!feature) {
@@ -104,9 +105,10 @@ export class FeatureController {
     @ApiResponse({ status: 409, description: 'Feature with slug already exists' })
     async update(
         @Param('id') id: string,
-        @Body() updateFeatureDto: UpdateFeatureDto
+        @Body() updateFeatureDto: UpdateFeatureDto,
+        @Query('organization_id') organization_id: string
     ): Promise<FeatureResponseDto> {
-        const command = new UpdateFeatureArgs({ id, ...updateFeatureDto });
+        const command = new UpdateFeatureArgs({ id, ...updateFeatureDto, organization_id });
         const feature = await this.commandHandler.handleUpdateFeature(command);
         return FeatureMapper.toResponseDto(feature);
     }
@@ -117,8 +119,8 @@ export class FeatureController {
     @ApiResponse({ status: 204, description: 'Feature deleted successfully' })
     @ApiResponse({ status: 404, description: 'Feature not found' })
     @HttpCode(HttpStatus.NO_CONTENT)
-    async delete(@Param('id') id: string): Promise<void> {
-        const command = new DeleteFeatureArgs({ id });
+    async delete(@Param('id') id: string, @Query('organization_id') organization_id: string): Promise<void> {
+        const command = new DeleteFeatureArgs({ id, organization_id });
         await this.commandHandler.handleDeleteFeature(command);
     }
 }

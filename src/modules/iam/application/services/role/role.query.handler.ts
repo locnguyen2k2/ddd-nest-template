@@ -17,7 +17,7 @@ export class RoleQueryHandler {
 
     @LogExecutionTime()
     async handleGetRoleBySlug(query: GetRoleBySlugQuery): Promise<RoleEntity | null> {
-        return await this.roleRepository.findBySlug(query.slug);
+        return await this.roleRepository.findBySlug(query.slug, query.organization_id);
     }
 
     @LogExecutionTime()

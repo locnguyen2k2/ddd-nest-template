@@ -11,7 +11,7 @@ export class FeatureCommandHandler {
     constructor(@Inject(FEATURE_REPO) private readonly featureRepository: IFeatureRepository) { }
 
     async handleCreateFeature(command: CreateFeatureArgs): Promise<Feature> {
-        const existingFeature = await this.featureRepository.findOneBySlug(command.slug);
+        const existingFeature = await this.featureRepository.findOneBySlug(command.slug, command.organization_id);
         if (existingFeature) {
             throw new Error(`Feature with slug '${command.slug}' already exists`);
         }
@@ -40,8 +40,8 @@ export class FeatureCommandHandler {
             throw new Error(`Feature with id '${command.id}' not found`);
         }
 
-        if (command.slug && command.slug !== existingFeature.getSlug().value) {
-            const slugConflict = await this.featureRepository.findOneBySlug(command.slug);
+        if (command.slug && command.slug !== existingFeature.slug().value) {
+            const slugConflict = await this.featureRepository.findOneBySlug(command.slug, command.organization_id);
             if (slugConflict) {
                 throw new Error(`Feature with slug '${command.slug}' already exists`);
             }
