@@ -7,6 +7,7 @@ import { IEntityID } from "@/shared/domain/entities/base.entity";
 import { Logger } from "@nestjs/common";
 import { LogExecutionTime } from "@/common/decorators/log-execution.decorator";
 import { uuidv7 } from 'uuidv7';
+import { PermissionAction } from "@/common/enum";
 
 
 export class PermissionCmdHandler {
@@ -15,9 +16,9 @@ export class PermissionCmdHandler {
 
     @LogExecutionTime()
     async handleCreatePermission(permission: CreatePermissionArgs) {
-        const isExist = await this.permissionRepo.findBySlug(permission.slug);
+        const isExist = await this.permissionRepo.findByAction(permission.action, permission.organizationId);
         if (isExist) {
-            throw new Error(`Permission with slug '${permission.slug}' already exists`);
+            throw new Error(`Permission with slug '${permission.action}' already exists`);
         }
         const id = uuidv7();
         const permissionId: IEntityID<string> = {
@@ -28,7 +29,7 @@ export class PermissionCmdHandler {
 
         const permissionEntity = PermissionEntity.create({
             id: permissionId,
-            slug: permission.slug,
+            action: permission.action as PermissionAction,
             name: permission.name,
             description: permission.description,
         });
@@ -38,25 +39,24 @@ export class PermissionCmdHandler {
 
     @LogExecutionTime()
     async handleUpdatePermission(permission: UpdatePermissionArgs) {
-        const isExist = await this.permissionRepo.findById(permission.id);
-        if (!isExist) {
-            throw new Error(`Permission with id '${permission.id}' not found`);
+        const [isExist, isExistByAction] = await Promise.all([
+            this.permissionRepo.findById(permission.id),
+            this.permissionRepo.findByAction(permission.action)
+        ]);
+
+        switch (true) {
+            case !isExist:
+                throw new Error(`Permission with id '${permission.id}' not found`);
+            case isExistByAction && isExistByAction.id.value !== permission.id:
+                throw new Error(`Permission with action '${permission.action}' already exists`);
         }
 
-        const id: IEntityID<string> = {
-            value: permission.id,
-            _id: permission.id,
-            get: () => permission.id
-        }
-
-
-        const permissionEntity = PermissionEntity.create({
-            id,
-            slug: permission.slug,
+        isExist.update({
+            action: permission.action as PermissionAction,
             name: permission.name,
             description: permission.description,
         });
 
-        return await this.permissionRepo.update(permission.id, permissionEntity);
+        return await this.permissionRepo.update(permission.id, isExist);
     }
 }

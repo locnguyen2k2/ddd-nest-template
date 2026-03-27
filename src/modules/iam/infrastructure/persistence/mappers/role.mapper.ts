@@ -2,10 +2,10 @@ import { RoleEntity } from '@/modules/iam/domain/entities/role.entity';
 import { Slug } from '@/modules/iam/domain/vo/slug.vo';
 import { RoleResponseDto } from '@/modules/iam/presentation/dtos/res/role-response.dto';
 import { IEntityID } from '@/shared/domain/entities/base.entity';
-import { Prisma } from '@prisma/client';
+import { Prisma, Role } from '@prisma/client';
 
 export class RoleMapper {
-    static toDomain(prismaRole: any): RoleEntity {
+    static toDomain(prismaRole: Role): RoleEntity {
         const roleId: IEntityID<string> = {
             value: prismaRole.id,
             _id: prismaRole.id,
@@ -21,15 +21,16 @@ export class RoleMapper {
             description: prismaRole.description || undefined,
             created_at: prismaRole.created_at,
             updated_at: prismaRole.updated_at,
+            organization_id: prismaRole.organization_id,
         });
     }
 
-    static toPrisma(role: RoleEntity): Prisma.RoleCreateInput {
+    static toPrisma(role: RoleEntity): any {
         return {
             id: role.id.value,
-            name: role.getName(),
-            slug: role.getSlug().value,
-            description: role.getDescription(),
+            name: role.name(),
+            slug: role.slug().value,
+            description: role.description(),
             created_at: new Date(),
             updated_at: new Date(),
         };
@@ -37,9 +38,9 @@ export class RoleMapper {
 
     static toPrismaUpdate(role: RoleEntity): Prisma.RoleUpdateInput {
         return {
-            name: role.getName(),
-            slug: role.getSlug().value,
-            description: role.getDescription(),
+            name: role.name(),
+            slug: role.slug().value,
+            description: role.description(),
             updated_at: new Date(),
         };
     }

@@ -17,7 +17,7 @@ export class FeatureMapper {
             name: prismaFeature.name,
             slug: slug,
             description: prismaFeature.description || undefined,
-            is_enabled: prismaFeature.is_enabled,
+            status: prismaFeature.is_enabled,
             created_at: prismaFeature.created_at,
             updated_at: prismaFeature.updated_at,
         });
@@ -26,10 +26,10 @@ export class FeatureMapper {
     static toPrisma(feature: Feature): any {
         return {
             id: feature.id.value,
-            name: feature.getName(),
-            slug: feature.getSlug().value,
-            description: feature.getDescription(),
-            is_enabled: feature.getIsEnabled(),
+            name: feature.name(),
+            slug: feature.slug().value,
+            description: feature.description(),
+            status: feature.status(),
             created_at: new Date(),
             updated_at: new Date(),
         };
@@ -37,10 +37,10 @@ export class FeatureMapper {
 
     static toPrismaUpdate(feature: Feature): any {
         return {
-            name: feature.getName(),
-            slug: feature.getSlug().value,
-            description: feature.getDescription(),
-            is_enabled: feature.getIsEnabled(),
+            name: feature.name(),
+            slug: feature.slug().value,
+            description: feature.description(),
+            status: feature.status(),
             updated_at: new Date(),
         };
     }
@@ -48,12 +48,12 @@ export class FeatureMapper {
     static toResponseDto(feature: Feature): any {
         return {
             id: feature.id.value,
-            name: feature.getName(),
-            slug: feature.getSlug().value,
-            description: feature.getDescription(),
-            is_enabled: feature.getIsEnabled(),
-            created_at: feature.getCreatedAt(),
-            updated_at: feature.getUpdatedAt(),
+            name: feature.name(),
+            slug: feature.slug().value,
+            description: feature.description(),
+            status: feature.status(),
+            created_at: feature.createdAt(),
+            updated_at: feature.updatedAt(),
         };
     }
 }

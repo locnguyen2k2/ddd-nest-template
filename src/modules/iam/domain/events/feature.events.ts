@@ -1,11 +1,12 @@
 import { BaseDomainEvent } from '@/shared/domain/events/base.domain-event';
+import { AccessControlStatus } from '@prisma/client';
 
 interface FeatureBaseData {
     id: string;
     name: string;
     slug: string;
     description?: string;
-    is_enabled?: boolean;
+    status?: AccessControlStatus;
 }
 
 // Feature Created Event
@@ -35,7 +36,7 @@ export class FeatureCreatedEvent extends BaseDomainEvent<string> {
             name: this.data.name,
             slug: this.data.slug,
             description: this.data.description,
-            is_enabled: this.data.is_enabled,
+            status: this.data.status,
             createdAt: this.data.createdAt,
             updatedAt: this.data.updatedAt,
         };
@@ -47,7 +48,7 @@ export interface FeatureUpdatedEventData extends Omit<FeatureCreatedEventData, '
     oldName: string;
     oldSlug: string;
     oldDescription?: string;
-    oldIsEnabled?: boolean;
+    oldStatus?: AccessControlStatus;
     updatedAt: Date;
 };
 
@@ -66,11 +67,11 @@ export class FeatureUpdatedEvent extends BaseDomainEvent<string> {
             name: this.data.name,
             slug: this.data.slug,
             description: this.data.description,
-            is_enabled: this.data.is_enabled,
+            status: this.data.status,
             oldName: this.data.oldName,
             oldSlug: this.data.oldSlug,
             oldDescription: this.data.oldDescription,
-            oldIsEnabled: this.data.oldIsEnabled,
+            oldStatus: this.data.oldStatus,
             updatedAt: this.data.updatedAt,
         };
     }
@@ -79,7 +80,7 @@ export class FeatureUpdatedEvent extends BaseDomainEvent<string> {
 // Feature Deleted Event
 export interface FeatureDeletedEventData extends FeatureBaseData {
     updatedAt: Date;
-    isDeleted: boolean;
+    status: AccessControlStatus;
 };
 
 export class FeatureDeletedEvent extends BaseDomainEvent<string> {
@@ -97,9 +98,8 @@ export class FeatureDeletedEvent extends BaseDomainEvent<string> {
             name: this.data.name,
             slug: this.data.slug,
             description: this.data.description,
-            is_enabled: this.data.is_enabled,
+            status: this.data.status,
             updatedAt: this.data.updatedAt,
-            isDeleted: this.data.isDeleted,
         };
     }
 }

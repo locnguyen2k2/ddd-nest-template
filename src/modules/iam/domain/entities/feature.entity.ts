@@ -1,12 +1,13 @@
 import { AggregateRoot, IEntityID } from '@/shared/domain/entities/base.entity';
 import { Slug } from '../vo/slug.vo';
 import { FeatureCreatedEvent, FeatureUpdatedEvent, FeatureDeletedEvent } from '../events/feature.events';
+import { AccessControlStatus } from '@/common/enum';
 
 export interface FeatureBaseProps {
     name: string;
     slug: Slug;
     description?: string;
-    is_enabled?: boolean;
+    status?: AccessControlStatus;
     created_at?: Date;
     updated_at?: Date;
 }
@@ -19,19 +20,19 @@ export interface UpdateFeatureProps {
     name?: string;
     slug?: Slug;
     description?: string;
-    is_enabled?: boolean;
+    status?: AccessControlStatus;
 }
 
 // Feature Aggregate Root
 export class Feature extends AggregateRoot<Feature, string> {
     private constructor(
         public readonly id: IEntityID<string>,
-        private name: string,
-        private slug: Slug,
-        private description?: string,
-        private is_enabled: boolean = true,
-        private created_at: Date = new Date(),
-        private updated_at: Date = new Date(),
+        private _name: string,
+        private _slug: Slug,
+        private _description?: string,
+        private _status: AccessControlStatus = AccessControlStatus.ACTIVE,
+        private _created_at: Date = new Date(),
+        private _updated_at: Date = new Date(),
     ) {
         super(id);
     }
@@ -42,7 +43,7 @@ export class Feature extends AggregateRoot<Feature, string> {
             props.name,
             props.slug,
             props.description,
-            props.is_enabled ?? true,
+            props.status ?? AccessControlStatus.ACTIVE,
             props.created_at ?? new Date(),
             props.updated_at ?? new Date()
         );
@@ -51,7 +52,7 @@ export class Feature extends AggregateRoot<Feature, string> {
             name: props.name,
             slug: props.slug.value,
             description: props.description,
-            is_enabled: props.is_enabled ?? true,
+            status: props.status ?? AccessControlStatus.ACTIVE,
             createdAt: props.created_at ?? new Date(),
             updatedAt: props.updated_at ?? new Date(),
         }));
@@ -59,73 +60,73 @@ export class Feature extends AggregateRoot<Feature, string> {
     }
 
     update(props: UpdateFeatureProps) {
-        const oldName = this.name;
-        const oldSlug = this.slug;
-        const oldDescription = this.description;
-        const oldIsEnabled = this.is_enabled;
+        const oldName = this._name;
+        const oldSlug = this._slug;
+        const oldDescription = this._description;
+        const oldStatus = this._status;
 
         if (props.name !== undefined) {
-            this.name = props.name;
+            this._name = props.name;
         }
         if (props.slug !== undefined) {
-            this.slug = props.slug;
+            this._slug = props.slug;
         }
         if (props.description !== undefined) {
-            this.description = props.description;
+            this._description = props.description;
         }
-        if (props.is_enabled !== undefined) {
-            this.is_enabled = props.is_enabled;
+        if (props.status !== undefined) {
+            this._status = props.status;
         }
 
-        this.updated_at = new Date();
+        this._updated_at = new Date();
 
         this.addDomainEvent(new FeatureUpdatedEvent({
             id: this.id.value,
-            name: this.name,
-            slug: this.slug.value,
-            description: this.description,
-            is_enabled: this.is_enabled,
+            name: this._name,
+            slug: this._slug.value,
+            description: this._description,
+            status: this._status,
             oldName,
             oldSlug: oldSlug.value,
             oldDescription,
-            oldIsEnabled,
-            updatedAt: this.updated_at,
+            oldStatus,
+            updatedAt: this._updated_at,
         }));
     }
 
     delete() {
         this.addDomainEvent(new FeatureDeletedEvent({
             id: this.id.value,
-            name: this.name,
-            slug: this.slug.value,
-            description: this.description,
-            isDeleted: true,
+            name: this._name,
+            slug: this._slug.value,
+            description: this._description,
+            status: AccessControlStatus.INACTIVE,
             updatedAt: new Date(),
         }));
     }
 
     // Getters
-    getName(): string {
-        return this.name;
+    name(): string {
+        return this._name;
     }
 
-    getSlug(): Slug {
-        return this.slug;
+    slug(): Slug {
+        return this._slug;
     }
 
-    getDescription(): string | undefined {
-        return this.description;
+    description(): string | undefined {
+        return this._description;
     }
 
-    getIsEnabled(): boolean {
-        return this.is_enabled;
+    status(): AccessControlStatus {
+        return this._status;
     }
 
-    getCreatedAt(): Date {
-        return this.created_at;
+    createdAt(): Date {
+        return this._created_at;
     }
 
-    getUpdatedAt(): Date {
-        return this.updated_at;
+    updatedAt(): Date {
+        return this._updated_at;
     }
 }

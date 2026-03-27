@@ -3,7 +3,9 @@ import { CacheModule as NestedCacheModule } from '@nestjs/cache-manager'
 import { ConfigKeyPaths, IRedisConfig, redisConfigKey } from '@/config';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { redisStore } from 'cache-manager-redis-store';
-import { CacheService } from './cache.service';
+import { CacheAdapter } from './adapters/cache.adapter';
+import { CACHE_PORT } from '../application/ports/cache.port';
+
 @Module({
     imports: [NestedCacheModule.registerAsync({
         imports: [ConfigModule],
@@ -39,7 +41,12 @@ import { CacheService } from './cache.service';
         },
         inject: [ConfigService],
     })],
-    providers: [CacheService],
-    exports: [CacheService],
+    providers: [CacheAdapter,
+        {
+            provide: CACHE_PORT,
+            useClass: CacheAdapter
+        }
+    ],
+    exports: [CacheAdapter, CACHE_PORT],
 })
 export class CacheModule { }

@@ -33,9 +33,9 @@ export class OrganizationQueryHandler {
         if (search) {
             const searchLower = search.toLowerCase();
             filteredOrganizations = organizations.filter(org =>
-                org.getName().toLowerCase().includes(searchLower) ||
-                org.getSlug().value.toLowerCase().includes(searchLower) ||
-                (org.getDescription()?.toLowerCase().includes(searchLower) ?? false)
+                org.name().toLowerCase().includes(searchLower) ||
+                org.slug().value.toLowerCase().includes(searchLower) ||
+                (org.description()?.toLowerCase().includes(searchLower) ?? false)
             );
         }
 

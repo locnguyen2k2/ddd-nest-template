@@ -1,5 +1,6 @@
 import { IsString, IsNotEmpty, IsOptional } from "class-validator";
 import { ApiProperty } from "@nestjs/swagger";
+import { PermissionAction } from "@prisma/client";
 
 export class CreatePermissionArgs {
     @ApiProperty()
@@ -7,20 +8,26 @@ export class CreatePermissionArgs {
     @IsNotEmpty()
     name: string;
 
-    @ApiProperty()
+    @ApiProperty({ type: String, enum: PermissionAction })
     @IsString()
     @IsNotEmpty()
-    slug: string;
+    action: PermissionAction;
 
     @ApiProperty()
     @IsString()
     @IsOptional()
     description?: string;
 
+    @ApiProperty()
+    @IsString()
+    @IsNotEmpty()
+    organizationId: string;
+
     constructor(data: CreatePermissionArgs) {
         this.name = data.name;
-        this.slug = data.slug;
+        this.action = data.action;
         this.description = data?.description;
+        this.organizationId = data?.organizationId;
     }
 }
 
@@ -35,10 +42,10 @@ export class UpdatePermissionArgs {
     @IsNotEmpty()
     name: string;
 
-    @ApiProperty()
+    @ApiProperty({ type: String, enum: PermissionAction })
     @IsString()
     @IsNotEmpty()
-    slug: string;
+    action: PermissionAction;
 
     @ApiProperty()
     @IsString()
@@ -48,7 +55,7 @@ export class UpdatePermissionArgs {
     constructor(data: UpdatePermissionArgs) {
         this.id = data.id;
         this.name = data.name;
-        this.slug = data.slug;
+        this.action = data.action;
         this.description = data?.description;
     }
 }

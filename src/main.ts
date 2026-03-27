@@ -9,7 +9,7 @@ import { appConfigKey, ConfigKeyPaths, IAppConfig } from '@/config';
 import { TransformInterceptor } from '@/common/interceptors/transform-interceptor';
 import { LoggingInterceptor } from '@/common/interceptors/logging-interceptor';
 import { HttpExceptionFilter } from '@/common/interceptors/http-interceptor';
-import { SwaggerService } from '@/shared/infrastructure/swagger/swagger.service';
+import { SwaggerAdapter } from '@/shared/infrastructure/adapters/swagger.adapter';
 
 async function bootstrap() {
   const fastifyAdapter = new FastifyAdapter({
@@ -72,7 +72,7 @@ async function bootstrap() {
   );
 
   // Setup Swagger
-  const swaggerService = app.get(SwaggerService);
+  const swaggerService = app.get(SwaggerAdapter);
 
   await app.register(async (fastify) => {
     // `basicAuth` is available *after* registration is complete

@@ -1,28 +1,33 @@
+import { PermissionAction } from "@/common/enum";
 import { PermissionEntity } from "@/modules/iam/domain/entities/permission.entity";
 import { IEntityID } from "@/shared/domain/entities/base.entity";
+import { Prisma } from "@prisma/client";
+import { uuidv7 } from "uuidv7";
 
 export class PermissionMapper {
-    static toDomain(permissionPrisma: any): PermissionEntity {
+    static toDomain(permissionPrisma: Prisma.PermissionCreateInput): PermissionEntity {
+        const value = permissionPrisma.id || uuidv7();
         const permissionID: IEntityID<string> = {
-            value: permissionPrisma.id,
-            _id: permissionPrisma.id,
-            get: () => permissionPrisma.id,
+            value,
+            _id: value,
+            get: () => permissionPrisma.action,
         };
+
         return PermissionEntity.create({
             id: permissionID,
             name: permissionPrisma.name,
-            slug: permissionPrisma.slug,
-            description: permissionPrisma.description,
-            created_at: permissionPrisma.created_at,
-            updated_at: permissionPrisma.updated_at,
+            action: permissionPrisma.action as PermissionAction,
+            description: permissionPrisma.description || undefined,
+            created_at: permissionPrisma.created_at as Date || undefined,
+            updated_at: permissionPrisma.updated_at as Date || undefined,
         });
     }
 
-    static toPrisma(permission: PermissionEntity): any {
+    static toPrisma(permission: PermissionEntity): Prisma.PermissionCreateInput {
         return {
             id: permission.id.value,
             name: permission.name,
-            slug: permission.slug,
+            action: permission.action,
             description: permission.description,
             created_at: new Date(),
             updated_at: new Date(),
@@ -32,7 +37,7 @@ export class PermissionMapper {
     static toPrismaUpdate(permission: PermissionEntity): any {
         return {
             name: permission.name,
-            slug: permission.slug,
+            action: permission.action,
             description: permission.description,
             updated_at: new Date(),
         };
@@ -42,10 +47,10 @@ export class PermissionMapper {
         return {
             id: permission.id.value,
             name: permission.name,
-            slug: permission.slug,
+            action: permission.action,
             description: permission.description,
-            created_at: permission.getCreatedAt(),
-            updated_at: permission.getUpdatedAt(),
+            created_at: permission.createdAt(),
+            updated_at: permission.updatedAt(),
         };
     }
 }

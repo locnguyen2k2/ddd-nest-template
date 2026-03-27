@@ -19,6 +19,11 @@ export class CreateFeatureDto {
     @IsOptional()
     @MaxLength(500)
     description?: string;
+    
+    @ApiProperty()
+    @IsString()
+    @IsNotEmpty()
+    organization_id!: string;
 }
 
 export class UpdateFeatureDto {
@@ -39,5 +44,10 @@ export class UpdateFeatureDto {
     @IsOptional()
     @MaxLength(500)
     description?: string;
+    
+    @ApiProperty({ required: false })
+    @IsString()
+    @IsOptional()
+    organization_id?: string;
 }
 

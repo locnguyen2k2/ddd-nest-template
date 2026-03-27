@@ -17,8 +17,13 @@ export class GetRoleBySlugQuery {
     @IsNotEmpty()
     slug: string;
 
+    @IsString()
+    @IsNotEmpty()
+    organization_id: string;
+
     constructor(data: any) {
         this.slug = data.slug;
+        this.organization_id = data.organization_id;
     }
 }
 

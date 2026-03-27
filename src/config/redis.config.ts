@@ -9,8 +9,11 @@ export const RedisConfig = registerAs(redisConfigKey, () => ({
     port: env.numb('REDIS_PORT', 6379),
     password: env.str('REDIS_PASSWORD'),
     user: env.str('REDIS_USERNAME'),
+    keySeparator: env.str('REDIS_KEY_SEPARATOR', ':'),
     db: env.numb('REDIS_DB'),
-    timeout: env.numb('REDIS_TIMEOUT', 300)
+    timeout: env.numb('REDIS_TIMEOUT', 300),
+    defaultTTL: env.numb('REDIS_DEFAULT_TTL', 300),
+    keyPrefix: env.str('REDIS_KEY_PREFIX', 'nest-template'),
 }));
 
 export type IRedisConfig = ConfigType<typeof RedisConfig>;

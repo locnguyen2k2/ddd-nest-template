@@ -5,8 +5,8 @@ import * as Ably from 'ably';
 import { Message } from 'ably';
 
 @Injectable()
-export class AblyService {
-  private readonly logger = new Logger(AblyService.name);
+export class AblyAdapter {
+  private readonly logger = new Logger(AblyAdapter.name);
   private readonly ably: Ably.Realtime;
 
   constructor(readonly configService: ConfigService<ConfigKeyPaths>) {

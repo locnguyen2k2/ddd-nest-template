@@ -16,47 +16,7 @@ export class FeatureQueryHandler {
 
     @LogExecutionTime()
     async handleGetFeatureBySlug(query: GetFeatureBySlugQuery): Promise<Feature | null> {
-        return await this.featureRepository.findOneBySlug(query.slug);
-    }
-
-    async handleListFeatures(query: ListFeaturesQuery): Promise<{
-        features: Feature[];
-        total: number;
-        page: number;
-        limit: number;
-        totalPages: number;
-    }> {
-        const { page = 1, limit = 10, search } = query;
-        const skip = (page - 1) * limit;
-
-        // For now, we'll implement basic pagination. In a real implementation,
-        // you might want to add search functionality to the repository
-        const features = await this.featureRepository.findAll();
-
-        let filteredFeatures = features;
-
-        // Apply search filter if provided
-        if (search) {
-            const searchLower = search.toLowerCase();
-            filteredFeatures = features.filter(feature =>
-                feature.getName().toLowerCase().includes(searchLower) ||
-                feature.getSlug().value.toLowerCase().includes(searchLower) ||
-                (feature.getDescription()?.toLowerCase().includes(searchLower) ?? false)
-            );
-        }
-
-        // Apply pagination
-        const paginatedFeatures = filteredFeatures.slice(skip, skip + limit);
-        const total = filteredFeatures.length;
-        const totalPages = Math.ceil(total / limit);
-
-        return {
-            features: paginatedFeatures,
-            total,
-            page,
-            limit,
-            totalPages,
-        };
+        return await this.featureRepository.findOneBySlug(query.slug, query.organization_id);
     }
 
     @LogExecutionTime()

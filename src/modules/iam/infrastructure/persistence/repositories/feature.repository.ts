@@ -1,18 +1,33 @@
 import { Injectable, Logger } from "@nestjs/common";
 import { IFeatureRepository } from "@/modules/iam/domain/repositories/feature.repository";
-import { Feature } from "@/modules/iam/domain/entities/feature.entity";
 import { FeatureMapper } from "../mappers/feature.mapper";
-import { PrismaService } from "@/shared/infrastructure/database/prisma.service";
+import { PrismaAdapter } from "@/shared/infrastructure/adapters/prisma.adapter";
 import { LogExecutionTime } from "@/common/decorators/log-execution.decorator";
 import { cursorHelper, paginateHelper, SortableFieldEnum, SortedEnum } from "@/common/pagination";
 import { CursorFeaturesQuery, PaginateFeaturesQuery } from "@/modules/iam/application/dtos/queries/feature-query.dto";
-import { Prisma } from "@prisma/client";
+import { Feature as FeatureSchema, Prisma } from "@prisma/client";
+import { CacheRepository } from "@/shared/infrastructure/presistence/cache.repository";
+import { ConfigService } from "@nestjs/config";
+import { Inject } from "@nestjs/common";
+import { ConfigKeyPaths } from "@/config";
+import { CACHE_PORT, CachePort } from "@/shared/application/ports/cache.port";
+import { Feature } from "@/modules/iam/domain/entities/feature.entity";
 
 @Injectable()
-export class FeatureRepository implements IFeatureRepository {
+export class FeatureRepository extends CacheRepository<FeatureSchema> implements IFeatureRepository {
     private readonly logger = new Logger(FeatureRepository.name);
+    protected readonly boundedContext: string = 'iam';
+    protected readonly aggregateType: string = 'feature';
+    protected readonly ttlConfig: { [key: string]: number } = {
+        default: 3600,
+    };
 
-    constructor(private readonly rbacDBService: PrismaService) { }
+    constructor(
+        private readonly rbacDBService: PrismaAdapter,
+        redisConfig: ConfigService<ConfigKeyPaths>,
+        @Inject(CACHE_PORT) cachePort: CachePort) {
+        super(redisConfig, cachePort);
+    }
 
     @LogExecutionTime()
     async paginate(pageOptions: PaginateFeaturesQuery) {
@@ -43,37 +58,42 @@ export class FeatureRepository implements IFeatureRepository {
     }
 
     @LogExecutionTime()
-    async findOneById(id: string): Promise<Feature | null> {
-        const prismaFeature = await this.rbacDBService.feature.findUnique({
-            where: { id }
+    async findOneById(id: string, organization_id?: string): Promise<Feature | null> {
+        const item = await this.getWithCache(id, async () => {
+            return await this.rbacDBService.feature.findUnique({
+                where: { id }
+            });
         });
 
-        return prismaFeature ? FeatureMapper.toDomain(prismaFeature) : null;
+        return item ? FeatureMapper.toDomain(item) : null;
     }
 
     @LogExecutionTime()
-    async findOneBySlug(slug: string): Promise<Feature | null> {
-        const prismaFeature = await this.rbacDBService.feature.findUnique({
-            where: { slug }
+    async findOneBySlug(slug: string, project_id: string): Promise<Feature | null> {
+        const item = await this.getWithCache(`${slug}:${project_id}`, async () => {
+            return await this.rbacDBService.feature.findUnique({
+                where: {
+                    project_id_slug: {
+                        slug,
+                        project_id
+                    }
+                }
+            });
         });
-
-        return prismaFeature ? FeatureMapper.toDomain(prismaFeature) : null;
-    }
-
-    @LogExecutionTime()
-    async findAll(): Promise<Feature[]> {
-        const prismaFeatures = await this.rbacDBService.feature.findMany();
-        return prismaFeatures.map(feature => FeatureMapper.toDomain(feature));
+        return item ? FeatureMapper.toDomain(item) : null;
     }
 
     @LogExecutionTime()
     async create(feature: Feature): Promise<Feature> {
         const prismaData = FeatureMapper.toPrisma(feature);
-        const createdFeature = await this.rbacDBService.feature.create({
-            data: prismaData
+
+        const item = await this.getWithCache('', async () => {
+            return await this.rbacDBService.feature.create({
+                data: prismaData
+            });
         });
 
-        return FeatureMapper.toDomain(createdFeature);
+        return FeatureMapper.toDomain(item);
     }
 
     @LogExecutionTime()
@@ -83,6 +103,7 @@ export class FeatureRepository implements IFeatureRepository {
             where: { id },
             data: prismaData
         });
+        await this.invalidateCache(id);
 
         return FeatureMapper.toDomain(updatedFeature);
     }
@@ -92,5 +113,6 @@ export class FeatureRepository implements IFeatureRepository {
         await this.rbacDBService.feature.delete({
             where: { id }
         });
+        await this.invalidateCache(id);
     }
 }

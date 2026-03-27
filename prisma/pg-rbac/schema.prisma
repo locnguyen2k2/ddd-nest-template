@@ -14,10 +14,19 @@ model User {
     password    String
     first_name  String
     last_name   String
-    is_deleted  Boolean  @default(false)
-    status      UserStatus @default(UNVERIFIED)
+    status      AccessControlStatus @default(ACTIVE)
     created_at   DateTime @default(now())
     updated_at   DateTime @updatedAt
+
+    organizations UserOrganization[]
+    created_permissions Permission[] @relation("PermissionCreatedBy")
+    created_features Feature[] @relation("FeatureCreatedBy")
+    created_roles Role[] @relation("RoleCreatedBy")
+    created_user_organizations UserOrganization[] @relation("UserOrganizationCreatedBy")
+    created_role_feature_permissions RoleFeaturePermission[] @relation("RoleFeaturePermissionCreatedBy")
+    created_user_organization_roles UserOrganizationRole[] @relation("UserOrganizationRoleCreatedBy")
+    created_organizations Organization[] @relation("OrganizationCreatedBy")
+    created_projects Project[] @relation("ProjectCreatedBy")
 
     @@index([email])
     @@index([username])
@@ -26,12 +35,19 @@ model User {
 model Permission {
     id          String   @id @default(uuid(7)) @db.Uuid
     name        String
-    slug        String   @unique
     description String?
+    action      PermissionAction
     created_at   DateTime @default(now())
     updated_at   DateTime @updatedAt
+    created_by   String?  @db.Uuid
+    updated_by   String?  @db.Uuid
 
-    @@index([slug])
+    role_feature_permissions RoleFeaturePermission[]
+    
+    created_by_user User? @relation("PermissionCreatedBy", fields: [created_by], references: [id], onDelete: SetNull)
+
+    @@unique([action])
+    @@index([action])
 }
 
 model Organization {
@@ -41,68 +57,155 @@ model Organization {
     description String?
     created_at   DateTime @default(now())
     updated_at   DateTime @updatedAt
+    created_by   String?  @db.Uuid
+    updated_by   String?  @db.Uuid
+
+    roles Role[]
+    users UserOrganization[]
+    projects Project[]
+    
+    created_by_user User? @relation("OrganizationCreatedBy", fields: [created_by], references: [id], onDelete: SetNull)
+
+    @@index([slug])
+}
+
+model Project {
+    id          String   @id @default(uuid(7)) @db.Uuid
+    name        String
+    slug        String   @unique
+    description String?
+    organization_id String @db.Uuid
+    created_at   DateTime @default(now())
+    updated_at   DateTime @updatedAt
+    created_by   String?  @db.Uuid
+    updated_by   String?  @db.Uuid
+
+    features Feature[]
+    
+    organization Organization @relation(fields: [organization_id], references: [id], onDelete: Cascade)
+    
+    created_by_user User? @relation("ProjectCreatedBy", fields: [created_by], references: [id], onDelete: SetNull)
+
+    @@index([slug])
+}
+
+model Feature {
+    id          String   @id @default(uuid(7)) @db.Uuid
+    name        String   
+    slug        String   
+    description String?
+    project_id String @db.Uuid
+    status      AccessControlStatus @default(ACTIVE)
+    created_at   DateTime @default(now())
+    updated_at   DateTime @updatedAt
+    created_by   String?  @db.Uuid
+    updated_by   String?  @db.Uuid
+    
+    project Project @relation(fields: [project_id], references: [id], onDelete: Cascade)
+
+    role_feature_permissions RoleFeaturePermission[]
+    
+    created_by_user User? @relation("FeatureCreatedBy", fields: [created_by], references: [id], onDelete: SetNull)
+
+    @@index([slug])
+    @@index([status])
+    @@unique([project_id, slug])
 }
 
 model Role {
     id          String   @id @default(uuid(7)) @db.Uuid
     name        String
-    slug        String   @unique
+    slug        String
+    organization_id String @db.Uuid
+    parent_role_id  String?  @db.Uuid
     description String?
     created_at   DateTime @default(now())
     updated_at   DateTime @updatedAt
+    created_by   String?  @db.Uuid
+    updated_by   String?  @db.Uuid
+    status      AccessControlStatus @default(ACTIVE)
+    
+    organization Organization @relation(fields: [organization_id], references: [id], onDelete: Cascade)
+    
+    role_feature_permissions RoleFeaturePermission[]
+    user_organization_roles UserOrganizationRole[]
+    parent_role Role? @relation("RoleHierarchy", fields: [parent_role_id], references: [id], onDelete: SetNull)
+    child_roles Role[] @relation("RoleHierarchy")
+    
+    created_by_user User? @relation("RoleCreatedBy", fields: [created_by], references: [id], onDelete: SetNull)
 
     @@index([slug])
-}
-
-model OrganizationRole {
-    organization_id String @db.Uuid
-    role_id String @db.Uuid
-    created_at DateTime @default(now())
-    
-    @@id([organization_id, role_id])
+    @@unique([organization_id, slug])
 }
 
 model UserOrganization {
-    userId String @db.Uuid
-    organizationId String @db.Uuid
-    roleId String? @db.Uuid
-    created_at DateTime @default(now())
+    organization_id String @db.Uuid
+    user_id String @db.Uuid
     
-    @@id([userId, organizationId])
+    status AccessControlStatus @default(ACTIVE)
+    created_at DateTime @default(now())
+    updated_at DateTime @updatedAt
+    created_by String? @db.Uuid
+    updated_by String? @db.Uuid
+    
+    user User @relation(fields: [user_id], references: [id], onDelete: Cascade)
+    organization Organization @relation(fields: [organization_id], references: [id], onDelete: Cascade)
+
+    user_organization_roles UserOrganizationRole[]
+    
+    created_by_user User? @relation("UserOrganizationCreatedBy", fields: [created_by], references: [id], onDelete: SetNull)
+
+    @@id([user_id, organization_id])
 }
 
 model RoleFeaturePermission {
     role_id String @db.Uuid
     feature_id String @db.Uuid
     permission_id String @db.Uuid
+
+    status AccessControlStatus @default(ACTIVE)
     created_at DateTime @default(now())
+    updated_at DateTime @updatedAt
+    created_by String? @db.Uuid
+    updated_by String? @db.Uuid
+    
+    role Role @relation(fields: [role_id], references: [id], onDelete: Cascade)
+    feature Feature @relation(fields: [feature_id], references: [id], onDelete: Cascade)
+    permission Permission @relation(fields: [permission_id], references: [id], onDelete: Cascade)
+    
+    created_by_user User? @relation("RoleFeaturePermissionCreatedBy", fields: [created_by], references: [id], onDelete: SetNull)
     
     @@id([role_id, feature_id, permission_id])
 }
 
-model UserRole {
-    user_id String @db.Uuid
+model UserOrganizationRole {
     role_id String @db.Uuid
+    user_id String @db.Uuid
+    organization_id String @db.Uuid
+
+    status AccessControlStatus @default(ACTIVE)
     created_at DateTime @default(now())
+    updated_at DateTime @updatedAt
+    created_by String? @db.Uuid
+    updated_by String? @db.Uuid
     
-    @@id([user_id, role_id])
+    user_organization UserOrganization @relation(fields: [user_id, organization_id], references: [user_id, organization_id], onDelete: Cascade)
+    role Role @relation(fields: [role_id], references: [id], onDelete: Cascade)
+    
+    created_by_user User? @relation("UserOrganizationRoleCreatedBy", fields: [created_by], references: [id], onDelete: SetNull)
+    
+    @@id([user_id, organization_id, role_id])
 }
 
-model Feature {
-    id          String   @id @default(uuid(7)) @db.Uuid
-    name        String   @unique
-    slug        String   @unique
-    description String?
-    is_enabled   Boolean  @default(true)
-    created_at   DateTime @default(now())
-    updated_at   DateTime @updatedAt
-
-    @@index([slug])
-    @@index([is_enabled])
+enum PermissionAction {
+    CREATE
+    READ
+    UPDATE
+    DELETE
 }
 
-enum UserStatus {
+enum AccessControlStatus {
     ACTIVE
     INACTIVE
-    UNVERIFIED
+    DELETED
 }
