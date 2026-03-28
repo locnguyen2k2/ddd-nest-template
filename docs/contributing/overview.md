@@ -2,16 +2,16 @@
 
 ## 📋 Overview
 
-Thank you for your interest in contributing to **RBAC NestJS**! This guide will help you get started with contributing to our comprehensive Role-Based Access Control system. We welcome contributions of all types, from bug fixes to new features and documentation improvements.
+Thank you for your interest in contributing to **RBAC NestJS**! This guide will help you get started with contributing to our comprehensive Role-Based Access Control system built with NestJS and Domain-Driven Design principles.
 
 ## 🎯 Business Requirements
 
 | | |
 |---|---|
-| **Problem** | Need community involvement to improve and extend the RBAC system |
-| **Goal** | Enable high-quality contributions while maintaining code quality and architectural integrity |
-| **Audience** | Developers, DevOps engineers, technical writers, and security experts |
-| **Success Metric** | Consistent, high-quality contributions that align with project goals |
+| **Problem** | Open-source projects thrive on community contributions, but need clear guidelines to maintain quality and consistency |
+| **Goal** | Provide comprehensive contributing guidelines that enable smooth collaboration while maintaining code quality |
+| **Audience** | Developers, DevOps engineers, documentation writers, and community members |
+| **Success Metric** | High-quality contributions that merge smoothly with minimal review cycles |
 
 ## 🚀 Getting Started
 
@@ -19,15 +19,15 @@ Thank you for your interest in contributing to **RBAC NestJS**! This guide will 
 
 Before you start contributing, make sure you have:
 
-- ✅ Read the [Project README](../README.md)
+- ✅ Read the [Project README](../../README.md)
 - ✅ Set up your [development environment](../setup/overview.md)
-- ✅ Familiarized yourself with the [codebase architecture](../architecture/overview.md)
-- ✅ Created a GitHub account
+- ✅ Familiarized yourself with the [architecture](../architecture/overview.md)
 - ✅ Reviewed the [API documentation](../api/overview.md)
+- ✅ Created a GitHub account
 
 ### Step 1: Fork the Repository
 
-1. Navigate to https://github.com/locnguyen2k2/rbac-nestjs
+1. Navigate to https://github.com/locnguyen2k2/ddd-nest-template
 2. Click the "Fork" button in the top-right corner
 3. Choose your GitHub account as the destination
 
@@ -35,18 +35,33 @@ Before you start contributing, make sure you have:
 
 ```bash
 # Clone your fork
-git clone https://github.com/YOUR_USERNAME/rbac-nestjs.git
+git clone https://github.com/YOUR_USERNAME/ddd-nest-template.git
 cd rbac-nestjs
 
 # Add original repository as upstream
-git remote add upstream https://github.com/locnguyen2k2/rbac-nestjs.git
+git remote add upstream https://github.com/locnguyen2k2/ddd-nest-template.git
 
 # Verify remotes
 git remote -v
-# Should show both origin (your fork) and upstream (original)
 ```
 
 ### Step 3: Set Up Development Environment
+
+```bash
+# Install dependencies
+npm install
+
+# Set up environment
+cp .env.example .env
+# Edit .env with your configuration
+
+# Run database setup
+npx prisma generate
+npx prisma migrate dev
+
+# Start development server
+npm run start:dev
+```
 
 ```bash
 # Install dependencies

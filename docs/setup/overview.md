@@ -2,16 +2,16 @@
 
 ## 📋 Overview
 
-This guide will help you set up **RBAC NestJS** on your local machine for development and testing purposes. Follow these steps to get the application running with all dependencies properly configured.
+This guide will help you set up **RBAC NestJS** on your local machine for development and testing purposes. The RBAC NestJS system provides comprehensive Identity and Access Management (IAM) capabilities with multi-tenant architecture support using Domain-Driven Design (DDD) principles.
 
 ## 🎯 Business Requirements
 
 | | |
 |---|---|
-| **Problem** | Developers need a consistent, reproducible environment setup process |
-| **Goal** | Enable quick onboarding with minimal configuration friction |
-| **Audience** | Developers joining the project, DevOps engineers, system administrators |
-| **Success Metric** | <30 minutes from clone to running application |
+| **Problem** | Developers need a consistent, reproducible way to set up the RBAC system for development and testing |
+| **Goal** | Provide a comprehensive setup guide that covers all prerequisites and configuration steps |
+| **Audience** | Developers, DevOps engineers, and system administrators |
+| **Success Metric** | Complete setup in under 30 minutes with all services running correctly |
 
 ## 📦 Prerequisites
 
@@ -19,10 +19,10 @@ This guide will help you set up **RBAC NestJS** on your local machine for develo
 
 | Requirement | Minimum | Recommended |
 |-------------|---------|-------------|
-| Operating System | Windows 10, macOS 10.15, Ubuntu 18.04 | Latest OS versions |
-| RAM | 4GB | 8GB or more |
-| Storage | 2GB free space | 5GB free space |
-| Processor | 2 cores | 4 cores or more |
+| Operating System | Windows 10, macOS 10.15, Ubuntu 18.04 | Windows 11, macOS 12+, Ubuntu 20.04+ |
+| RAM | 4GB | 8GB+ |
+| Storage | 2GB free space | 5GB+ free space |
+| Processor | 2 cores | 4+ cores |
 
 ### Software Requirements
 
@@ -31,13 +31,14 @@ This guide will help you set up **RBAC NestJS** on your local machine for develo
 - **Node.js**: 18.0.0 or later
   - Download: [nodejs.org](https://nodejs.org/)
   - Verify: `node --version`
-  - Recommended: Use LTS version
 
 - **npm**: 9.0.0 or later (included with Node.js)
-  - Alternative: yarn 1.22.0+ or pnpm 8.0.0+
   - Verify: `npm --version`
+  - Alternative package managers:
+    - yarn: `npm install -g yarn`
+    - pnpm: `npm install -g pnpm`
 
-- **Git**: 2.30.0 or later
+- **Git**: 2.20.0 or later
   - Download: [git-scm.com](https://git-scm.com/)
   - Verify: `git --version`
 
@@ -46,18 +47,20 @@ This guide will help you set up **RBAC NestJS** on your local machine for develo
 - **PostgreSQL**: 13.0 or later
   - Download: [postgresql.org](https://postgresql.org/download/)
   - Verify: `psql --version`
-  - Required for primary data storage
-
-- **Redis**: 6.0 or later
-  - Download: [redis.io](https://redis.io/download)
-  - Verify: `redis-cli --version`
-  - Required for caching and session management
 
 #### Optional Software
 
+- **Redis**: 6.0 or later (for caching and sessions)
+  - Download: [redis.io](https://redis.io/download)
+  - Docker alternative: `docker run -d -p 6379:6379 redis:7-alpine`
+
 - **Docker**: 20.10.0 or later (for containerized setup)
-- **Docker Compose**: 2.0.0 or later
+  - Download: [docker.com](https://docker.com/get-started/)
+  - Verify: `docker --version`
+
 - **IDE/Editor**: VS Code, WebStorm, or similar
+  - Recommended extensions: Prisma, ESLint, Prettier
+
 - **API Client**: Postman, Insomnia, or similar for API testing
 
 ## 🚀 Quick Start (5 minutes)
@@ -66,24 +69,25 @@ If you have all prerequisites installed:
 
 ```bash
 # 1. Clone the repository
-git clone https://github.com/locnguyen2k2/rbac-nestjs.git
+git clone https://github.com/locnguyen2k2/ddd-nest-template
 cd rbac-nestjs
 
 # 2. Install dependencies
 npm install
 
 # 3. Set up environment
-cp .env.example .env.development
-# Edit .env.development with your configuration
+cp .env.example .env
+# Edit .env with your configuration
 
 # 4. Initialize database
+npx prisma generate
 npx prisma migrate dev
 
 # 5. Start the application
 npm run start:dev
 
 # 6. Verify installation
-curl http://localhost:3004/health
+curl http://localhost:3000/health
 ```
 
 ## 📥 Installation

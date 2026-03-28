@@ -2,31 +2,31 @@
 
 ## 📋 Overview
 
-This document describes the architecture of **RBAC NestJS**, including system design, component relationships, and technology decisions. The system implements a comprehensive Role-Based Access Control (RBAC) solution using Domain-Driven Design (DDD) principles.
+This document describes the architecture of **RBAC NestJS**, including system design, component relationships, and technology decisions. The system implements a comprehensive Role-Based Access Control (RBAC) solution using Domain-Driven Design (DDD) principles with multi-tenant architecture support.
 
 ## 🎯 Business Requirements
 
 | | |
 |---|---|
-| **Problem** | Need for a scalable, enterprise-grade access control system that can manage users, roles, permissions, and organizations with granular control |
-| **Goal** | Provide a robust IAM solution supporting multi-tenant architecture with real-time capabilities and high performance |
-| **Audience** | Enterprise applications, SaaS platforms, and systems requiring sophisticated access control |
-| **Success Metric** | Sub-100ms response times, 99.9% uptime, support for 10,000+ concurrent users |
+| **Problem** | Organizations need a robust, scalable system to manage user access across multiple applications and projects with granular permission control and complete data isolation |
+| **Goal** | Provide a comprehensive RBAC system that supports multi-tenancy, hierarchical roles, feature-level permissions, and real-time capabilities |
+| **Audience** | Enterprise development teams, SaaS companies, and organizations requiring sophisticated access control |
+| **Success Metric** | 99.9% uptime, sub-200ms response times, and support for 10,000+ concurrent users |
 
 ## 🧠 Mental Model
 
-Think of **RBAC NestJS** as a **digital security office** for your application.
+Think of **RBAC NestJS** as a **digital security department** for your organization.
 
-Just like a physical security office manages who can enter which rooms with what permissions, our system manages digital access through a hierarchical structure of organizations, roles, and permissions. The security office maintains records (database), validates credentials (authentication), and enforces access rules (authorization) in real-time.
+Just as a physical security department manages building access, employee badges, and clearance levels, our system manages digital access to applications, data, and features. Each organization is like a separate building with its own security policies, roles are like different security clearance levels, and permissions are like specific door access rights.
 
 | Metaphor Component | System Component |
 |-------------------|------------------|
-| Security Office | IAM Module |
-| Access Badges | User Roles & Permissions |
-| Room Keys | Feature Access Rights |
-| Visitor Log | Audit Trail & Events |
-| Security Guards | Authentication Guards |
-| Building Layout | Organization Structure |
+| Security Department | IAM Module |
+| Building Access | Organization Management |
+| Employee Badges | User Management |
+| Clearance Levels | Role Hierarchy |
+| Door Access Rights | Feature Permissions |
+| Access Logs | Audit Trail |
 
 ## 🏛️ System Architecture
 
@@ -37,39 +37,42 @@ graph TB
         A --> C[API Client]
     end
     
+    subgraph "API Gateway Layer"
+        D[Fastify Server] --> E[Authentication Guard]
+        D --> F[Authorization Guard]
+        D --> G[Validation Pipe]
+    end
+    
     subgraph "Application Layer"
-        D[API Gateway] --> E[Auth Guards]
-        D --> F[IAM Controllers]
-        D --> G[Validation Service]
+        H[IAM Module] --> I[User Service]
+        H --> J[Organization Service]
+        H --> K[Role Service]
+        H --> L[Permission Service]
     end
     
     subgraph "Domain Layer"
-        F --> H[Command Handlers]
-        F --> I[Query Handlers]
-        H --> J[Domain Entities]
-        I --> J
-        J --> K[Business Rules]
+        I --> M[User Domain]
+        J --> N[Organization Domain]
+        K --> O[Role Domain]
+        L --> P[Permission Domain]
     end
     
     subgraph "Infrastructure Layer"
-        L[PostgreSQL] --> M[Redis Cache]
-        L --> N[Prisma ORM]
-        O[Event Publishers] --> P[Ably Real-time]
-        Q[Swagger Docs] --> R[OpenAPI Spec]
+        Q[PostgreSQL] --> R[Redis Cache]
+        Q --> S[Prisma ORM]
+        T[Ably Realtime] --> U[File Storage]
     end
     
     A --> D
     B --> D
     C --> D
-    E --> F
-    F --> H
-    F --> I
-    H --> N
-    I --> N
-    N --> L
-    J --> O
-    O --> P
-    D --> Q
+    E --> H
+    M --> Q
+    N --> Q
+    O --> Q
+    P --> Q
+    H --> R
+    H --> T
 ```
 
 ## 📦 Component Overview
@@ -79,48 +82,61 @@ graph TB
 **Purpose**: Handle user interaction and presentation
 
 **Components**:
-- **Web Client**: API consumers and frontend applications
-- **Mobile Client**: Mobile applications consuming the API
-- **API Client**: Third-party integrations and services
+- **Web Client**: Frontend applications consuming the API
+- **Mobile Client**: Mobile applications using the RBAC system
+- **API Client**: Third-party applications integrating with our API
 
-**Technologies**: REST API, OpenAPI/Swagger documentation
+**Technologies**: Any HTTP client (React, Angular, Vue, mobile apps)
 
-### Application Layer
+### API Gateway Layer
 
 **Purpose**: Orchestrate business processes and expose APIs
 
 **Components**:
-- **API Gateway**: NestJS application with Fastify server
-- **Auth Guards**: Authentication and authorization middleware
-- **IAM Controllers**: REST endpoints for RBAC operations
-- **Validation Service**: Input validation using class-validator
+- **Fastify Server**: High-performance HTTP server
+- **Authentication Guard**: JWT token validation and user authentication
+- **Authorization Guard**: Role-based access control enforcement
+- **Validation Pipe**: Request validation and sanitization
 
-**Technologies**: NestJS, Fastify, Swagger, Basic Auth
+**Technologies**: Fastify, JWT, class-validator, class-transformer
+
+### Application Layer
+
+**Purpose**: Implement core business logic and orchestrate use cases
+
+**Components**:
+- **IAM Module**: Identity and Access Management coordination
+- **User Service**: User lifecycle management
+- **Organization Service**: Multi-tenant organization management
+- **Role Service**: Role hierarchy and assignment management
+- **Permission Service**: Feature-level permission management
+
+**Patterns**: Command Query Responsibility Segregation (CQRS), Domain-Driven Design
 
 ### Domain Layer
 
 **Purpose**: Implement core business logic and rules
 
 **Components**:
-- **Command Handlers**: Handle write operations (CQRS pattern)
-- **Query Handlers**: Handle read operations (CQRS pattern)
-- **Domain Entities**: Core business objects (User, Role, Permission, etc.)
-- **Business Rules**: Validation and business logic enforcement
+- **User Domain**: User entity and business rules
+- **Organization Domain**: Multi-tenant organization logic
+- **Role Domain**: Role hierarchy and inheritance
+- **Permission Domain**: Permission granularity and control
 
-**Patterns**: CQRS, Domain-Driven Design, Repository Pattern
+**Patterns**: Domain Events, Aggregates, Value Objects
 
 ### Infrastructure Layer
 
 **Purpose**: Provide technical infrastructure and external integrations
 
 **Components**:
-- **PostgreSQL**: Primary data storage
-- **Redis Cache**: Caching and session management
-- **Prisma ORM**: Database access and migrations
-- **Event Publishers**: Real-time event broadcasting
-- **Swagger Docs**: API documentation generation
+- **PostgreSQL**: Primary data storage with ACID compliance
+- **Redis Cache**: High-performance caching and session storage
+- **Prisma ORM**: Type-safe database access and migrations
+- **Ably Realtime**: Real-time notifications and updates
+- **File Storage**: Document and media storage
 
-**Technologies**: PostgreSQL, Redis, Prisma, Ably, OpenAPI
+**Technologies**: PostgreSQL, Redis, Prisma, Ably
 
 ## 🔄 Data Flow
 
@@ -128,36 +144,28 @@ graph TB
 sequenceDiagram
     participant C as Client
     participant G as API Gateway
-    participant A as Auth Guards
-    participant H as Command Handler
-    participant Q as Query Handler
+    participant A as Auth Guard
+    participant B as Business Logic
     participant D as Database
-    participant R as Redis Cache
-    participant E as Event Publisher
+    participant E as Cache
+    participant R as Realtime
     
-    C->>G: HTTP Request
-    G->>A: Validate Authentication
-    A-->>G: Auth Valid
-    G->>H: Process Command (Write)
-    H->>D: Update Data
-    D-->>H: Data Updated
-    H->>E: Publish Event
-    E-->>R: Invalidate Cache
-    H-->>G: Operation Result
-    G-->>C: HTTP Response
-    
-    Note over C,E: For Query Operations:
-    C->>G: HTTP Request
-    G->>Q: Process Query (Read)
-    Q->>R: Check Cache
+    C->>G: HTTP Request + JWT Token
+    G->>A: Validate Token
+    A-->>G: User Context
+    G->>B: Process Request
+    B->>E: Check Cache
     alt Cache Hit
-        R-->>Q: Cached Data
+        E-->>B: Cached Data
     else Cache Miss
-        Q->>D: Query Database
-        D-->>Q: Query Results
-        Q->>R: Update Cache
+        B->>D: Query Data
+        D-->>B: Data Result
+        B->>E: Update Cache
     end
-    Q-->>G: Query Result
+    B->>D: Persist Changes
+    D-->>B: Confirmation
+    B->>R: Broadcast Updates
+    B-->>G: Processed Result
     G-->>C: HTTP Response
 ```
 
@@ -165,7 +173,7 @@ sequenceDiagram
 
 ### Database Schema
 
-The system uses PostgreSQL with a comprehensive RBAC schema supporting multi-tenant architecture through organizations, with granular permissions at the feature level.
+The database follows a relational design with proper normalization and indexing. Key entities include Users, Organizations, Projects, Roles, Features, and Permissions with many-to-many relationships managed through junction tables.
 
 ### Data Models
 
@@ -178,28 +186,9 @@ erDiagram
         string password
         string first_name
         string last_name
-        boolean is_deleted
         enum status
-        datetime createdAt
-        datetime updatedAt
-    }
-    
-    Role {
-        string id PK
-        string name
-        string slug UK
-        string description
-        datetime createdAt
-        datetime updatedAt
-    }
-    
-    Permission {
-        string id PK
-        string name
-        string slug UK
-        string description
-        datetime createdAt
-        datetime updatedAt
+        datetime created_at
+        datetime updated_at
     }
     
     Organization {
@@ -207,51 +196,95 @@ erDiagram
         string name
         string slug UK
         string description
-        datetime createdAt
-        datetime updatedAt
+        datetime created_at
+        datetime updated_at
+        string created_by FK
+    }
+    
+    Project {
+        string id PK
+        string name
+        string slug UK
+        string description
+        string organization_id FK
+        datetime created_at
+        datetime updated_at
+        string created_by FK
+    }
+    
+    Role {
+        string id PK
+        string name
+        string slug
+        string organization_id FK
+        string parent_role_id FK
+        string description
+        enum status
+        datetime created_at
+        datetime updated_at
+        string created_by FK
     }
     
     Feature {
         string id PK
-        string name UK
-        string slug UK
+        string name
+        string slug
         string description
-        boolean isEnabled
-        datetime createdAt
-        datetime updatedAt
+        string project_id FK
+        enum status
+        datetime created_at
+        datetime updated_at
+        string created_by FK
     }
     
-    User ||--o{ UserRole : has
-    Role ||--o{ UserRole : assigned_to
-    Role ||--o{ RoleFeaturePermission : has
-    Feature ||--o{ RoleFeaturePermission : has
-    Permission ||--o{ RoleFeaturePermission : has
-    Organization ||--o{ UserOrganization : contains
+    Permission {
+        string id PK
+        string name
+        string description
+        enum action
+        datetime created_at
+        datetime updated_at
+        string created_by FK
+    }
+    
     User ||--o{ UserOrganization : belongs_to
-    Organization ||--o{ OrganizationRole : has
-    Role ||--o{ OrganizationRole : assigned_to
+    Organization ||--o{ UserOrganization : has
+    Organization ||--o{ Role : contains
+    Organization ||--o{ Project : owns
+    Project ||--o{ Feature : contains
+    Role ||--o{ UserOrganizationRole : assigned_to
+    UserOrganization ||--o{ UserOrganizationRole : has
+    Role ||--o{ RoleFeaturePermission : has
+    Feature ||--o{ RoleFeaturePermission : granted_on
+    Permission ||--o{ RoleFeaturePermission : defines
+    Role ||--o{ Role : parent_of
 ```
 
 ### Caching Strategy
 
-Redis caching is implemented at multiple levels:
-- **Query Result Caching**: Frequently accessed role and permission data
-- **Session Caching**: User authentication tokens and session data
-- **Event Caching**: Real-time event broadcasting and pub/sub
+**Multi-Level Caching**:
+- **L1 Cache**: In-memory request-level caching for frequently accessed data
+- **L2 Cache**: Redis-based distributed caching for user sessions and permissions
+- **L3 Cache**: Database query result caching for complex queries
+
+**Cache Invalidation**:
+- Time-based expiration (TTL)
+- Event-driven invalidation on data changes
+- Manual cache clearing for administrative operations
 
 ## 🔧 Technology Stack
 
 | Layer | Technology | Version | Rationale |
 |-------|------------|---------|-----------|
-| Runtime | Node.js | 18+ | Mature ecosystem, excellent performance |
-| Framework | NestJS | 11.0.1 | Enterprise-grade TypeScript framework with DDD support |
-| Database | PostgreSQL | 13+ | Robust relational database with advanced features |
-| ORM | Prisma | 7.5.0 | Type-safe database access with excellent migration support |
-| Cache | Redis | 6+ | High-performance in-memory data store |
-| Server | Fastify | 11.1.16 | High-performance HTTP server for NestJS |
-| Real-time | Ably | 2.20.0 | Reliable real-time messaging platform |
-| Documentation | Swagger | 11.2.6 | Industry-standard API documentation |
-| Testing | Jest | 29.7.0 | Comprehensive testing framework with good TypeScript support |
+| Backend | NestJS | ^11.0.1 | Progressive Node.js framework with excellent TypeScript support |
+| Database | PostgreSQL | Latest | ACID compliance, excellent JSON support, robust indexing |
+| ORM | Prisma | ^7.5.0 | Type-safe database access, excellent migrations, auto-completion |
+| Cache | Redis | Latest | In-memory performance, distributed caching, pub/sub capabilities |
+| Server | Fastify | ^11.1.16 | High performance, excellent TypeScript support |
+| Real-time | Ably | ^2.20.0 | Reliable real-time messaging, excellent SDK support |
+| Auth | JWT | - | Stateless authentication, widely supported, secure |
+| Validation | class-validator | ^0.15.1 | Declarative validation, excellent TypeScript integration |
+| Testing | Jest | ^29.7.0 | Comprehensive testing framework, excellent TypeScript support |
 
 ## 🚀 Deployment Architecture
 
