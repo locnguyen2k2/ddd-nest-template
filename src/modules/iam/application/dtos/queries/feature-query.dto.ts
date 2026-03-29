@@ -1,61 +1,68 @@
-import { IsString, IsOptional, IsNotEmpty, IsNumber, Min, Max } from 'class-validator';
+import {
+  IsString,
+  IsOptional,
+  IsNotEmpty,
+  IsNumber,
+  Min,
+  Max,
+} from 'class-validator';
 import { Type } from 'class-transformer';
-import { BaseCursorPageOptionDto } from "@/common/pagination";
-import { BasePageOptionDto } from "@/common/pagination/dtos/page-options.dto";
+import { BaseCursorPageOptionDto } from '@/common/pagination';
+import { BasePageOptionDto } from '@/common/pagination/dtos/page-options.dto';
 
 // Get Feature By ID Query
 export class GetFeatureByIdQuery {
-    @IsString()
-    @IsNotEmpty()
-    id: string;
+  @IsString()
+  @IsNotEmpty()
+  id: string;
 
-    constructor(data: GetFeatureByIdQuery) {
-        this.id = data.id;
-    }
+  constructor(data: GetFeatureByIdQuery) {
+    this.id = data.id;
+  }
 }
 
 // Get Feature By Slug Query
 export class GetFeatureBySlugQuery {
-    @IsString()
-    @IsNotEmpty()
-    slug: string;
+  @IsString()
+  @IsNotEmpty()
+  slug: string;
 
-    @IsString()
-    @IsNotEmpty()
-    organization_id: string;
+  @IsString()
+  @IsNotEmpty()
+  organization_id: string;
 
-    constructor(data: GetFeatureBySlugQuery) {
-        this.slug = data.slug;
-        this.organization_id = data.organization_id;
-    }
+  constructor(data: GetFeatureBySlugQuery) {
+    this.slug = data.slug;
+    this.organization_id = data.organization_id;
+  }
 }
 
 // List Features Query
 export class ListFeaturesQuery {
-    @IsOptional()
-    @Type(() => Number)
-    @IsNumber()
-    @Min(1)
-    page?: number = 1;
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(1)
+  page?: number = 1;
 
-    @IsOptional()
-    @Type(() => Number)
-    @IsNumber()
-    @Min(1)
-    @Max(100)
-    limit?: number = 10;
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(1)
+  @Max(100)
+  limit?: number = 10;
 
-    @IsOptional()
-    @IsString()
-    search?: string;
+  @IsOptional()
+  @IsString()
+  search?: string;
 
-    constructor(data: ListFeaturesQuery) {
-        this.page = data.page || 1;
-        this.limit = data.limit || 10;
-        this.search = data.search;
-    }
+  constructor(data: ListFeaturesQuery) {
+    this.page = data.page || 1;
+    this.limit = data.limit || 10;
+    this.search = data.search;
+  }
 }
 
-export class PaginateFeaturesQuery extends BasePageOptionDto { }
+export class PaginateFeaturesQuery extends BasePageOptionDto {}
 
-export class CursorFeaturesQuery extends BaseCursorPageOptionDto { }
+export class CursorFeaturesQuery extends BaseCursorPageOptionDto {}

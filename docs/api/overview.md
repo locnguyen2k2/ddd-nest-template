@@ -2,55 +2,51 @@
 
 ## 📋 Overview
 
-The **RBAC NestJS** API provides RESTful endpoints for comprehensive Role-Based Access Control management. This documentation covers all available endpoints, authentication methods, request/response formats, and usage examples.
+The **RBAC NestJS** API provides RESTful endpoints for comprehensive Identity and Access Management (IAM) operations. This documentation covers all available endpoints, authentication methods, request/response formats, and usage examples for managing users, organizations, projects, roles, features, and permissions.
 
 ## 🎯 Business Requirements
 
 | | |
 |---|---|
-| **Problem** | Need for programmatic access to manage users, roles, permissions, and organizations in enterprise applications |
-| **Goal** | Provide comprehensive REST API for all RBAC operations with real-time capabilities |
-| **Audience** | Frontend applications, third-party integrations, and system administrators |
-| **Success Metric** | Complete API coverage with <100ms response times and 99.9% availability |
+| **Problem** | Organizations need a standardized, secure way to manage access control across multiple applications and projects |
+| **Goal** | Provide a comprehensive REST API for RBAC operations with real-time capabilities and enterprise-grade security |
+| **Audience** | Developers integrating RBAC functionality, frontend applications, and third-party services |
+| **Success Metric** | Sub-200ms response times, 99.9% uptime, comprehensive API coverage |
 
 ## 🔗 Base URL
 
 ```
-Development: http://localhost:3004/api
-Production: https://your-domain.com/api
+Development: http://localhost:3000/v1
+Production: https://api.yourdomain.com/v1
 ```
 
 ## 🔐 Authentication
 
 ### Authentication Method
 
-Currently implements Basic Authentication for API access. JWT authentication framework is in place and can be enabled by uncommenting the relevant guards in `app.module.ts`.
+The API uses JWT (JSON Web Token) based authentication with Bearer tokens. Authentication is required for most endpoints except public health checks.
 
-### Getting API Credentials
+### Getting API Keys
 
-For development, use the default Basic Auth credentials:
-- Username: `admin`
-- Password: `admin`
-
-For production, configure credentials through environment variables:
-- `BASIC_AUTH_USERNAME`
-- `BASIC_AUTH_PASSWORD`
+1. Authenticate using the login endpoint to receive a JWT token
+2. Include the token in the Authorization header for subsequent requests
+3. Tokens expire after 24 hours and must be refreshed
 
 ### Using Authentication
 
 ```bash
 # Example with curl
-curl -u "admin:admin" \
+curl -H "Authorization: Bearer YOUR_JWT_TOKEN" \
      -H "Content-Type: application/json" \
-     http://localhost:3004/api/roles
+     http://localhost:3000/v1/organizations
 ```
 
 ### Authentication Headers
 
 | Header | Value | Required |
 |--------|-------|----------|
-| Authorization | Basic base64(username:password) | Yes |
-| Content-Type | application/json | Yes (for POST/PATCH) |
+| Authorization | Bearer {JWT_TOKEN} | YES (for protected endpoints) |
+| Content-Type | application/json | YES (for POST/PATCH requests) |
 
 ## 📊 API Overview
 
@@ -58,16 +54,18 @@ curl -u "admin:admin" \
 
 | Resource | Description | Endpoints |
 |----------|-------------|-----------|
-| Roles | Role management with permissions | GET, POST, PATCH, DELETE /roles |
-| Organizations | Multi-tenant organization management | GET, POST, PATCH, DELETE /organizations |
-| Features | Feature management for permission control | GET, POST, PATCH, DELETE /features |
+| Organizations | Multi-tenant organization management | CRUD operations, listing by slug |
+| Projects | Project management within organizations | CRUD operations, organization-scoped |
+| Roles | Role hierarchy and management | CRUD operations, pagination, cursor pagination |
+| Features | Feature definition and management | CRUD operations, project-scoped |
+| Permissions | Permission management | CRUD operations, action-based |
 | Users | User management and role assignments | GET, POST, PATCH, DELETE /users |
 
 ### Rate Limiting
 
-Rate limiting is implemented with Redis backend:
-- **Default Limit**: 10 requests per 20-second window
-- **Configurable**: Through `THROTTLE_DEFAULT_LIMIT` and `THROTTLE_DEFAULT_TTL` environment variables
+- **Default Limit**: 1000 requests per hour per authenticated user
+- **Burst Limit**: 100 requests per minute
+- **Rate Limit Headers**: `X-RateLimit-Limit`, `X-RateLimit-Remaining`, `X-RateLimit-Reset`
 
 ## 🛠️ Common Parameters
 

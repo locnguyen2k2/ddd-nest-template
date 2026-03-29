@@ -17,7 +17,6 @@ export class AblyAdapter {
     });
   }
 
-
   getClient(): Ably.Realtime {
     return this.ably;
   }

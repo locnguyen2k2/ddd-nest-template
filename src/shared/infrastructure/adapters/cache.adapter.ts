@@ -9,80 +9,88 @@ export type TCacheResult<T> = Promise<T | undefined>;
 
 @Injectable()
 export class CacheAdapter implements CachePort {
-    private readonly client: IORedis;
-    private readonly cacheConfigs: IRedisConfig;
+  private readonly client: IORedis;
+  private readonly cacheConfigs: IRedisConfig;
 
-    constructor(configService: ConfigService<ConfigKeyPaths>) {
-        this.cacheConfigs = configService.get<IRedisConfig>(redisConfigKey) as IRedisConfig;
-        this.client = new IORedis({
-            host: this.cacheConfigs.host,
-            port: this.cacheConfigs.port,
-            password: this.cacheConfigs.password,
-            db: this.cacheConfigs.db,
-            keyPrefix: this.cacheConfigs.keyPrefix,
-        });
+  constructor(configService: ConfigService<ConfigKeyPaths>) {
+    this.cacheConfigs = configService.get<IRedisConfig>(
+      redisConfigKey,
+    ) as IRedisConfig;
+    this.client = new IORedis({
+      host: this.cacheConfigs.host,
+      port: this.cacheConfigs.port,
+      password: this.cacheConfigs.password,
+      db: this.cacheConfigs.db,
+      keyPrefix: this.cacheConfigs.keyPrefix,
+    });
+  }
+
+  async get<T>(key: string): Promise<T | null> {
+    const data = await this.client.get(key);
+
+    if (!data) {
+      return null;
     }
 
-    async get<T>(key: string): Promise<T | null> {
-        const data = await this.client.get(key);
-
-        if (!data) {
-            return null;
-        }
-
-        try {
-            return JSON.parse(data) as T;
-        } catch {
-            return data as unknown as T;
-        }
+    try {
+      return JSON.parse(data) as T;
+    } catch {
+      return data as unknown as T;
     }
+  }
 
-    async set<T>(key: string, value: T, ttl?: number): Promise<void> {
-        const serialized = JSON.stringify(value);
-        const effectiveTtl = ttl ?? this.cacheConfigs.defaultTTL;
+  async set<T>(key: string, value: T, ttl?: number): Promise<void> {
+    const serialized = JSON.stringify(value);
+    const effectiveTtl = ttl ?? this.cacheConfigs.defaultTTL;
 
-        await this.client.setex(key, effectiveTtl, serialized);
+    await this.client.setex(key, effectiveTtl, serialized);
+  }
+
+  async delete(key: string): Promise<void> {
+    await this.client.del(key);
+  }
+
+  async deleteByPattern(pattern: string): Promise<void> {
+    const keys = await this.scanKeys(pattern);
+
+    if (keys.length > 0) {
+      await this.client.del(...keys);
     }
+  }
 
-    async delete(key: string): Promise<void> {
-        await this.client.del(key);
-    }
+  async exists(key: string): Promise<boolean> {
+    const result = await this.client.exists(key);
+    return result === 1;
+  }
 
-    async deleteByPattern(pattern: string): Promise<void> {
-        const keys = await this.scanKeys(pattern);
+  async getTtl(key: string): Promise<number> {
+    return await this.client.ttl(key);
+  }
 
-        if (keys.length > 0) {
-            await this.client.del(...keys);
-        }
-    }
+  async refreshTtl(key: string, ttl: number): Promise<void> {
+    await this.client.expire(key, ttl);
+  }
 
-    async exists(key: string): Promise<boolean> {
-        const result = await this.client.exists(key);
-        return result === 1;
-    }
+  private async scanKeys(pattern: string): Promise<string[]> {
+    const keys: string[] = [];
+    let cursor = '0';
 
-    async getTtl(key: string): Promise<number> {
-        return await this.client.ttl(key);
-    }
+    do {
+      const result = await this.client.scan(
+        cursor,
+        'MATCH',
+        pattern,
+        'COUNT',
+        100,
+      );
+      cursor = result[0];
+      keys.push(...result[1]);
+    } while (cursor !== '0');
 
-    async refreshTtl(key: string, ttl: number): Promise<void> {
-        await this.client.expire(key, ttl);
-    }
+    return keys;
+  }
 
-    private async scanKeys(pattern: string): Promise<string[]> {
-        const keys: string[] = [];
-        let cursor = '0';
-
-        do {
-            const result = await this.client.scan(cursor, 'MATCH', pattern, 'COUNT', 100);
-            cursor = result[0];
-            keys.push(...result[1]);
-        } while (cursor !== '0');
-
-        return keys;
-    }
-
-    async onModuleDestroy() {
-        await this.client.quit();
-    }
+  async onModuleDestroy() {
+    await this.client.quit();
+  }
 }

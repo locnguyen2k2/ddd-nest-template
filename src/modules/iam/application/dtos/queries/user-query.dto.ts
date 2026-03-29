@@ -1,3 +1,1 @@
-export class ProfileQuery {
-       
-}
+export class ProfileQuery {}

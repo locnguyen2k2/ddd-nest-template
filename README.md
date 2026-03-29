@@ -1,98 +1,360 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# 🔐 RBAC NestJS
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+**A comprehensive Role-Based Access Control (RBAC) system built with NestJS, TypeScript, and PostgreSQL.**
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
-
-## Description
-
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
-
-## Project setup
+## 🚀 Quick Start
 
 ```bash
-$ npm install
+# Clone the repository
+git clone https://github.com/locnguyen2k2/ddd-nest-template
+cd rbac-nestjs
+
+# Install dependencies
+npm install
+
+# Run the project
+npm run start:dev
 ```
 
-## Compile and run the project
+## 📋 Table of Contents
+
+- [About](#about)
+- [Features](#features)
+- [Technology Stack](#technology-stack)
+- [Prerequisites](#prerequisites)
+- [Installation](#installation)
+- [Usage](#usage)
+- [API Documentation](#api-documentation)
+- [Contributing](#contributing)
+- [License](#license)
+
+## 📖 About
+
+RBAC NestJS is a robust, enterprise-ready authentication and authorization system that provides fine-grained access control for modern web applications. Built using Domain-Driven Design (DDD) principles, it offers a scalable and maintainable solution for managing user permissions across organizations, projects, and features.
+
+**Business Value**: 
+- Reduces development time by providing a ready-to-use RBAC system
+- Ensures security through comprehensive permission management
+- Scales from small teams to enterprise organizations
+- Provides audit trails and compliance features
+
+**Target Audience**: 
+- Enterprise development teams building multi-tenant applications
+- SaaS companies requiring sophisticated user management
+- Organizations needing granular access control
+- Developers implementing security-first architectures
+
+## ✨ Features
+
+- **Multi-Tenancy**: Support for multiple organizations with isolated data
+- **Hierarchical Roles**: Create role hierarchies with inheritance
+- **Feature-Based Permissions**: Granular permissions tied to specific features
+- **Project-Level Access**: Control access at the project level within organizations
+- **User Management**: Comprehensive user profile and status management
+- **Audit Trail**: Track who created/modified what and when
+- **RESTful API**: Clean, well-documented REST endpoints
+- **TypeScript Support**: Full type safety and IntelliSense support
+- **Database Migrations**: Schema versioning with Prisma
+- **Caching**: Redis-based caching for performance optimization
+- **Real-time Updates**: Ably integration for real-time notifications
+
+## 🛠️ Technology Stack
+
+| Technology | Version | Purpose |
+|------------|---------|---------|
+| NestJS | ^11.0.1 | Progressive Node.js framework |
+| TypeScript | ^5.7.3 | Type-safe JavaScript superset |
+| Prisma | ^7.5.0 | Modern database toolkit |
+| PostgreSQL | Latest | Relational database |
+| Redis | Latest | In-memory data store for caching |
+| Fastify | ^11.1.16 | High-performance HTTP server |
+| Ably | ^2.20.0 | Real-time communication platform |
+| bcrypt | ^6.0.0 | Password hashing |
+| class-validator | ^0.15.1 | Input validation |
+| Jest | ^29.7.0 | Testing framework |
+
+## 📦 Prerequisites
+
+- **Node.js**: 18.0.0 or later
+- **npm**: 9.0.0 or later
+- **PostgreSQL**: 13.0 or later
+- **Redis**: 6.0 or later (for caching)
+- **Git**: Latest version
+
+## 🔧 Installation
+
+### 1. Clone the Repository
 
 ```bash
-# development
-$ npm run start
-
-# watch mode
-$ npm run start:dev
-
-# production mode
-$ npm run start:prod
+git clone https://github.com/locnguyen2k2/ddd-nest-template
+cd rbac-nestjs
 ```
 
-## Run tests
+### 2. Install Dependencies
 
 ```bash
-# unit tests
-$ npm run test
-
-# e2e tests
-$ npm run test:e2e
-
-# test coverage
-$ npm run test:cov
+npm install
 ```
 
-## Deployment
-
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
-
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
+### 3. Environment Configuration
 
 ```bash
-$ npm install -g mau
-$ mau deploy
+# Copy environment template
+cp .env.example .env
+
+# Edit environment variables
+# Configure database connection, Redis, and Ably keys
 ```
 
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
+### 4. Database Setup
 
-## Resources
+```bash
+# Generate Prisma client
+npx prisma generate
 
-Check out a few resources that may come in handy when working with NestJS:
+# Run database migrations
+npx prisma migrate dev
 
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
+# Seed database (optional)
+npm run seed
+```
 
-## Support
+### 5. Start the Application
 
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
+```bash
+# Development mode
+npm run start:dev
 
-## Stay in touch
+# Production mode
+npm run build
+npm run start:prod
+```
 
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
+## 🎯 Usage
 
-## License
+### Basic Usage
 
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+The application provides RESTful endpoints for managing users, organizations, projects, roles, and permissions. Here's a quick example:
+
+```bash
+# Create a new organization
+curl -X POST http://localhost:3000/organizations \
+  -H "Content-Type: application/json" \
+  -d '{"name": "Acme Corp", "slug": "acme-corp"}'
+
+# Create a user
+curl -X POST http://localhost:3000/users \
+  -H "Content-Type: application/json" \
+  -d '{"email": "user@example.com", "username": "user123", "password": "securePassword"}'
+```
+
+### Advanced Usage
+
+The system supports complex permission scenarios:
+
+```bash
+# Create a role with specific permissions
+curl -X POST http://localhost:3000/roles \
+  -H "Content-Type: application/json" \
+  -d '{"name": "Admin", "slug": "admin", "organization_id": "org-id"}'
+
+# Assign permissions to roles
+curl -X POST http://localhost:3000/role-feature-permissions \
+  -H "Content-Type: application/json" \
+  -d '{"role_id": "role-id", "feature_id": "feature-id", "permission_id": "permission-id"}'
+```
+
+### Configuration Options
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| PORT | number | 3000 | Server port |
+| NODE_ENV | string | development | Environment mode |
+| DATABASE_URL | string | - | PostgreSQL connection string |
+| REDIS_URL | string | - | Redis connection string |
+| ABLY_API_KEY | string | - | Ably real-time API key |
+
+## 📚 API Documentation
+
+[API Documentation](docs/api/overview.md)
+
+### Main Endpoints
+
+- `POST /users`: Create new users
+- `POST /organizations`: Create organizations
+- `POST /projects`: Create projects within organizations
+- `POST /roles`: Create roles with permissions
+- `POST /features`: Define application features
+- `GET /users/:id/permissions`: Get user permissions
+
+### Authentication
+
+The system uses JWT-based authentication with refresh tokens. Include the JWT token in the Authorization header:
+
+```
+Authorization: Bearer <your-jwt-token>
+```
+
+## 🤝 Contributing
+
+We welcome contributions! Please read our [Contributing Guidelines](docs/contributing/overview.md) for details.
+
+### Development Setup
+
+```bash
+# Fork and clone the repository
+git clone https://github.com/YOUR_USERNAME/rbac-nestjs
+cd rbac-nestjs
+
+# Install dependencies
+npm install
+
+# Run tests
+npm run test
+
+# Start development server
+npm run start:dev
+```
+
+### Code Style
+
+- Use ESLint and Prettier for code formatting
+- Follow Conventional Commits specification
+- Write tests for new features
+- Update documentation
+
+## 🧪 Testing
+
+```bash
+# Run all tests
+npm run test
+
+# Run specific test suite
+npm run test:watch
+
+# Run with coverage
+npm run test:cov
+
+# Run e2e tests
+npm run test:e2e
+```
+
+## 📦 Deployment
+
+### Development
+
+Use Docker Compose for local development:
+
+```bash
+docker-compose up -d
+```
+
+### Production
+
+Deploy using PM2 or your preferred process manager:
+
+```bash
+# Build the application
+npm run build
+
+# Start with PM2
+pm2 start ecosystem.config.js
+```
+
+### Docker
+
+```bash
+# Build Docker image
+docker build -t rbac-nestjs .
+
+# Run container
+docker run -p 3000:3000 --env-file .env rbac-nestjs
+```
+
+## 📊 Project Structure
+
+```
+rbac-nestjs/
+├── src/                    # Source code
+│   ├── common/            # Common utilities and constants
+│   ├── config/            # Configuration files
+│   ├── modules/           # Feature modules
+│   │   ├── iam/           # Identity and Access Management
+│   │   ├── notification/  # Notification services
+│   │   └── social/        # Social features
+│   ├── shared/            # Shared application code
+│   └── app.module.ts      # Root module
+├── prisma/                # Database schema and migrations
+├── test/                  # Test files
+├── docs/                  # Documentation
+└── scripts/               # Build and deployment scripts
+```
+
+## 🔍 Monitoring & Logging
+
+The application includes comprehensive logging and monitoring capabilities:
+
+- **Structured Logging**: JSON-formatted logs with correlation IDs
+- **Performance Metrics**: Request timing and database query monitoring
+- **Health Checks**: Built-in health check endpoints
+- **Error Tracking**: Centralized error reporting
+
+## 🐛 Troubleshooting
+
+### Common Issues
+
+| Issue | Solution |
+|-------|----------|
+| Database connection failed | Check DATABASE_URL in .env file |
+| Redis connection refused | Ensure Redis is running and accessible |
+| Permission denied errors | Verify user roles and permissions |
+| Migration failures | Check database schema and migration files |
+
+### Getting Help
+
+- 📖 [Documentation](docs/README.md)
+- 🐛 [Issue Tracker](https://github.com/locnguyen2k2/ddd-nest-template/issues)
+- 💬 [Discussions](https://github.com/locnguyen2k2/ddd-nest-template/discussions)
+
+## 📈 Performance
+
+The application is optimized for high-performance scenarios:
+
+- **Database Indexing**: Optimized queries with proper indexing
+- **Caching Strategy**: Redis-based caching for frequently accessed data
+- **Connection Pooling**: Efficient database connection management
+- **Lazy Loading**: On-demand loading of related entities
+
+## 🔒 Security
+
+Security is a top priority with comprehensive measures:
+
+- **Password Hashing**: bcrypt for secure password storage
+- **JWT Tokens**: Secure token-based authentication
+- **Input Validation**: Comprehensive input sanitization
+- **SQL Injection Prevention**: Parameterized queries via Prisma
+- **CORS Configuration**: Configurable cross-origin resource sharing
+
+## 📝 Changelog
+
+See [CHANGELOG.md](CHANGELOG.md) for version history.
+
+## 📄 License
+
+This project is licensed under the UNLICENSED - see the [LICENSE](LICENSE) file for details.
+
+## 👥 Contributors
+
+- **locnguyen2k2** - *Initial work* - [locnguyen2k2](https://github.com/locnguyen2k2)
+
+## 🙏 Acknowledgments
+
+- NestJS Team for the excellent framework
+- Prisma Team for the modern database toolkit
+- Open Source Community for inspiration and contributions
+
+---
+
+**RBAC NestJS** - Enterprise-grade access control made simple
+
+Built with ❤️ by [locnguyen2k2](https://github.com/locnguyen2k2)

@@ -1,6 +1,9 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from '@/app.module';
-import { FastifyAdapter, NestFastifyApplication } from '@nestjs/platform-fastify';
+import {
+  FastifyAdapter,
+  NestFastifyApplication,
+} from '@nestjs/platform-fastify';
 import fastifyMultipart from '@fastify/multipart';
 import fastifyBasicAuth from '@fastify/basic-auth';
 import { ConfigService } from '@nestjs/config';
@@ -27,7 +30,8 @@ async function bootstrap() {
   );
 
   const configService = app.get(ConfigService<ConfigKeyPaths>);
-  const { port, basicAuthPassword, basicAuthUsername } = configService.get<IAppConfig>(appConfigKey, { infer: true });
+  const { port, basicAuthPassword, basicAuthUsername } =
+    configService.get<IAppConfig>(appConfigKey, { infer: true });
 
   const authenticate = async (
     username: string,
@@ -36,10 +40,7 @@ async function bootstrap() {
     reply,
     done,
   ) => {
-    if (
-      username !== basicAuthUsername ||
-      password !== basicAuthPassword
-    ) {
+    if (username !== basicAuthUsername || password !== basicAuthPassword) {
       reply.code(401).send({
         statusCode: 401,
         message: 'Unauthorized: Invalid Swagger credentials',
@@ -90,6 +91,5 @@ async function bootstrap() {
     const url = await app.getUrl();
     console.log(`[${prefix + pid}] Server running on ${url}`);
   });
-
 }
 bootstrap();
