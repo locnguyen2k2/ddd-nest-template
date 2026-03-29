@@ -1,21 +1,30 @@
-import { Injectable, Logger } from "@nestjs/common";
-import { IFeatureRepository } from "@/modules/iam/domain/repositories/feature.repository";
-import { FeatureMapper } from "../mappers/feature.mapper";
-import { PrismaAdapter } from "@/shared/infrastructure/adapters/prisma.adapter";
-import { LogExecutionTime } from "@/common/decorators/log-execution.decorator";
-import { cursorHelper, paginateHelper, SortableFieldEnum, SortedEnum } from "@/common/pagination";
-import { CursorFeaturesQuery, PaginateFeaturesQuery } from "@/modules/iam/application/dtos/queries/feature-query.dto";
-import { Feature as FeatureSchema, Prisma } from "@prisma/client";
-import { CacheRepository } from "@/shared/infrastructure/presistence/cache.repository";
-import { ConfigService } from "@nestjs/config";
-import { Inject } from "@nestjs/common";
-import { ConfigKeyPaths } from "@/config";
-import { CACHE_PORT, CachePort } from "@/shared/application/ports/cache.port";
-import { Feature } from "@/modules/iam/domain/entities/feature.entity";
+import { Injectable, Logger } from '@nestjs/common';
+import { IFeatureRepository } from '@/modules/iam/domain/repositories/feature.repository';
+import { FeatureMapper } from '../mappers/feature.mapper';
+import { PrismaAdapter } from '@/shared/infrastructure/adapters/prisma.adapter';
+import { LogExecutionTime } from '@/common/decorators/log-execution.decorator';
+import {
+    cursorHelper,
+    paginateHelper,
+    SortableFieldEnum,
+    SortedEnum,
+} from '@/common/pagination';
+import {
+    CursorFeaturesQuery,
+    PaginateFeaturesQuery,
+} from '@/modules/iam/application/dtos/queries/feature-query.dto';
+import { Prisma } from '@prisma/client';
+import { CacheRepository } from '@/shared/infrastructure/presistence/cache.repository';
+import { ConfigService } from '@nestjs/config';
+import { Inject } from '@nestjs/common';
+import { ConfigKeyPaths } from '@/config';
+import { CACHE_PORT, CachePort } from '@/shared/application/ports/cache.port';
+import { Feature } from '@/modules/iam/domain/entities/feature.entity';
 
 @Injectable()
-export class FeatureRepository extends CacheRepository<FeatureSchema> implements IFeatureRepository {
-    private readonly logger = new Logger(FeatureRepository.name);
+export class FeatureRepository
+    extends CacheRepository
+    implements IFeatureRepository {
     protected readonly boundedContext: string = 'iam';
     protected readonly aggregateType: string = 'feature';
     protected readonly ttlConfig: { [key: string]: number } = {
@@ -25,43 +34,49 @@ export class FeatureRepository extends CacheRepository<FeatureSchema> implements
     constructor(
         private readonly rbacDBService: PrismaAdapter,
         redisConfig: ConfigService<ConfigKeyPaths>,
-        @Inject(CACHE_PORT) cachePort: CachePort) {
+        @Inject(CACHE_PORT) cachePort: CachePort,
+    ) {
         super(redisConfig, cachePort);
     }
 
     @LogExecutionTime()
     async paginate(pageOptions: PaginateFeaturesQuery) {
-        const { data = [], paginated } = await paginateHelper<Prisma.FeatureCreateInput>({
-            query: this.rbacDBService.feature,
-            pageOptions,
-        });
+        const { data = [], paginated } =
+            await paginateHelper<Prisma.FeatureCreateInput>({
+                query: this.rbacDBService.feature,
+                pageOptions,
+            });
 
         return {
-            data: data.map(item => FeatureMapper.toDomain(item)),
-            paginated
+            data: data.map((item) => FeatureMapper.toDomain(item)),
+            paginated,
         };
     }
 
     @LogExecutionTime()
     async cursorPagination(pageOptions: CursorFeaturesQuery) {
-        const { data = [], paginated } = await cursorHelper<Prisma.FeatureCreateInput>({
-            query: this.rbacDBService.feature,
-            pageOptions,
-            cursorField: SortableFieldEnum.CREATED_AT,
-            orderDirection: SortedEnum.DESC,
-        });
+        const { data = [], paginated } =
+            await cursorHelper<Prisma.FeatureCreateInput>({
+                query: this.rbacDBService.feature,
+                pageOptions,
+                cursorField: SortableFieldEnum.CREATED_AT,
+                orderDirection: SortedEnum.DESC,
+            });
 
         return {
-            data: data.map(item => FeatureMapper.toDomain(item)),
-            paginated
+            data: data.map((item) => FeatureMapper.toDomain(item)),
+            paginated,
         };
     }
 
     @LogExecutionTime()
-    async findOneById(id: string, organization_id?: string): Promise<Feature | null> {
+    async findOneById(
+        id: string,
+        organization_id?: string,
+    ): Promise<Feature | null> {
         const item = await this.getWithCache(id, async () => {
             return await this.rbacDBService.feature.findUnique({
-                where: { id }
+                where: { id },
             });
         });
 
@@ -69,15 +84,18 @@ export class FeatureRepository extends CacheRepository<FeatureSchema> implements
     }
 
     @LogExecutionTime()
-    async findOneBySlug(slug: string, project_id: string): Promise<Feature | null> {
+    async findOneBySlug(
+        slug: string,
+        project_id: string,
+    ): Promise<Feature | null> {
         const item = await this.getWithCache(`${slug}:${project_id}`, async () => {
             return await this.rbacDBService.feature.findUnique({
                 where: {
                     project_id_slug: {
                         slug,
-                        project_id
-                    }
-                }
+                        project_id,
+                    },
+                },
             });
         });
         return item ? FeatureMapper.toDomain(item) : null;
@@ -89,7 +107,7 @@ export class FeatureRepository extends CacheRepository<FeatureSchema> implements
 
         const item = await this.getWithCache('', async () => {
             return await this.rbacDBService.feature.create({
-                data: prismaData
+                data: prismaData,
             });
         });
 
@@ -101,7 +119,7 @@ export class FeatureRepository extends CacheRepository<FeatureSchema> implements
         const prismaData = FeatureMapper.toPrismaUpdate(feature);
         const updatedFeature = await this.rbacDBService.feature.update({
             where: { id },
-            data: prismaData
+            data: prismaData,
         });
         await this.invalidateCache(id);
 
@@ -111,7 +129,7 @@ export class FeatureRepository extends CacheRepository<FeatureSchema> implements
     @LogExecutionTime()
     async delete(id: string): Promise<void> {
         await this.rbacDBService.feature.delete({
-            where: { id }
+            where: { id },
         });
         await this.invalidateCache(id);
     }

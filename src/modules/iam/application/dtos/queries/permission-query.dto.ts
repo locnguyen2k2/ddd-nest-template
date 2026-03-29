@@ -1,2 +1,1 @@
-export class PermissionQueryDto {
-}
+export class PermissionQueryDto {}

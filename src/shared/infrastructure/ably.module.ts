@@ -7,4 +7,4 @@ import { AblyAdapter } from './adapters/ably.adapter';
   providers: [AblyAdapter],
   exports: [AblyAdapter],
 })
-export class AblyModule { }
+export class AblyModule {}

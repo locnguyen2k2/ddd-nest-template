@@ -1,41 +1,41 @@
-import { IsNotEmpty, IsString, IsOptional, IsNumber } from "class-validator";
+import { IsNotEmpty, IsString, IsOptional, IsNumber } from 'class-validator';
 
 export class GetOrganizationByIdQuery {
-    @IsString()
-    @IsNotEmpty()
-    id: string;
+  @IsString()
+  @IsNotEmpty()
+  id: string;
 
-    constructor(data: any) {
-        this.id = data.id;
-    }
+  constructor(data: any) {
+    this.id = data.id;
+  }
 }
 
 export class GetOrganizationBySlugQuery {
-    @IsString()
-    @IsNotEmpty()
-    slug: string;
+  @IsString()
+  @IsNotEmpty()
+  slug: string;
 
-    constructor(data: any) {
-        this.slug = data.slug;
-    }
+  constructor(data: any) {
+    this.slug = data.slug;
+  }
 }
 
 export class ListOrganizationsQuery {
-    @IsOptional()
-    @IsNumber()
-    page?: number;
+  @IsOptional()
+  @IsNumber()
+  page?: number;
 
-    @IsOptional()
-    @IsNumber()
-    limit?: number;
+  @IsOptional()
+  @IsNumber()
+  limit?: number;
 
-    @IsOptional()
-    @IsString()
-    search?: string;
+  @IsOptional()
+  @IsString()
+  search?: string;
 
-    constructor(data: any = {}) {
-        this.page = data.page;
-        this.limit = data.limit;
-        this.search = data.search;
-    }
+  constructor(data: any = {}) {
+    this.page = data.page;
+    this.limit = data.limit;
+    this.search = data.search;
+  }
 }

@@ -10,7 +10,10 @@ export interface IDomainEvent<T> {
 export abstract class BaseDomainEvent<T> implements IDomainEvent<T> {
   public readonly occurredOn: Date;
 
-  constructor(public readonly aggregateId: T, occurredOn?: Date) {
+  constructor(
+    public readonly aggregateId: T,
+    occurredOn?: Date,
+  ) {
     this.occurredOn = occurredOn ?? new Date();
   }
 

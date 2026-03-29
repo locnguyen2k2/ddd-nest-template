@@ -1,4 +1,4 @@
-import { BasePageOptionDto } from "../dtos/page-options.dto";
+import { BasePageOptionDto } from '../dtos/page-options.dto';
 
 export interface IPagination {
   pageOptions: BasePageOptionDto;

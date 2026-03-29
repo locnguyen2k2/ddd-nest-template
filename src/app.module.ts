@@ -30,5 +30,4 @@ const modules = [IamModule];
     // { provide: APP_GUARD, useClass: RbacAuthGuard },
   ],
 })
-export class AppModule { }
-
+export class AppModule {}
