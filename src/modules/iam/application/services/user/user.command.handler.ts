@@ -1,13 +1,13 @@
 import { USER_REPO } from '@/modules/iam/domain/repositories/user.repository';
 import { UserRepository } from '@/modules/iam/infrastructure/persistence/repositories/user.repository';
 import { Inject, Injectable } from '@nestjs/common';
-import { RegisterUserArgs } from '../../dtos/commands/user-cmd.dto';
+import { RegisterUserArgs, UpdateProfileArgs } from '../../dtos/commands/user-cmd.dto';
 import { IEntityID } from '@/shared/domain/entities/base.entity';
 import { uuidv7 } from 'uuidv7';
 import { UserEntity } from '@/modules/iam/domain/entities/user.entity';
 import { UserService } from '@/modules/iam/domain/services/user.service';
 import { BusinessException } from '@/common/http/business-exception';
-import { AuthResponseDto } from '@/modules/iam/presentation/dtos/res/user-response.dto';
+import { AuthResponseDto, UserResponseDto } from '@/modules/iam/presentation/dtos/res/user-response.dto';
 import { AuthDomainService } from '@/modules/iam/domain/services/auth.service';
 
 @Injectable()
@@ -51,5 +51,14 @@ export class UserCmdHandler {
     await this.userRepo.create(userDomain);
 
     return await this.authService.login(args.username, args.password);
+  }
+
+  async updateProfile(args: UpdateProfileArgs): Promise<UserResponseDto> {
+    try {
+      return {} as UserResponseDto;
+    } catch (e: any) {
+      console.dir(e?.message);
+      throw new BusinessException(`400|Failed to update profile`);
+    }
   }
 }
