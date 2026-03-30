@@ -29,6 +29,13 @@ import {
 import { API_VERS } from '@/common/constant';
 import { ProjectCmdHandler } from '../../application/services/project/project.cmd.handler';
 import { ProjectQueryHandler } from '../../application/services/project/project.query.handler';
+import {
+  CursorProjectsQuery,
+  GetProjectByIdQuery,
+  GetProjectBySlugQuery,
+  PaginateProjectsQuery,
+} from '../../application/dtos/queries/project-query.dto';
+import { ProjectMapper } from '../../infrastructure/persistence/mappers/project.mapper';
 
 @ApiTags('projects')
 @Controller(API_VERS.V1 + '/projects')
@@ -36,7 +43,7 @@ export class ProjectController {
   constructor(
     private readonly projectCmdHandler: ProjectCmdHandler,
     private readonly prjectQueryHandler: ProjectQueryHandler,
-  ) {}
+  ) { }
 
   // CREATE
   @Post()
@@ -62,11 +69,17 @@ export class ProjectController {
     type: ProjectResponseDto,
   })
   @ApiResponse({ status: 404, description: 'Project not found' })
-  async getById(@Param('id') id: string): Promise<any> {
-    return await this.prjectQueryHandler.handlerGetByID(id);
+  async getById(@Param('id') id: string): Promise<ProjectResponseDto> {
+    const query = new GetProjectByIdQuery({ id });
+    const project = await this.prjectQueryHandler.handlerGetByID(query);
+
+    if (!project) {
+      throw new Error('Project not found');
+    }
+
+    return ProjectMapper.toResponseDto(ProjectMapper.toPrisma(project));
   }
 
-  // READ - By Slug
   @Get('slug/:slug')
   @ApiOperation({ summary: 'Get project by slug' })
   @ApiParam({ name: 'slug', description: 'Project slug' })
@@ -85,11 +98,16 @@ export class ProjectController {
     @Param('slug') slug: string,
     @Query('organization_id') organization_id: string,
   ): Promise<ProjectResponseDto> {
-    // TODO: Implement get project by slug logic
-    throw new Error('Not implemented yet');
+    const query = new GetProjectBySlugQuery({ slug, organization_id });
+    const project = await this.prjectQueryHandler.handlerGetProjectBySlug(query);
+
+    if (!project) {
+      throw new Error('Project not found');
+    }
+
+    return ProjectMapper.toResponseDto(ProjectMapper.toPrisma(project));
   }
 
-  // READ - List with Pagination
   @Get()
   @ApiOperation({ summary: 'List projects with pagination' })
   @ApiQuery({
@@ -121,9 +139,15 @@ export class ProjectController {
     description: 'Projects retrieved successfully',
     type: PaginateProjectsResponseDto,
   })
-  async paginate(@Query() query: any): Promise<PaginateProjectsResponseDto> {
-    // TODO: Implement project pagination logic
-    throw new Error('Not implemented yet');
+  async paginate(
+    @Query() listQuery: PaginateProjectsQuery,
+  ): Promise<PaginateProjectsResponseDto> {
+    const result = await this.prjectQueryHandler.handlePaginate(listQuery);
+
+    return {
+      projects: result.data,
+      paginated: result.paginated,
+    };
   }
 
   // READ - Cursor Pagination
@@ -152,10 +176,14 @@ export class ProjectController {
     type: CursorProjectsResponseDto,
   })
   async cursorPagination(
-    @Query() query: any,
+    @Query() listQuery: CursorProjectsQuery,
   ): Promise<CursorProjectsResponseDto> {
-    // TODO: Implement project cursor pagination logic
-    throw new Error('Not implemented yet');
+    const result = await this.prjectQueryHandler.handleCursorPaginate(listQuery);
+
+    return {
+      projects: result.data,
+      paginated: result.paginated,
+    };
   }
 
   // UPDATE

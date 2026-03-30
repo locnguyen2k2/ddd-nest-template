@@ -1,5 +1,6 @@
 import { ProjectEntity } from '@/modules/iam/domain/entities/project.entity';
 import { IEntityID } from '@/shared/domain/entities/base.entity';
+import { ProjectResponseDto } from '@/modules/iam/presentation/dtos/res/project-response.dto';
 import { Project } from '@prisma/client';
 
 export class ProjectMapper {
@@ -34,6 +35,20 @@ export class ProjectMapper {
       updated_at: prj.updatedAt(),
       created_by: prj.createdBy(),
       updated_by: prj.updatedBy(),
+    };
+  }
+
+  static toResponseDto(project: Project): ProjectResponseDto {
+    return {
+      id: project.id,
+      name: project.name,
+      slug: project.slug,
+      description: project.description || undefined,
+      organization_id: project.organization_id,
+      created_by: project.created_by || undefined,
+      updated_by: project.updated_by || undefined,
+      created_at: project.created_at,
+      updated_at: project.updated_at,
     };
   }
 }

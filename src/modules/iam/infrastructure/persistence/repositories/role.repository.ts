@@ -3,7 +3,7 @@ import {
   ROLE_REPO,
 } from '@/modules/iam/domain/repositories/role.repository';
 import { Injectable } from '@nestjs/common';
-import { RoleEntity } from '@/modules/iam/domain/entities/role.entity';
+import { CreateRoleProps, RoleEntity } from '@/modules/iam/domain/entities/role.entity';
 import { RoleMapper } from '../mappers/role.mapper';
 import { PrismaAdapter } from '@/shared/infrastructure/adapters/prisma.adapter';
 import { Logger } from '@nestjs/common';
@@ -21,11 +21,12 @@ import {
 import { AccessControlStatus, Prisma } from '@prisma/client';
 import { BusinessException } from '@/common/http/business-exception';
 import { ErrorEnum } from '@/common/exception.enum';
+import { RoleResponseDto } from '@/modules/iam/presentation/dtos/res/role-response.dto';
 
 @Injectable()
 export class RoleRepository implements IRoleRepository {
   private readonly logger = new Logger(RoleRepository.name);
-  constructor(private readonly rbacDBService: PrismaAdapter) {}
+  constructor(private readonly rbacDBService: PrismaAdapter) { }
 
   @LogExecutionTime()
   async createRFP(
@@ -148,7 +149,7 @@ export class RoleRepository implements IRoleRepository {
   async paginate(pageOptions: PaginateRolesQuery) {
     try {
       const { data = [], paginated } =
-        await paginateHelper<Prisma.RoleCreateInput>({
+        await paginateHelper<RoleResponseDto>({
           query: this.rbacDBService.role,
           pageOptions,
         });
@@ -167,7 +168,7 @@ export class RoleRepository implements IRoleRepository {
   async cursorPagination(pageOptions: CursorRolesQuery) {
     try {
       const { data = [], paginated } =
-        await cursorHelper<Prisma.RoleCreateInput>({
+        await cursorHelper<RoleResponseDto>({
           query: this.rbacDBService.role,
           pageOptions,
           cursorField: SortableFieldEnum.CREATED_AT,

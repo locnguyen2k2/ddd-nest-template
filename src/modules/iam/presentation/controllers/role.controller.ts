@@ -46,7 +46,7 @@ export class RoleController {
   constructor(
     private readonly commandHandler: RoleCommandHandler,
     private readonly queryHandler: RoleQueryHandler,
-  ) {}
+  ) { }
 
   @Post()
   @ApiOperation({ summary: 'Create a new role' })
@@ -116,7 +116,7 @@ export class RoleController {
     const result = await this.queryHandler.handlePaginate(listQuery);
 
     return {
-      roles: result.data.map((role) => RoleMapper.toResponseDto(role)),
+      roles: result.data,
       paginated: result.paginated,
     };
   }
@@ -134,7 +134,7 @@ export class RoleController {
     const result = await this.queryHandler.handleCursorPaginate(listQuery);
 
     return {
-      roles: result.data.map((role) => RoleMapper.toResponseDto(role)),
+      roles: result.data,
       paginated: result.paginated,
     };
   }
