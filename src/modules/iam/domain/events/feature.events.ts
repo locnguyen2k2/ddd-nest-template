@@ -1,5 +1,5 @@
 import { BaseDomainEvent } from '@/shared/domain/events/base.domain-event';
-import { AccessControlStatus } from '@prisma/client';
+import { AccessControlStatus } from '@/common/enum';
 
 interface FeatureBaseData {
   id: string;

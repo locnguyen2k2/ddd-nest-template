@@ -1,7 +1,7 @@
 import { UserEntity } from '@/modules/iam/domain/entities/user.entity';
 import { UserResponseDto } from '@/modules/iam/presentation/dtos/res/user-response.dto';
 import { IEntityID } from '@/shared/domain/entities/base.entity';
-import { AccessControlStatus, Prisma, User } from '@prisma/client';
+import { AccessControlStatus, Prisma, User } from '@internal/rbac/client';
 
 export class UserMapper {
   static toDomain(props: User): UserEntity {

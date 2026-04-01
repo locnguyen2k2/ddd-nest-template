@@ -1,9 +1,8 @@
 import {
   IRoleRepository,
-  ROLE_REPO,
 } from '@/modules/iam/domain/repositories/role.repository';
 import { Injectable } from '@nestjs/common';
-import { CreateRoleProps, RoleEntity } from '@/modules/iam/domain/entities/role.entity';
+import { RoleEntity } from '@/modules/iam/domain/entities/role.entity';
 import { RoleMapper } from '../mappers/role.mapper';
 import { PrismaAdapter } from '@/shared/infrastructure/adapters/prisma.adapter';
 import { Logger } from '@nestjs/common';
@@ -18,7 +17,7 @@ import {
   CursorRolesQuery,
   PaginateRolesQuery,
 } from '@/modules/iam/application/dtos/queries/role-query.dto';
-import { AccessControlStatus, Prisma } from '@prisma/client';
+import { AccessControlStatus } from '@internal/rbac/client';
 import { BusinessException } from '@/common/http/business-exception';
 import { ErrorEnum } from '@/common/exception.enum';
 import { RoleResponseDto } from '@/modules/iam/presentation/dtos/res/role-response.dto';

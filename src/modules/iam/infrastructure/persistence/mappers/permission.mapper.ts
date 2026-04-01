@@ -1,7 +1,7 @@
 import { PermissionAction } from '@/common/enum';
 import { PermissionEntity } from '@/modules/iam/domain/entities/permission.entity';
 import { IEntityID } from '@/shared/domain/entities/base.entity';
-import { Prisma } from '@prisma/client';
+import { Prisma } from '@internal/rbac/client';
 import { uuidv7 } from 'uuidv7';
 
 export class PermissionMapper {

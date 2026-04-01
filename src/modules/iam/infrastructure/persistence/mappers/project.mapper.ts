@@ -1,7 +1,7 @@
 import { ProjectEntity } from '@/modules/iam/domain/entities/project.entity';
 import { IEntityID } from '@/shared/domain/entities/base.entity';
 import { ProjectResponseDto } from '@/modules/iam/presentation/dtos/res/project-response.dto';
-import { Project } from '@prisma/client';
+import { Project } from '@internal/rbac/client';
 
 export class ProjectMapper {
   static toDomain(prj: Project): ProjectEntity {
