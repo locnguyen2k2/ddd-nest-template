@@ -1,6 +1,6 @@
 import { IsString, IsNotEmpty, IsOptional } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
-import { PermissionAction } from '@prisma/client';
+import { PermissionAction } from '@/common/enum';
 
 export class CreatePermissionArgs {
   @ApiProperty()

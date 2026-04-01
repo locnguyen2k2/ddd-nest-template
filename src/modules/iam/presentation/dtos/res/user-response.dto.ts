@@ -1,4 +1,4 @@
-import { AccessControlStatus } from '@prisma/client';
+import { AccessControlStatus } from '@internal/rbac/client';
 import { ApiProperty } from '@nestjs/swagger';
 import { IsEnum, IsNumber, IsString } from 'class-validator';
 import { Type } from 'class-transformer';

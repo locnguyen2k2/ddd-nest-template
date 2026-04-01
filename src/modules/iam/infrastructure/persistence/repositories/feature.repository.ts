@@ -13,7 +13,7 @@ import {
     CursorFeaturesQuery,
     PaginateFeaturesQuery,
 } from '@/modules/iam/application/dtos/queries/feature-query.dto';
-import { Prisma } from '@prisma/client';
+import { Prisma } from '@internal/rbac/client';
 import { CacheRepository } from '@/shared/infrastructure/presistence/cache.repository';
 import { ConfigService } from '@nestjs/config';
 import { Inject } from '@nestjs/common';

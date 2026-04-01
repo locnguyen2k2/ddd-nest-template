@@ -2,7 +2,7 @@ import { RoleEntity } from '@/modules/iam/domain/entities/role.entity';
 import { Slug } from '@/modules/iam/domain/vo/slug.vo';
 import { RoleResponseDto } from '@/modules/iam/presentation/dtos/res/role-response.dto';
 import { IEntityID } from '@/shared/domain/entities/base.entity';
-import { Prisma, Role } from '@prisma/client';
+import { Prisma, Role } from '@internal/rbac/client';
 
 export class RoleMapper {
   static toDomain(prismaRole: Role): RoleEntity {

@@ -4,7 +4,7 @@ import { PrismaAdapter } from '@/shared/infrastructure/adapters/prisma.adapter';
 import { PermissionMapper } from '../mappers/permission.mapper';
 import { Logger } from '@nestjs/common';
 import { LogExecutionTime } from '@/common/decorators/log-execution.decorator';
-import { PermissionAction } from '@prisma/client';
+import { PermissionAction } from '@internal/rbac/client';
 
 export class PermissionRepository implements IPermissionRepository {
   private readonly logger = new Logger(PermissionRepository.name);

@@ -1,15 +1,13 @@
 import { Injectable, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
-import { PrismaPg } from '@prisma/adapter-pg';
-import { databaseConfigKey, IDatabaseConfig } from '@/config/database.config';
+import { PrismaClient } from '@internal/rbac/client';
 import { ConfigService } from '@nestjs/config';
-import { ConfigKeyPaths } from '@/config';
-import { PrismaClient } from '@prisma/client';
+import { ConfigKeyPaths, databaseConfigKey, IDatabaseConfig } from '@/config';
+import { PrismaPg } from '@prisma/adapter-pg';
 
 @Injectable()
 export class PrismaAdapter
   extends PrismaClient
-  implements OnModuleInit, OnModuleDestroy
-{
+  implements OnModuleInit, OnModuleDestroy {
   constructor(configService: ConfigService<ConfigKeyPaths>) {
     const rbacURL =
       configService.get<IDatabaseConfig>(databaseConfigKey)?.rbac?.url;

@@ -3,7 +3,7 @@ import {
   IPermissionRepository,
   PERMISSION_REPO,
 } from '@/modules/iam/domain/repositories/permission.repository';
-import { PermissionAction } from '@prisma/client';
+import { PermissionAction } from '@/common/enum';
 
 export class PermissionQueryHandler {
   constructor(
