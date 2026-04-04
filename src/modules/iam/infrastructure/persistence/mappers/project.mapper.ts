@@ -27,14 +27,14 @@ export class ProjectMapper {
   static toPrisma(prj: ProjectEntity): Project {
     return {
       id: prj.id.value,
-      name: prj.name(),
-      slug: prj.slug(),
-      description: prj.description(),
-      organization_id: prj.organizationID(),
-      created_at: prj.createdAt(),
-      updated_at: prj.updatedAt(),
-      created_by: prj.createdBy(),
-      updated_by: prj.updatedBy(),
+      name: prj.name,
+      slug: prj.slug,
+      description: prj.description,
+      organization_id: prj.organizationID,
+      created_at: prj.createdAt,
+      updated_at: prj.updatedAt,
+      created_by: prj.createdBy,
+      updated_by: prj.updatedBy,
     };
   }
 

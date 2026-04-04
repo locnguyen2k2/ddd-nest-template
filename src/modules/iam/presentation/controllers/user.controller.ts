@@ -4,11 +4,14 @@ import {
   Body,
   HttpStatus,
   HttpCode,
+  UseGuards,
 } from '@nestjs/common';
 import {
   ApiTags,
   ApiOperation,
   ApiResponse,
+  ApiHeader,
+  ApiHeaders,
 } from '@nestjs/swagger';
 import { RegisterUserDto, LoginUserDto, VerifyAccessTokenDto, RefreshTokenDto, LogoutDto } from '@/modules/iam/presentation/dtos/req/user.dto';
 import { AuthResponseDto, UserResponseDto, TokenResponseDto } from '@/modules/iam/presentation/dtos/res/user-response.dto';
@@ -17,9 +20,11 @@ import { AuthCmdHandler } from '@/modules/iam/application/services/auth/auth.com
 import { RegisterUserArgs } from '@/modules/iam/application/dtos/commands/user-cmd.dto';
 import { VerifyAccessTokenArgs, RefreshTokenArgs, LogoutArgs } from '@/modules/iam/application/dtos/commands/auth-cmd.dto';
 import { LoginArgs } from '@/modules/iam/application/dtos/commands/auth-cmd.dto';
-import { API_VERS } from '@/common/constant';
+import { API_VERS, HeaderKeys } from '@/common/constant';
 import { BusinessException } from '@/common/http/business-exception';
 import { ErrorEnum } from '@/common/exception.enum';
+import { HeadersAuthGuard } from '../guards/headers-auth.guard';
+import { GetHeaderKey, HeaderKey } from '@/common/decorators';
 
 @ApiTags('users')
 @Controller(API_VERS.V1 + '/users')
@@ -59,9 +64,19 @@ export class UserController {
     description: 'User logged in successfully',
     type: AuthResponseDto,
   })
+  @ApiHeaders([
+    {
+      name: HeaderKeys.ORG_ID,
+      required: true,
+      description: 'Organization ID',
+    },
+  ])
   @ApiResponse({ status: 401, description: 'Unauthorized - Invalid credentials' })
+  @HeaderKey(HeaderKeys.ORG_ID)
+  @UseGuards(HeadersAuthGuard)
   @HttpCode(HttpStatus.OK)
   async login(
+    @GetHeaderKey(HeaderKeys.ORG_ID) orgID: string,
     @Body() loginUserDto: LoginUserDto,
   ): Promise<AuthResponseDto> {
     try {
@@ -70,9 +85,9 @@ export class UserController {
         loginUserDto.password,
       );
 
-      return await this.authCmdHandler.login(command);
-    } catch (error) {
-      throw new BusinessException(ErrorEnum.UNAUTHORIZED);
+      return await this.authCmdHandler.login(command, orgID);
+    } catch (error: any) {
+      throw new BusinessException(ErrorEnum.UNAUTHORIZED, error?.message);
     }
   }
 

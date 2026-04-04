@@ -1,5 +1,23 @@
 import { IsString, IsOptional, IsNotEmpty } from 'class-validator';
 
+export class AssignRoleToUserArgs {
+  @IsString()
+  @IsNotEmpty()
+  userId: string;
+  @IsString()
+  @IsNotEmpty()
+  roleId: string;
+  @IsString()
+  @IsNotEmpty()
+  orgId: string;
+
+  constructor(data: AssignRoleToUserArgs) {
+    this.userId = data.userId;
+    this.roleId = data.roleId;
+    this.orgId = data.orgId;
+  }
+}
+
 export class CreateOrganizationArgs {
   @IsString()
   @IsNotEmpty()

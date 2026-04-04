@@ -10,7 +10,7 @@ import {
 
 @Injectable()
 export class SwaggerAdapter {
-  constructor(private readonly configService: ConfigService<ConfigKeyPaths>) {}
+  constructor(private readonly configService: ConfigService<ConfigKeyPaths>) { }
 
   setup(app: NestFastifyApplication) {
     const config = this.configService.get<ISwaggerConfig>(swaggerConfigKey, {
@@ -23,14 +23,14 @@ export class SwaggerAdapter {
       .setTitle('API Documentation')
       .setDescription('API documentation for the application')
       .setVersion('1.0')
-      .addBearerAuth()
+      .addBearerAuth({
+        type: 'http',
+        scheme: 'bearer',
+        bearerFormat: 'JWT',
+      })
       .build();
 
     const document = SwaggerModule.createDocument(app, documentConfig);
-    SwaggerModule.setup(config.path, app, document, {
-      swaggerOptions: {
-        persistAuthorization: true,
-      },
-    });
+    SwaggerModule.setup(config.path, app, document);
   }
 }

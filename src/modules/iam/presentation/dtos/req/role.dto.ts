@@ -24,6 +24,11 @@ export class CreateRoleDto {
   @IsString()
   @IsNotEmpty()
   organization_id!: string;
+  
+  @ApiProperty({ required: false })
+  @IsString()
+  @IsOptional()
+  parent_role_id?: string;
 }
 
 export class UpdateRoleDto {
@@ -49,4 +54,27 @@ export class UpdateRoleDto {
   @IsString()
   @IsNotEmpty()
   organization_id!: string;
+  
+  @ApiProperty({ required: false })
+  @IsString()
+  @IsOptional()
+  parent_role_id?: string;
 }
+
+export class AssignPermissionToRoleArgs {
+  @ApiProperty()
+  @IsString()
+  @IsNotEmpty()
+  role_id!: string;
+  
+  @ApiProperty()
+  @IsString()
+  @IsNotEmpty()
+  permission_id!: string;
+  
+  @ApiProperty()
+  @IsString()
+  @IsNotEmpty()
+  feature_id!: string;
+}
+

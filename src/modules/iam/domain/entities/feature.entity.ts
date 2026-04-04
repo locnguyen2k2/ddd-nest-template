@@ -6,6 +6,11 @@ import {
   FeatureDeletedEvent,
 } from '../events/feature.events';
 import { AccessControlStatus } from '@/common/enum';
+import { IFeaturePermission } from './role.entity';
+
+export interface IRolePermission extends Omit<IFeaturePermission, 'feature_id'> {
+  role_id: string
+}
 
 export interface FeatureBaseProps {
   name: string;
@@ -14,6 +19,10 @@ export interface FeatureBaseProps {
   status?: AccessControlStatus;
   created_at?: Date;
   updated_at?: Date;
+  project_id: string;
+  role_permissions?: IRolePermission[];
+  created_by: string | undefined;
+  updated_by: string | undefined;
 }
 
 export interface CreateFeatureProps extends FeatureBaseProps {
@@ -25,32 +34,40 @@ export interface UpdateFeatureProps {
   slug?: Slug;
   description?: string;
   status?: AccessControlStatus;
+  role_permissions?: IRolePermission[];
 }
 
 // Feature Aggregate Root
 export class Feature extends AggregateRoot<Feature, string> {
+  private _name: string;
+  private _slug: Slug;
+  private _description?: string;
+  private _status: AccessControlStatus;
+  private _created_at: Date;
+  private _updated_at: Date;
+  private _project_id: string;
+  private _role_permissions: IRolePermission[];
+  private _created_by: string | undefined;
+  private _updated_by: string | undefined;
+
   private constructor(
-    public readonly id: IEntityID<string>,
-    private _name: string,
-    private _slug: Slug,
-    private _description?: string,
-    private _status: AccessControlStatus = AccessControlStatus.ACTIVE,
-    private _created_at: Date = new Date(),
-    private _updated_at: Date = new Date(),
+    props: CreateFeatureProps,
   ) {
-    super(id);
+    super(props.id);
+    this._name = props.name;
+    this._slug = props.slug;
+    this._description = props.description;
+    this._status = props.status ?? AccessControlStatus.ACTIVE;
+    this._created_at = props.created_at ?? new Date();
+    this._updated_at = props.updated_at ?? new Date();
+    this._project_id = props.project_id;
+    this._role_permissions = props.role_permissions ?? [];
+    this._created_by = props.created_by;
+    this._updated_by = props.updated_by;
   }
 
   static create(props: CreateFeatureProps) {
-    const feature = new Feature(
-      props.id,
-      props.name,
-      props.slug,
-      props.description,
-      props.status ?? AccessControlStatus.ACTIVE,
-      props.created_at ?? new Date(),
-      props.updated_at ?? new Date(),
-    );
+    const feature = new Feature(props);
     feature.addDomainEvent(
       new FeatureCreatedEvent({
         id: props.id.value,
@@ -116,27 +133,43 @@ export class Feature extends AggregateRoot<Feature, string> {
   }
 
   // Getters
-  name(): string {
+  get name(): string {
     return this._name;
   }
 
-  slug(): Slug {
+  get slug(): Slug {
     return this._slug;
   }
 
-  description(): string | undefined {
+  get description(): string | undefined {
     return this._description;
   }
 
-  status(): AccessControlStatus {
+  get status(): AccessControlStatus {
     return this._status;
   }
 
-  createdAt(): Date {
+  get createdAt(): Date {
     return this._created_at;
   }
 
-  updatedAt(): Date {
+  get updatedAt(): Date {
     return this._updated_at;
+  }
+
+  get projectId(): string {
+    return this._project_id;
+  }
+
+  get RFPs(): IRolePermission[] {
+    return this._role_permissions;
+  }
+
+  get createdBy(): string | undefined {
+    return this._created_by;
+  }
+
+  get updatedBy(): string | undefined {
+    return this._updated_by;
   }
 }

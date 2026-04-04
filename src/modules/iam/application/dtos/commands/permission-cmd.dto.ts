@@ -18,16 +18,10 @@ export class CreatePermissionArgs {
   @IsOptional()
   description?: string;
 
-  @ApiProperty()
-  @IsString()
-  @IsNotEmpty()
-  organizationId: string;
-
   constructor(data: CreatePermissionArgs) {
     this.name = data.name;
     this.action = data.action;
     this.description = data?.description;
-    this.organizationId = data?.organizationId;
   }
 }
 

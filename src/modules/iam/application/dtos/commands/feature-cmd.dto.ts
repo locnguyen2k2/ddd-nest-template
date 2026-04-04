@@ -19,13 +19,13 @@ export class CreateFeatureArgs {
 
   @IsString()
   @IsNotEmpty()
-  organization_id: string;
+  project_id: string;
 
   constructor(data: CreateFeatureArgs) {
     this.name = data.name;
     this.slug = data.slug;
     this.description = data.description;
-    this.organization_id = data.organization_id;
+    this.project_id = data.project_id;
   }
 }
 

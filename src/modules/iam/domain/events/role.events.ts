@@ -20,6 +20,10 @@ export interface IRoleUpdatedEvent {
   oldDescription?: string;
   updatedAt: Date;
   organizationId: string;
+  parentRoleId?: string;
+  createdBy?: string;
+  updatedBy?: string;
+  status: string;
 }
 
 export interface IRoleDeletedEvent {

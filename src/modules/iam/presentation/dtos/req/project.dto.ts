@@ -24,11 +24,6 @@ export class CreateProjectDto {
   @IsString()
   @IsNotEmpty()
   organization_id!: string;
-
-  @ApiProperty()
-  @IsString()
-  @IsOptional()
-  created_by?: string;
 }
 
 export class UpdateProjectDto {

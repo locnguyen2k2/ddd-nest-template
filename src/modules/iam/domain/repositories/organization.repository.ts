@@ -1,3 +1,4 @@
+import { ListOrganizationsQuery } from '../../application/dtos/queries/organization-query.dto';
 import { Organization } from '../entities/organization.entity';
 
 export const ORGANIZATION_REPO = 'ORGANIZATION_REPO';
@@ -23,4 +24,6 @@ export interface IOrganizationRepository {
   // Validation operations
   organizationHasUser(organizationId: string, userId: string): Promise<boolean>;
   organizationHasRole(organizationId: string, roleId: string): Promise<boolean>;
+  handleListOrganizationsByJoiner(joinerId: string): Promise<Organization[]>
+  assignRoleToUser(organizationId: string, userId: string, roleId: string): Promise<void>
 }

@@ -22,8 +22,8 @@ export enum ErrorEnum {
   USERNAME_OR_PASSWORD_INCORRECT = '400|Username or password is incorrect',
   USERNAME_ALREADY_EXISTS = '409|Username already exists',
   EMAIL_ALREADY_EXISTS = '409|Email already exists',
-  USERNAME_INVALID = '400|Username is invalid',
-  PASSWORD_INVALID = '400|Password is invalid',
+  USERNAME_INVALID = '400|Username is invalid (〜￣▽￣)〜',
+  PASSWORD_INVALID = '400|Password is invalid ( ͡~ ͜ʖ ͡°)',
 
-  UNAUTHORIZED = '401|Unauthorized',
+  UNAUTHORIZED = '401|Unauthorized ╰(*°▽°*)╯',
 }

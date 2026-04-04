@@ -1,6 +1,23 @@
 import { IsString, IsOptional, IsNotEmpty, MaxLength } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
+export class AssignRoleToUserDto {
+  @ApiProperty()
+  @IsString()
+  @IsNotEmpty()
+  roleId!: string;
+
+  @ApiProperty()
+  @IsString()
+  @IsNotEmpty()
+  orgId!: string;
+
+  @ApiProperty()
+  @IsString()
+  @IsNotEmpty()
+  userId!: string;
+}
+
 export class CreateOrganizationDto {
   @ApiProperty()
   @IsString()

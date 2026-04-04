@@ -9,21 +9,34 @@ import {
 } from '@/modules/iam/application/dtos/commands/feature-cmd.dto';
 import { FEATURE_REPO } from '@/modules/iam/domain/repositories/feature.repository';
 import { uuidv7 } from 'uuidv7';
+import { BusinessException } from '@/common/http/business-exception';
+import { ErrorEnum } from '@/common/exception.enum';
+import { PROJECT_REPO } from '@/modules/iam/domain/repositories/project.repository';
+import { IProjectRepository } from '@/modules/iam/domain/repositories/project.repository';
 
 @Injectable()
 export class FeatureCommandHandler {
   constructor(
     @Inject(FEATURE_REPO)
     private readonly featureRepository: IFeatureRepository,
-  ) {}
+    @Inject(PROJECT_REPO)
+    private readonly projectRepository: IProjectRepository,
+  ) { }
 
   async handleCreateFeature(command: CreateFeatureArgs): Promise<Feature> {
-    const existingFeature = await this.featureRepository.findOneBySlug(
-      command.slug,
-      command.organization_id,
-    );
-    if (existingFeature) {
-      throw new Error(`Feature with slug '${command.slug}' already exists`);
+    const [existingFeature, existingProject] = await Promise.all([
+      this.featureRepository.findOneBySlug(
+        command.slug,
+        command.project_id,
+      ),
+      this.projectRepository.findById(command.project_id),
+    ]);
+
+    switch (true) {
+      case !!existingFeature:
+        throw new BusinessException(ErrorEnum.RECORD_ALREADY_EXISTS, 'Feature');
+      case !existingProject:
+        throw new BusinessException(ErrorEnum.RECORD_NOT_FOUND, 'Project');
     }
 
     const id = uuidv7();
@@ -39,6 +52,9 @@ export class FeatureCommandHandler {
       name: command.name,
       slug: slug,
       description: command.description,
+      project_id: command.project_id,
+      created_by: undefined,
+      updated_by: undefined,
     });
 
     return await this.featureRepository.create(feature);
@@ -49,16 +65,16 @@ export class FeatureCommandHandler {
       command.id,
     );
     if (!existingFeature) {
-      throw new Error(`Feature with id '${command.id}' not found`);
+      throw new BusinessException(ErrorEnum.RECORD_NOT_FOUND, 'Feature');
     }
 
-    if (command.slug && command.slug !== existingFeature.slug().value) {
+    if (command.slug && command.slug !== existingFeature.slug.value) {
       const slugConflict = await this.featureRepository.findOneBySlug(
         command.slug,
         command.organization_id,
       );
       if (slugConflict) {
-        throw new Error(`Feature with slug '${command.slug}' already exists`);
+        throw new BusinessException(ErrorEnum.RECORD_ALREADY_EXISTS, 'Feature');
       }
     }
 
@@ -79,7 +95,7 @@ export class FeatureCommandHandler {
       command.id,
     );
     if (!existingFeature) {
-      throw new Error(`Feature with id '${command.id}' not found`);
+      throw new BusinessException(ErrorEnum.RECORD_NOT_FOUND, 'Feature');
     }
 
     existingFeature.delete();

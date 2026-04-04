@@ -23,7 +23,7 @@ export class CreateFeatureDto {
   @ApiProperty()
   @IsString()
   @IsNotEmpty()
-  organization_id!: string;
+  project_id!: string;
 }
 
 export class UpdateFeatureDto {

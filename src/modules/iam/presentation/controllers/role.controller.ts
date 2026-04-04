@@ -17,7 +17,7 @@ import {
   ApiParam,
   ApiQuery,
 } from '@nestjs/swagger';
-import { CreateRoleDto } from '@/modules/iam/presentation/dtos/req/role.dto';
+import { AssignPermissionToRoleArgs, CreateRoleDto } from '@/modules/iam/presentation/dtos/req/role.dto';
 import { UpdateRoleDto } from '@/modules/iam/presentation/dtos/req/role.dto';
 import {
   RoleResponseDto,
@@ -48,6 +48,18 @@ export class RoleController {
     private readonly queryHandler: RoleQueryHandler,
   ) { }
 
+  @Post('assign-permission')
+  @ApiOperation({ summary: 'Assign permission to role' })
+  @ApiResponse({
+    status: 200,
+    description: 'Permission assigned to role successfully',
+  })
+  @ApiResponse({ status: 400, description: 'Bad Request' })
+  @ApiResponse({ status: 404, description: 'Role or permission not found' })
+  async assignPermissionToRole(@Body() assignPermissionToRoleDto: AssignPermissionToRoleArgs): Promise<void> {
+    await this.commandHandler.handleAssignPermissionToRole(assignPermissionToRoleDto);
+  }
+
   @Post()
   @ApiOperation({ summary: 'Create a new role' })
   @ApiResponse({
@@ -58,8 +70,7 @@ export class RoleController {
   @ApiResponse({ status: 400, description: 'Bad Request' })
   @ApiResponse({ status: 409, description: 'Role with slug already exists' })
   async create(@Body() createRoleDto: CreateRoleDto): Promise<RoleResponseDto> {
-    const command = new CreateRoleArgs(createRoleDto);
-    const role = await this.commandHandler.handleCreateRole(command);
+    const role = await this.commandHandler.handleCreateRole(createRoleDto);
     return RoleMapper.toResponseDto(RoleMapper.toPrisma(role));
   }
 
@@ -73,14 +84,13 @@ export class RoleController {
   })
   @ApiResponse({ status: 404, description: 'Role not found' })
   async getById(@Param('id') id: string): Promise<RoleResponseDto> {
-    const query = new GetRoleByIdQuery({ id });
-    const role = await this.queryHandler.handleGetRoleById(query);
+    const role = await this.queryHandler.handleGetRolePermissions(id);
 
     if (!role) {
       throw new Error('Role not found');
     }
 
-    return RoleMapper.toResponseDto(RoleMapper.toPrisma(role));
+    return RoleMapper.toResponseDtoWithPermissions(RoleMapper.toPrismaWithPermissions(role));
   }
 
   @Get('slug/:slug')

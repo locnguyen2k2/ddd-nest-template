@@ -13,7 +13,7 @@ export interface IProjectProps {
   id: IEntityID<string>;
 }
 
-export interface ICreateProject extends IProjectProps {}
+export interface ICreateProject extends IProjectProps { }
 
 export interface IUpdateProject extends Pick<IProjectProps, 'updated_by'> {
   name?: string;
@@ -74,31 +74,31 @@ export class ProjectEntity extends AggregateRoot<ProjectEntity, string> {
     return;
   }
 
-  name() {
+  get name() {
     return this._name;
   }
 
-  slug() {
+  get slug() {
     return this._slug;
   }
 
-  organizationID() {
+  get organizationID(): string {
     return this._organization_id;
   }
 
-  description(): string | null {
+  get description(): string | null {
     return this._description || null;
   }
-  createdAt(): Date {
+  get createdAt(): Date {
     return this?._created_at ? new Date(this._created_at) : new Date();
   }
-  updatedAt(): Date {
+  get updatedAt(): Date {
     return this?._updated_at ? new Date(this._updated_at) : new Date();
   }
-  createdBy(): string | null {
+  get createdBy(): string | null {
     return this._created_by || null;
   }
-  updatedBy(): string | null {
+  get updatedBy(): string | null {
     return this._updated_by || null;
   }
 }

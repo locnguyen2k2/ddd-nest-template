@@ -48,7 +48,7 @@ export class FeatureController {
   constructor(
     private readonly commandHandler: FeatureCommandHandler,
     private readonly queryHandler: FeatureQueryHandler,
-  ) {}
+  ) { }
 
   @Post()
   @ApiOperation({ summary: 'Create a new feature' })
@@ -84,7 +84,9 @@ export class FeatureController {
       throw new Error('Feature not found');
     }
 
-    return FeatureMapper.toResponseDto(feature);
+    return FeatureMapper.toResponseDtoWithPermissions(
+      FeatureMapper.toPrismaWithPermissions(feature),
+    );
   }
 
   @Get('slug/:slug')

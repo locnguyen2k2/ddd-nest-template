@@ -33,6 +33,16 @@ export class TokenResponseDto {
   }
 }
 
+export class OrgRoleResponseDto {
+  @ApiProperty()
+  @IsString()
+  organization_id!: string;
+  
+  @ApiProperty()
+  @IsString()
+  role_ids!: string[];
+}
+
 export class UserResponseDto {
   @ApiProperty()
   @IsString()
@@ -58,6 +68,9 @@ export class UserResponseDto {
   @ApiProperty()
   @IsString()
   updated_at: Date;
+  @ApiProperty()
+  @IsString()
+  organization_roles?: OrgRoleResponseDto[];
 
   constructor(
     id: string,
@@ -68,6 +81,7 @@ export class UserResponseDto {
     status: AccessControlStatus,
     created_at: Date,
     updated_at: Date,
+    organization_roles?: OrgRoleResponseDto[],
   ) {
     this.id = id;
     this.email = email;
@@ -77,6 +91,7 @@ export class UserResponseDto {
     this.status = status;
     this.created_at = created_at;
     this.updated_at = updated_at;
+    this.organization_roles = organization_roles;
   }
 }
 
