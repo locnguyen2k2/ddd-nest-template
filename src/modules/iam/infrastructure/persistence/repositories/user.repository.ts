@@ -3,6 +3,7 @@ import { IUserRepository } from '@/modules/iam/domain/repositories/user.reposito
 import { UserMapper } from '../mappers/user.mapper';
 import { PrismaAdapter } from '@/shared/infrastructure/adapters/prisma.adapter';
 import { Injectable } from '@nestjs/common';
+import { BusinessException } from '@/common/http/business-exception';
 
 @Injectable()
 export class UserRepository implements IUserRepository {
@@ -27,8 +28,36 @@ export class UserRepository implements IUserRepository {
     await this.rbacDBService.user.delete({ where: { id } });
   }
 
+  async findByIDWithOrgRoles(id: string, organization_id: string): Promise<UserEntity | null> {
+    const result = await this.rbacDBService.user.findFirst({
+      where: {
+        id,
+        organizations: {
+          some: {
+            organization: {
+              id: organization_id
+            },
+          }
+        }
+      },
+      include: {
+        organizations: {
+          include: {
+            user_organization_roles: true
+          },
+        }
+      },
+    });
+    if (!result) return null;
+    return UserMapper.toDomainWithOrgRoles(result);
+  }
+
   async findByID(id: string): Promise<UserEntity | null> {
-    const result = await this.rbacDBService.user.findUnique({ where: { id } });
+    const result = await this.rbacDBService.user.findFirst({
+      where: {
+        id,
+      },
+    });
     if (!result) return null;
     return UserMapper.toDomain(result);
   }
@@ -49,13 +78,35 @@ export class UserRepository implements IUserRepository {
 
   async findByUsernameOrEmail(
     usernameOrEmail: string,
+    organization_id?: string,
   ): Promise<UserEntity | null> {
-    const result = await this.rbacDBService.user.findFirst({
-      where: {
-        OR: [{ username: usernameOrEmail }, { email: usernameOrEmail }],
-      },
-    });
-    if (!result) return null;
-    return UserMapper.toDomain(result);
+    try {
+      const result = await this.rbacDBService.user.findFirst({
+        where: {
+          OR: [{ username: usernameOrEmail }, { email: usernameOrEmail }],
+          ...(organization_id && {
+            organizations: {
+              some: {
+                organization: {
+                  id: organization_id
+                }
+              }
+            }
+          })
+        },
+        include: {
+          organizations: {
+            include: {
+              user_organization_roles: true
+            },
+          }
+        },
+      });
+      if (!result) return null;
+      return UserMapper.toDomainWithOrgRoles(result);
+    } catch (error) {
+      console.dir(error);
+      throw new BusinessException('400|Failed to find user by username or email');
+    }
   }
 }

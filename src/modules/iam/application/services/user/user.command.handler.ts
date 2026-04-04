@@ -9,6 +9,8 @@ import { UserService } from '@/modules/iam/domain/services/user.service';
 import { BusinessException } from '@/common/http/business-exception';
 import { AuthResponseDto, UserResponseDto } from '@/modules/iam/presentation/dtos/res/user-response.dto';
 import { AuthDomainService } from '@/modules/iam/domain/services/auth.service';
+import { Password } from '@/modules/iam/domain/vo/password.vo';
+import { AuthMapper } from '@/modules/iam/infrastructure/persistence/mappers/auth.mapper';
 
 @Injectable()
 export class UserCmdHandler {
@@ -25,10 +27,11 @@ export class UserCmdHandler {
       _id,
       get: () => _id,
     };
-    const [isUsernameExisted, hashedPassword, isEmailExisted] =
+    const password: Password = Password.hash(args.password);
+
+    const [isUsernameExisted, isEmailExisted] =
       await Promise.all([
         await this.userService.usernameIsExisted(args.username),
-        await this.userService.hashPassword(args.password),
         await this.userRepo.findByEmail(args.email),
       ]);
 
@@ -42,7 +45,7 @@ export class UserCmdHandler {
     const userDomain = UserEntity.create({
       id,
       email: args.email,
-      password: hashedPassword,
+      password,
       first_name: args.first_name,
       last_name: args.last_name,
       username: args.username,
@@ -50,7 +53,8 @@ export class UserCmdHandler {
 
     await this.userRepo.create(userDomain);
 
-    return await this.authService.login(args.username, args.password);
+    const { refresh_token, access_token, expires_in } = await this.authService.prepareTokens(userDomain);
+    return AuthMapper.toResponseDto(expires_in, refresh_token, access_token, userDomain);
   }
 
   async updateProfile(args: UpdateProfileArgs): Promise<UserResponseDto> {

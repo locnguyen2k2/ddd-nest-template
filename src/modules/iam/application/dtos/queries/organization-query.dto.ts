@@ -1,3 +1,4 @@
+import { BasePageOptionDto } from '@/common/pagination';
 import { IsNotEmpty, IsString, IsOptional, IsNumber } from 'class-validator';
 
 export class GetOrganizationByIdQuery {
@@ -20,22 +21,5 @@ export class GetOrganizationBySlugQuery {
   }
 }
 
-export class ListOrganizationsQuery {
-  @IsOptional()
-  @IsNumber()
-  page?: number;
-
-  @IsOptional()
-  @IsNumber()
-  limit?: number;
-
-  @IsOptional()
-  @IsString()
-  search?: string;
-
-  constructor(data: any = {}) {
-    this.page = data.page;
-    this.limit = data.limit;
-    this.search = data.search;
-  }
+export class ListOrganizationsQuery extends BasePageOptionDto {
 }

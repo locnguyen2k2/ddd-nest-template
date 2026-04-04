@@ -24,6 +24,9 @@ import {
   PROJECT_REPO,
   IProjectRepository,
 } from '@/modules/iam/domain/repositories/project.repository';
+import { BusinessException } from '@/common/http/business-exception';
+import { ORGANIZATION_REPO, IOrganizationRepository } from '@/modules/iam/domain/repositories/organization.repository';
+import { ErrorEnum } from '@/common/exception.enum';
 
 @Injectable()
 export class RoleCommandHandler {
@@ -34,16 +37,24 @@ export class RoleCommandHandler {
     @Inject(PERMISSION_REPO)
     private readonly permissionRepo: IPermissionRepository,
     @Inject(PROJECT_REPO) private readonly projectRepo: IProjectRepository,
-  ) {}
+    @Inject(ORGANIZATION_REPO) private readonly organizationRepo: IOrganizationRepository,
+  ) { }
 
   @LogExecutionTime()
   async handleCreateRole(command: CreateRoleArgs): Promise<RoleEntity> {
-    const existingRole = await this.roleRepo.findBySlug(
-      command.slug,
-      command.organization_id,
-    );
-    if (existingRole) {
-      throw new Error(`Role with slug '${command.slug}' already exists`);
+    const [existingRole, organization, parentRole] = await Promise.all([
+      this.roleRepo.findBySlug(command.slug, command.organization_id),
+      this.organizationRepo.findById(command.organization_id),
+      ...(command.parent_role_id ? [this.roleRepo.findById(command.parent_role_id)] : [null]),
+    ]);
+
+    switch (true) {
+      case !!existingRole:
+        throw new BusinessException(`404|Role with slug '${command.slug}' already exists`);
+      case command.parent_role_id && !parentRole:
+        throw new BusinessException(`404|Parent role with id '${command.parent_role_id}' not found`);
+      case !organization:
+        throw new BusinessException(`404|Organization with id '${command.organization_id}' not found`);
     }
 
     const id = uuidv7();
@@ -60,6 +71,7 @@ export class RoleCommandHandler {
       slug: slug,
       description: command.description,
       organization_id: command.organization_id,
+      parent_role_id: command.parent_role_id,
     });
 
     return await this.roleRepo.create(role);
@@ -69,16 +81,16 @@ export class RoleCommandHandler {
   async handleUpdateRole(command: UpdateRoleArgs): Promise<RoleEntity> {
     const existingRole = await this.roleRepo.findById(command.id);
     if (!existingRole) {
-      throw new Error(`Role with id '${command.id}' not found`);
+      throw new BusinessException(`404|Role with id '${command.id}' not found`);
     }
 
-    if (command.slug && command.slug !== existingRole.slug().value) {
+    if (command.slug && command.slug !== existingRole.slug.value) {
       const slugConflict = await this.roleRepo.findBySlug(
         command.slug,
         command.organization_id,
       );
       if (slugConflict) {
-        throw new Error(`Role with slug '${command.slug}' already exists`);
+        throw new BusinessException(`404|Role with slug '${command.slug}' already exists`);
       }
     }
 
@@ -89,6 +101,13 @@ export class RoleCommandHandler {
     if (command.description !== undefined)
       updateProps.description = command.description;
 
+    if (command.parent_id !== undefined) {
+      if (command.parent_id) {
+        await this.roleService.validateParentAssignment(command.id, command.parent_id);
+      }
+      updateProps.parent_role_id = command.parent_id;
+    }
+
     existingRole.update(updateProps);
 
     return await this.roleRepo.update(command.id, existingRole);
@@ -98,7 +117,7 @@ export class RoleCommandHandler {
   async handleDeleteRole(command: DeleteRoleArgs): Promise<void> {
     const existingRole = await this.roleRepo.findById(command.id);
     if (!existingRole) {
-      throw new Error(`Role with id '${command.id}' not found`);
+      throw new BusinessException(`404|Role with id '${command.id}' not found`);
     }
 
     existingRole.delete();
@@ -120,21 +139,17 @@ export class RoleCommandHandler {
 
     switch (true) {
       case !existingRole:
-        throw new Error(`Role with id '${command.role_id}' not found`);
+        throw new BusinessException(ErrorEnum.RECORD_NOT_FOUND, `Role with id '${command.role_id}' not found`);
       case !existingFeature:
-        throw new Error(`Feature with id '${command.feature_id}' not found`);
+        throw new BusinessException(ErrorEnum.RECORD_NOT_FOUND, `Feature with id '${command.feature_id}' not found`);
       case !existingPermission:
-        throw new Error(
-          `Permission with id '${command.permission_id}' not found`,
-        );
+        throw new BusinessException(ErrorEnum.RECORD_NOT_FOUND, `Permission with id '${command.permission_id}' not found`);
       case !existingProject:
-        throw new Error(
-          `Project with feature id '${command.feature_id}' not found`,
-        );
+        throw new BusinessException(ErrorEnum.RECORD_NOT_FOUND, `Project with feature id '${command.feature_id}' not found`);
     }
 
-    if (existingRole.organizationId() !== existingProject.organizationID()) {
-      throw new Error(`Role organization does not match project organization`);
+    if (existingRole.organizationId !== existingProject.organizationID) {
+      throw new BusinessException(ErrorEnum.RECORD_ALREADY_EXISTS, `Role organization does not match project organization`);
     }
 
     await this.roleService.validatePermissionAssignment(

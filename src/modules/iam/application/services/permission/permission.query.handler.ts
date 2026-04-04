@@ -1,21 +1,41 @@
-import { Inject } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import {
   IPermissionRepository,
   PERMISSION_REPO,
 } from '@/modules/iam/domain/repositories/permission.repository';
-import { PermissionAction } from '@/common/enum';
+import { LogExecutionTime } from '@/common/decorators/log-execution.decorator';
+import {
+  CursorPermissionQuery,
+  GetPermissionByActionQuery,
+  GetPermissionByIdQuery,
+  PaginatePermissionQuery,
+} from '../../dtos/queries/permission-query.dto';
+import { PermissionEntity } from '@/modules/iam/domain/entities/permission.entity';
 
+@Injectable()
 export class PermissionQueryHandler {
   constructor(
     @Inject(PERMISSION_REPO)
     private readonly permissionRepository: IPermissionRepository,
-  ) {}
+  ) { }
 
-  handleGetById(id: string) {
-    return this.permissionRepository.findById(id);
+  @LogExecutionTime()
+  async handleGetById(query: GetPermissionByIdQuery): Promise<PermissionEntity | null> {
+    return this.permissionRepository.findById(query.id);
   }
 
-  handleGetByAction(action: PermissionAction, organizationId?: string) {
-    return this.permissionRepository.findByAction(action, organizationId);
+  @LogExecutionTime()
+  async handleGetByAction(query: GetPermissionByActionQuery): Promise<PermissionEntity | null> {
+    return this.permissionRepository.findByAction(query.action);
+  }
+
+  @LogExecutionTime()
+  async handlePaginate(query: PaginatePermissionQuery) {
+    return await this.permissionRepository.paginate(query);
+  }
+
+  @LogExecutionTime()
+  async handleCursorPaginate(query: CursorPermissionQuery) {
+    return await this.permissionRepository.cursorPagination(query);
   }
 }

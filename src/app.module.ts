@@ -4,6 +4,8 @@ import configs from '@/config';
 import { SharedModules } from '@/shared/shared.modules';
 import { ScheduleModule } from '@nestjs/schedule';
 import { IamModule } from '@/modules/iam/iam.module';
+import { APP_GUARD } from '@nestjs/core';
+import { JwtAuthGuard } from './modules/iam/presentation/guards/jwt-auth.guard';
 
 const modules = [IamModule];
 
@@ -22,7 +24,7 @@ const modules = [IamModule];
   ],
 
   providers: [
-    // // JWT Guard
+    // JWT Guard
     // { provide: APP_GUARD, useClass: JwtAuthGuard },
     // // Graphql Guard
     // { provide: APP_GUARD, useClass: GqlThrottlerGuard },
@@ -30,4 +32,4 @@ const modules = [IamModule];
     // { provide: APP_GUARD, useClass: RbacAuthGuard },
   ],
 })
-export class AppModule {}
+export class AppModule { }

@@ -28,6 +28,25 @@ export class RoleRepository implements IRoleRepository {
   constructor(private readonly rbacDBService: PrismaAdapter) { }
 
   @LogExecutionTime()
+  async getRoleFeaturePermissions(role_id: string): Promise<RoleEntity> {
+    try {
+      const role = await this.rbacDBService.role.findUnique({
+        where: { id: role_id },
+        include: {
+          role_feature_permissions: true,
+        },
+      });
+      if (!role) {
+        throw new BusinessException(ErrorEnum.RECORD_NOT_FOUND);
+      }
+      return RoleMapper.toDomainWithPermissions(role);
+    } catch (e: any) {
+      this.logger.error(e);
+      throw new BusinessException(ErrorEnum.REQUEST_FAILED_TO_EXECUTE);
+    }
+  }
+
+  @LogExecutionTime()
   async createRFP(
     role_id: string,
     feature_id: string,
@@ -151,6 +170,11 @@ export class RoleRepository implements IRoleRepository {
         await paginateHelper<RoleResponseDto>({
           query: this.rbacDBService.role,
           pageOptions,
+          include: {
+            organization: true,
+            parent_role: true,
+            child_roles: true,
+          },
         });
 
       return {

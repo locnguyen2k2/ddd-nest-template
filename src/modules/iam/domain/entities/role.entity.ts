@@ -6,6 +6,18 @@ import {
   RoleDeletedEvent,
   PermissionAssignedEvent,
 } from '../events/role.events';
+import { PermissionEntity } from './permission.entity';
+import { AccessControlStatus } from '@/common/enum';
+
+export interface IFeaturePermission {
+  feature_id: string;
+  permission_id: string;
+  created_at: Date | undefined;
+  updated_at: Date | undefined;
+  created_by: string | undefined;
+  updated_by: string | undefined;
+  status: AccessControlStatus;
+}
 
 export interface IRoleProps {
   name: string;
@@ -14,6 +26,12 @@ export interface IRoleProps {
   created_at?: Date;
   updated_at?: Date;
   organization_id: string;
+  permissions?: PermissionEntity[];
+  parent_role_id?: string;
+  created_by?: string;
+  updated_by?: string;
+  status?: AccessControlStatus;
+  feature_permissions?: IFeaturePermission[];
 }
 
 export interface CreateRoleProps extends IRoleProps {
@@ -24,6 +42,7 @@ export interface UpdateRoleProps {
   name?: string;
   slug?: Slug;
   description?: string;
+  parent_role_id?: string;
 }
 
 export class RoleEntity extends AggregateRoot<RoleEntity, string> {
@@ -33,6 +52,12 @@ export class RoleEntity extends AggregateRoot<RoleEntity, string> {
   private _created_at: Date;
   private _updated_at: Date;
   private _organization_id: string;
+  private _permissions: PermissionEntity[];
+  private _parent_role_id?: string;
+  private _created_by?: string;
+  private _updated_by?: string;
+  private _status: AccessControlStatus;
+  private _feature_permissions: IFeaturePermission[];
 
   private constructor(
     readonly id: IEntityID<string>,
@@ -45,6 +70,16 @@ export class RoleEntity extends AggregateRoot<RoleEntity, string> {
     this._created_at = props.created_at ?? new Date();
     this._updated_at = props.updated_at ?? new Date();
     this._organization_id = props.organization_id;
+    this._permissions = props.permissions ?? [];
+    this._parent_role_id = props.parent_role_id;
+    this._created_by = props.created_by;
+    this._updated_by = props.updated_by;
+    this._status = props.status ?? AccessControlStatus.ACTIVE;
+    this._feature_permissions = props.feature_permissions ?? [];
+  }
+
+  hasPermission(roleIds: string[], feature: string, action: string) {
+
   }
 
   static create(props: CreateRoleProps): RoleEntity {
@@ -56,6 +91,11 @@ export class RoleEntity extends AggregateRoot<RoleEntity, string> {
       created_at: now,
       updated_at: now,
       organization_id: props.organization_id,
+      parent_role_id: props.parent_role_id,
+      created_by: props.created_by,
+      updated_by: props.updated_by,
+      status: props.status ?? AccessControlStatus.ACTIVE,
+      feature_permissions: props.feature_permissions ?? [],
     });
     role.addDomainEvent(
       new RoleCreatedEvent({
@@ -85,6 +125,9 @@ export class RoleEntity extends AggregateRoot<RoleEntity, string> {
     if (props.description !== undefined) {
       this._description = props.description;
     }
+    if (props.parent_role_id !== undefined) {
+      this._parent_role_id = props.parent_role_id;
+    }
 
     this._updated_at = new Date();
 
@@ -99,6 +142,10 @@ export class RoleEntity extends AggregateRoot<RoleEntity, string> {
         oldDescription,
         updatedAt: this._updated_at,
         organizationId: this._organization_id,
+        parentRoleId: this._parent_role_id,
+        createdBy: this._created_by,
+        updatedBy: this._updated_by,
+        status: this._status,
       }),
     );
   }
@@ -132,27 +179,52 @@ export class RoleEntity extends AggregateRoot<RoleEntity, string> {
     );
   }
 
-  name(): string {
+  get name(): string {
     return this._name;
   }
 
-  slug(): Slug {
+  get slug(): Slug {
     return this._slug;
   }
 
-  description(): string | undefined {
+  get permissions(): string[] {
+    return this._permissions.map(p => p.action);
+  }
+
+  get description(): string | undefined {
     return this._description;
   }
 
-  createdAt(): Date {
+  get createdAt(): Date {
     return this._created_at;
   }
 
-  updatedAt(): Date {
+  get updatedAt(): Date {
     return this._updated_at;
   }
 
-  organizationId(): string {
+  get organizationId(): string {
     return this._organization_id;
   }
+
+  get parentRoleId(): string | undefined {
+    return this._parent_role_id;
+  }
+
+  get createdBy(): string | undefined {
+    return this._created_by;
+  }
+
+  get updatedBy(): string | undefined {
+    return this._updated_by;
+  }
+
+  get status(): string {
+    return this._status;
+  }
+
+  get RFPs(): IFeaturePermission[] {
+    return this._feature_permissions;
+  }
+
 }

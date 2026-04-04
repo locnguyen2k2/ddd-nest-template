@@ -43,6 +43,10 @@ import {
 import { UserService } from './domain/services/user.service';
 import { UserCmdHandler } from './application/services/user/user.command.handler';
 import { USER_REPO } from './domain/repositories/user.repository';
+import { UserQueryHandler } from './application/services/user/user.query.handler';
+import { PermissionController } from './presentation/controllers/permission.controller';
+import { PermissionQueryHandler } from './application/services/permission/permission.query.handler';
+import { OrgSerevice } from './domain/services/organization.service';
 
 const featureProviders = [
   FeatureCommandHandler,
@@ -70,6 +74,7 @@ const organizationProviders = [
   OrganizationQueryHandler,
   OrganizationRepository,
   OrganizationEventPublisher,
+  OrgSerevice,
   {
     provide: ORGANIZATION_REPO,
     useClass: OrganizationRepository,
@@ -79,6 +84,7 @@ const permissionProviders = [
   PermissionRepository,
   PermissionCmdHandler,
   PermissionDomainService,
+  PermissionQueryHandler,
   {
     provide: PERMISSION_REPO,
     useClass: PermissionRepository,
@@ -97,6 +103,7 @@ const userProviders = [
   UserRepository,
   UserService,
   UserCmdHandler,
+  UserQueryHandler,
   {
     provide: USER_REPO,
     useClass: UserRepository,
@@ -123,18 +130,20 @@ const roleExports = [RoleRepository, RoleEventPublisher];
 const organizationExports = [
   OrganizationRepository,
   OrganizationEventPublisher,
+  OrgSerevice,
 ];
 const permissionExports = [
   PermissionRepository,
   PermissionCmdHandler,
   PermissionDomainService,
+  PermissionQueryHandler,
 ];
 const projectExports = [
   ProjectRepository,
   ProjectCmdHandler,
   ProjectQueryHandler,
 ];
-const userExports = [UserRepository, UserService, UserCmdHandler];
+const userExports = [UserRepository, UserService, UserCmdHandler, UserQueryHandler];
 
 const authExports = [AuthCmdHandler, AuthDomainService];
 
@@ -146,6 +155,7 @@ const authExports = [AuthCmdHandler, AuthDomainService];
     OrganizationController,
     ProjectController,
     UserController,
+    PermissionController,
   ],
   providers: [
     ...featureProviders,

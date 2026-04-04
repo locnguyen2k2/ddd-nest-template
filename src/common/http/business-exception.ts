@@ -23,7 +23,7 @@ export class BusinessException extends HttpException {
     super(
       HttpException.createBody({
         code: code,
-        message: `${value} ${message}`,
+        message: value ? `${value} ${message}` : message,
       }),
       parseInt(code),
     );

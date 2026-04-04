@@ -41,4 +41,6 @@ export interface IRoleRepository
   ): Promise<boolean>;
 
   getRoleChain(role_id: string): Promise<string[]>;
+
+  getRoleFeaturePermissions(role_id: string): Promise<RoleEntity>;
 }

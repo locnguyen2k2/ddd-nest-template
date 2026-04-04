@@ -5,8 +5,9 @@ export interface IUserRepository {
   create(props: UserEntity): Promise<UserEntity>;
   update(props: UserEntity): Promise<UserEntity>;
   delete(id: string): Promise<void>;
-  findByID(id: string): Promise<UserEntity | null>;
+  findByID(id: string, organization_id?: string): Promise<UserEntity | null>;
   findByEmail(email: string): Promise<UserEntity | null>;
   findByUsername(username: string): Promise<UserEntity | null>;
-  findByUsernameOrEmail(usernameOrEmail: string): Promise<UserEntity | null>;
+  findByUsernameOrEmail(usernameOrEmail: string, organization_id?: string): Promise<UserEntity | null>;
+  findByIDWithOrgRoles(id: string, organization_id: string): Promise<UserEntity | null>
 }

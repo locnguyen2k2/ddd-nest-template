@@ -14,8 +14,7 @@ import { ConfigService } from '@nestjs/config';
 @Injectable()
 export class OrganizationRepository
   extends CacheRepository
-  implements IOrganizationRepository
-{
+  implements IOrganizationRepository {
   protected readonly boundedContext: string = 'iam';
   protected readonly aggregateType: string = 'organization';
   protected readonly ttlConfig: { [key: string]: number } = {
@@ -28,6 +27,33 @@ export class OrganizationRepository
     @Inject(CACHE_PORT) cachePort: CachePort,
   ) {
     super(redisConfig, cachePort);
+  }
+
+  @LogExecutionTime()
+  async assignRoleToUser(organizationId: string, userId: string, roleId: string): Promise<void> {
+    try {
+      await this.rbacDBService.userOrganizationRole.create({
+        data: {
+          organization_id: organizationId,
+          user_id: userId,
+          role_id: roleId,
+        },
+      });
+    } catch (e: any) {
+      throw new BusinessException(ErrorEnum.REQUEST_FAILED_TO_QUERY);
+    }
+  }
+
+  @LogExecutionTime()
+  async handleListOrganizationsByJoiner(joinerId: string): Promise<Organization[]> {
+    try {
+      const organizations = await this.rbacDBService.organization.findMany({
+        where: { users: { some: { user_id: joinerId } } },
+      });
+      return organizations.map(OrganizationMapper.toDomain);
+    } catch (e: any) {
+      throw new BusinessException(ErrorEnum.REQUEST_FAILED_TO_QUERY);
+    }
   }
 
   @LogExecutionTime()

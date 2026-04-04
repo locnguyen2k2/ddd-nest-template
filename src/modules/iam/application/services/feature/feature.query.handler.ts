@@ -10,13 +10,18 @@ import {
 } from '../../dtos/queries/feature-query.dto';
 import { FEATURE_REPO } from '@/modules/iam/domain/repositories/feature.repository';
 import { LogExecutionTime } from '@/common/decorators/log-execution.decorator';
+import { AccessControlStatus } from '@/common/enum';
 
 @Injectable()
 export class FeatureQueryHandler {
   constructor(
     @Inject(FEATURE_REPO)
     private readonly featureRepository: IFeatureRepository,
-  ) {}
+  ) { }
+
+  @LogExecutionTime()
+  async handleGetFeatureRoles(prj_id: string, slug: string) {
+  }
 
   @LogExecutionTime()
   async handleGetFeatureById(

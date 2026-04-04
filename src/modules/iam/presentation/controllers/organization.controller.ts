@@ -9,13 +9,15 @@ import {
   Query,
   HttpStatus,
   HttpCode,
+  UseGuards,
 } from '@nestjs/common';
 import {
   ApiTags,
   ApiOperation,
   ApiResponse,
   ApiParam,
-  ApiQuery,
+  ApiBearerAuth,
+  ApiHeaders,
 } from '@nestjs/swagger';
 import { CreateOrganizationDto } from '@/modules/iam/presentation/dtos/req/organization.dto';
 import { UpdateOrganizationDto } from '@/modules/iam/presentation/dtos/req/organization.dto';
@@ -36,7 +38,12 @@ import {
   ListOrganizationsQuery,
 } from '@/modules/iam/application/dtos/queries/organization-query.dto';
 import { OrganizationMapper } from '@/modules/iam/infrastructure/persistence/mappers/organization.mapper';
-import { API_VERS } from '@/common/constant';
+import { API_VERS, HeaderKeys } from '@/common/constant';
+import { JwtAuthGuard } from '../guards/jwt-auth.guard';
+import { IPayload } from '../../domain/services/auth.service';
+import { User, Permissions, HeaderKey, GetHeaderKey } from '@/common/decorators';
+import { HeadersAuthGuard } from '../guards/headers-auth.guard';
+import { AssignRoleToUserDto } from '../dtos/req/organization.dto';
 
 @ApiTags('organizations')
 @Controller(API_VERS.V1 + '/organizations')
@@ -44,7 +51,69 @@ export class OrganizationController {
   constructor(
     private readonly commandHandler: OrganizationCommandHandler,
     private readonly queryHandler: OrganizationQueryHandler,
-  ) {}
+  ) { }
+
+  @Post('/assign-role')
+  // @ApiBearerAuth()
+  @ApiOperation({ summary: "Assign role to user" })
+  @ApiResponse({
+    status: 200,
+    description: 'Role assigned successfully',
+  })
+  @ApiHeaders([
+    {
+      name: HeaderKeys.ORG_ID,
+      required: true,
+      description: 'Organization ID',
+    },
+  ])
+  @HeaderKey(HeaderKeys.ORG_ID)
+  @ApiResponse({ status: 404, description: 'Role, organization or user not found' })
+  @UseGuards(HeadersAuthGuard)
+  async assignRoleToUser(@Body() dto: AssignRoleToUserDto, @GetHeaderKey(HeaderKeys.ORG_ID) orgId: string): Promise<void> {
+    await this.commandHandler.handleAssignRoleToUser({ ...dto });
+  }
+
+  @Post('/:id/join')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: "Join organization" })
+  @ApiParam({ name: 'id', description: 'Organization ID' })
+  @ApiResponse({
+    status: 200,
+    description: 'Organization joined successfully',
+  })
+  @ApiResponse({ status: 404, description: 'Organization not found' })
+  @UseGuards(JwtAuthGuard)
+  async joinOrganization(@User() user: IPayload, @Param('id') id: string): Promise<void> {
+    await this.commandHandler.handleJoinOrganization({ userId: user.sub, organizationId: id });
+  }
+
+  @Get('/joined')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: "Get organizations by user ID" })
+  @ApiResponse({
+    status: 200,
+    description: 'Organizations retrieved successfully',
+    type: [OrganizationResponseDto],
+  })
+  @ApiResponse({ status: 404, description: 'User not found' })
+  @Permissions(`organization:get`)
+  @ApiHeaders([
+    {
+      name: HeaderKeys.ORG_ID,
+      required: true,
+    },
+    {
+      name: HeaderKeys.PROJECT_ID,
+      required: true,
+    }
+  ])
+  @HeaderKey(HeaderKeys.ORG_ID, HeaderKeys.PROJECT_ID)
+  @UseGuards(HeadersAuthGuard, JwtAuthGuard)
+  async myOrganizations(@User() user: IPayload): Promise<OrganizationResponseDto[]> {
+    const organizations = await this.queryHandler.handleListOrganizationsByJoiner(user.sub);
+    return organizations.map(OrganizationMapper.toResponseDto);
+  }
 
   @Post()
   @ApiOperation({ summary: 'Create a new organization' })
@@ -113,24 +182,6 @@ export class OrganizationController {
 
   @Get()
   @ApiOperation({ summary: 'List organizations with pagination' })
-  @ApiQuery({
-    name: 'page',
-    required: false,
-    type: Number,
-    description: 'Page number (default: 1)',
-  })
-  @ApiQuery({
-    name: 'limit',
-    required: false,
-    type: Number,
-    description: 'Items per page (default: 10, max: 100)',
-  })
-  @ApiQuery({
-    name: 'search',
-    required: false,
-    type: String,
-    description: 'Search term',
-  })
   @ApiResponse({
     status: 200,
     description: 'Organizations retrieved successfully',
@@ -139,8 +190,7 @@ export class OrganizationController {
   async list(
     @Query() listQuery: ListOrganizationsQuery,
   ): Promise<ListOrganizationsResponseDto> {
-    const query = new ListOrganizationsQuery(listQuery);
-    const result = await this.queryHandler.handleListOrganizations(query);
+    const result = await this.queryHandler.handleListOrganizations(listQuery);
 
     return {
       organizations: result.organizations.map((org) =>

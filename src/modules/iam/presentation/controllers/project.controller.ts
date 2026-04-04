@@ -55,8 +55,9 @@ export class ProjectController {
   })
   @ApiResponse({ status: 400, description: 'Bad Request' })
   @ApiResponse({ status: 409, description: 'Project with slug already exists' })
-  async create(@Body() createProjectDto: CreateProjectDto): Promise<any> {
-    return await this.projectCmdHandler.handleCreate(createProjectDto);
+  async create(@Body() createProjectDto: CreateProjectDto): Promise<ProjectResponseDto> {
+    const project = await this.projectCmdHandler.handleCreate(createProjectDto);
+    return ProjectMapper.toResponseDto(ProjectMapper.toPrisma(project));
   }
 
   // READ - By ID

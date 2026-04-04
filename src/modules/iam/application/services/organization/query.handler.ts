@@ -13,7 +13,7 @@ export class OrganizationQueryHandler {
   constructor(
     @Inject(ORGANIZATION_REPO)
     private readonly organizationRepository: IOrganizationRepository,
-  ) {}
+  ) { }
 
   async handleGetOrganizationById(
     query: GetOrganizationByIdQuery,
@@ -27,6 +27,16 @@ export class OrganizationQueryHandler {
     return await this.organizationRepository.findBySlug(query.slug);
   }
 
+  async handleListOrganizationsByJoiner(joinerId: string): Promise<Organization[]> {
+    let organizations: Organization[] = [];
+    try {
+      organizations = await this.organizationRepository.handleListOrganizationsByJoiner(joinerId);
+    } catch (error) {
+      console.error('Error listing organizations by joiner:', error);
+    }
+    return organizations;
+  }
+
   async handleListOrganizations(query: ListOrganizationsQuery): Promise<{
     organizations: Organization[];
     total: number;
@@ -34,7 +44,7 @@ export class OrganizationQueryHandler {
     limit: number;
     totalPages: number;
   }> {
-    const { page = 1, limit = 10, search } = query;
+    const { page = 1, take: limit = 10, keyword: search } = query;
     const skip = (page - 1) * limit;
 
     const organizations = await this.organizationRepository.findAll();

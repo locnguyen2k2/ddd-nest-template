@@ -21,12 +21,17 @@ export class CreateRoleArgs {
   @IsNotEmpty()
   organization_id: string;
 
+  @IsString()
+  @IsOptional()
+  parent_role_id?: string;
+
   constructor(data: CreateRoleArgs) {
     this.name = data.name;
     this.slug = data.slug;
     this.description = data.description;
     this.permissions = data.permissions;
     this.organization_id = data.organization_id;
+    this.parent_role_id = data.parent_role_id;
   }
 }
 
@@ -55,6 +60,10 @@ export class UpdateRoleArgs {
   @IsNotEmpty()
   organization_id: string;
 
+  @IsString()
+  @IsOptional()
+  parent_id?: string;
+
   constructor(data: UpdateRoleArgs) {
     this.id = data.id;
     this.name = data.name;
@@ -62,6 +71,7 @@ export class UpdateRoleArgs {
     this.description = data.description;
     this.permissions = data.permissions;
     this.organization_id = data.organization_id;
+    this.parent_id = data.parent_id;
   }
 }
 

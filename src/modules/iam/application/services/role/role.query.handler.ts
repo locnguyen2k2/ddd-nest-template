@@ -17,6 +17,11 @@ export class RoleQueryHandler {
   ) {}
 
   @LogExecutionTime()
+  async handleGetRolePermissions(role_id: string): Promise<RoleEntity> {
+    return await this.roleRepository.getRoleFeaturePermissions(role_id);
+  }
+
+  @LogExecutionTime()
   async handleGetRoleById(query: GetRoleByIdQuery): Promise<RoleEntity | null> {
     const result = await this.roleRepository.findById(query.id);
     return result;

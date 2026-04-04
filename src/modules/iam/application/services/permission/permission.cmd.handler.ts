@@ -1,35 +1,36 @@
 import { IPermissionRepository } from '@/modules/iam/domain/repositories/permission.repository';
-import { Inject } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 import { PERMISSION_REPO } from '@/modules/iam/domain/repositories/permission.repository';
 import {
   CreatePermissionArgs,
   UpdatePermissionArgs,
+  DeletePermissionArgs,
 } from '../../dtos/commands/permission-cmd.dto';
 import { PermissionEntity } from '@/modules/iam/domain/entities/permission.entity';
 import { IEntityID } from '@/shared/domain/entities/base.entity';
-import { Logger } from '@nestjs/common';
 import { LogExecutionTime } from '@/common/decorators/log-execution.decorator';
 import { uuidv7 } from 'uuidv7';
 import { PermissionAction } from '@/common/enum';
 import { PermissionDomainService } from '@/modules/iam/domain/services/permission.service';
+import { BusinessException } from '@/common/http/business-exception';
 
+@Injectable()
 export class PermissionCmdHandler {
   private readonly logger = new Logger(PermissionCmdHandler.name);
   constructor(
     @Inject(PERMISSION_REPO)
     private readonly permissionRepo: IPermissionRepository,
     private readonly permissionDomainService: PermissionDomainService,
-  ) {}
+  ) { }
 
   @LogExecutionTime()
-  async handleCreatePermission(permission: CreatePermissionArgs) {
+  async handleCreatePermission(command: CreatePermissionArgs): Promise<PermissionEntity> {
     const isExist = await this.permissionRepo.findByAction(
-      permission.action,
-      permission.organizationId,
+      command.action,
     );
     if (isExist) {
-      throw new Error(
-        `Permission with slug '${permission.action}' already exists`,
+      throw new BusinessException(
+        `409|Permission with slug '${command.action}' already exists`,
       );
     }
     const id = uuidv7();
@@ -41,31 +42,50 @@ export class PermissionCmdHandler {
 
     const permissionEntity = PermissionEntity.create({
       id: permissionId,
-      action: permission.action as PermissionAction,
-      name: permission.name,
-      description: permission.description,
+      action: command.action as PermissionAction,
+      name: command.name,
+      description: command.description,
     });
 
-    return await this.permissionRepo.create(permissionEntity);
+    const result = await this.permissionRepo.create(permissionEntity);
+    if (!result) {
+      throw new BusinessException(`500|Failed to create permission`);
+    }
+    return result;
   }
 
   @LogExecutionTime()
-  async handleUpdatePermission(permission: UpdatePermissionArgs) {
-    const [isExist] = await Promise.all([
-      this.permissionRepo.findById(permission.id),
-      this.permissionDomainService.validateUniqueness(permission.action),
-    ]);
+  async handleUpdatePermission(command: UpdatePermissionArgs): Promise<PermissionEntity> {
+    const existingPermission = await this.permissionRepo.findById(command.id);
 
-    if (!isExist) {
-      throw new Error(`Permission with id '${permission.id}' not found`);
+    if (!existingPermission) {
+      throw new BusinessException(`404|Permission with id '${command.id}' not found`);
     }
 
-    isExist.update({
-      action: permission.action as PermissionAction,
-      name: permission.name,
-      description: permission.description,
+    if (command.action && command.action !== existingPermission.action) {
+      await this.permissionDomainService.validateUniqueness(command.action);
+    }
+
+    existingPermission.update({
+      action: command.action as PermissionAction,
+      name: command.name,
+      description: command.description,
     });
 
-    return await this.permissionRepo.update(permission.id, isExist);
+    const result = await this.permissionRepo.update(command.id, existingPermission);
+    if (!result) {
+      throw new BusinessException(`500|Failed to update permission`);
+    }
+    return result;
+  }
+
+  @LogExecutionTime()
+  async handleDeletePermission(command: DeletePermissionArgs): Promise<void> {
+    const existingPermission = await this.permissionRepo.findById(command.id);
+    if (!existingPermission) {
+      throw new BusinessException(`404|Permission with id '${command.id}' not found`);
+    }
+
+    await this.permissionRepo.delete(command.id);
   }
 }

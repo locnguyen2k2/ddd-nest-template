@@ -9,7 +9,6 @@ import {
     TOKEN_BLACKLIST_REPO,
 } from '../repositories/auth.repository';
 import { IUserRepository, USER_REPO } from '../repositories/user.repository';
-import { UserService } from './user.service';
 import { BusinessException } from '@/common/http/business-exception';
 import { ErrorEnum } from '@/common/exception.enum';
 import {
@@ -17,6 +16,13 @@ import {
     TokenResponseDto,
     UserResponseDto,
 } from '../../presentation/dtos/res/user-response.dto';
+import { UserEntity } from '../entities/user.entity';
+
+export interface IPayload {
+    sub: string;
+    email: string;
+    username: string;
+}
 
 @Injectable()
 export class AuthDomainService {
@@ -29,23 +35,33 @@ export class AuthDomainService {
         @Inject(SESSION_REPO) private readonly sessionRepo: ISessionRepository,
         @Inject(TOKEN_BLACKLIST_REPO)
         private readonly blacklistRepo: ITokenBlacklistRepository,
-        private readonly userService: UserService,
     ) {
         this.jwtConfigs = this.configService.get<IJwtConfig>(jwtConfigKey)!;
     }
 
-    async login(username: string, password: string): Promise<AuthResponseDto> {
-        const user = await this.userRepo.findByUsernameOrEmail(username);
+    async validateUser(username: string, password: string, orgID: string): Promise<UserEntity> {
+        const user = await this.userRepo.findByUsernameOrEmail(username, orgID);
         if (!user) {
             throw new BusinessException(ErrorEnum.RECORD_NOT_FOUND);
         }
 
-        await this.userService.compareAndHash(password, user.password());
+        if (!user.validateCredentials(password)) {
+            throw new BusinessException(ErrorEnum.PASSWORD_INVALID);
+        }
 
+        return user;
+    }
+
+    async prepareTokens(user: UserEntity): Promise<{
+        access_token: string;
+        refresh_token: string;
+        expires_in: number;
+        token_type: string;
+    }> {
         const tokens = await this.generateTokens({
             sub: user.id.value,
-            email: user.email(),
-            username: user.username(),
+            email: user.email,
+            username: user.username,
         });
 
         const ttl = this.convertExpiresInToSeconds(
@@ -53,24 +69,12 @@ export class AuthDomainService {
         );
         await this.sessionRepo.createSession(user.id.value, ttl);
 
-        return new AuthResponseDto(
-            new UserResponseDto(
-                user.id.value,
-                user.email(),
-                user.username(),
-                user.firstName(),
-                user.lastName(),
-                user.status(),
-                user.createdAt(),
-                user.updatedAt(),
-            ),
-            new TokenResponseDto(
-                tokens.accessToken,
-                tokens.refreshToken,
-                this.convertExpiresInToSeconds(this.jwtConfigs.expiresIn),
-                'Bearer',
-            ),
-        );
+        return {
+            access_token: tokens.accessToken,
+            refresh_token: tokens.refreshToken,
+            expires_in: this.convertExpiresInToSeconds(this.jwtConfigs.expiresIn),
+            token_type: 'Bearer',
+        }
     }
 
     async logout(
@@ -131,6 +135,7 @@ export class AuthDomainService {
                 'Bearer',
             );
         } catch (error) {
+            console.log(error);
             throw new BusinessException(ErrorEnum.UNAUTHORIZED);
         }
     }
@@ -158,20 +163,20 @@ export class AuthDomainService {
 
             return new UserResponseDto(
                 user.id.value,
-                user.email(),
-                user.username(),
-                user.firstName(),
-                user.lastName(),
-                user.status(),
-                user.createdAt(),
-                user.updatedAt(),
+                user.email,
+                user.username,
+                user.first_name,
+                user.last_name,
+                user.status,
+                user.created_at,
+                user.updated_at,
             );
         } catch (error) {
             throw new BusinessException(ErrorEnum.UNAUTHORIZED);
         }
     }
 
-    private async generateTokens(payload: any) {
+    private async generateTokens(payload: IPayload) {
         const accessToken = this.jwtPort.sign(payload, {
             secret: this.jwtConfigs.secret,
             expiresIn: this.jwtConfigs.expiresIn,

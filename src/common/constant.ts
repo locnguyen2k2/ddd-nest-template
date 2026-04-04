@@ -5,7 +5,14 @@ export const providers = {
 export const successCode = 200;
 export const KEYS = {
   ABLY: `ably`,
+  PERMISSIONS: 'permissions',
+  HEADERS: 'headers',
 };
+
+export const HeaderKeys = {
+  ORG_ID: 'organization-id',
+  PROJECT_ID: 'project-id',
+}
 
 export const API_VERS = {
   V1: 'apis/v1',
