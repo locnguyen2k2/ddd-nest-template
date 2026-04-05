@@ -1,32 +1,17 @@
 import { UserEntity } from '@/modules/iam/domain/entities/user.entity';
 import { Password } from '@/modules/iam/domain/vo/password.vo';
+import { OrgRolesResDto } from '@/modules/iam/presentation/dtos/res/organization-response.dto';
 import { UserResponseDto } from '@/modules/iam/presentation/dtos/res/user-response.dto';
 import { IEntityID } from '@/shared/domain/entities/base.entity';
-import { AccessControlStatus, Prisma, User } from '@internal/rbac/client';
+import { AccessControlStatus, Organization, Prisma, Role, User } from '@internal/rbac/client';
 
 export class UserMapper {
-  static toDomainWithOrgRoles(props: Prisma.UserGetPayload<{
-    include: {
-      organizations: {
-        include: {
-          user_organization_roles: true
-        },
-      }
-    }
-  }>): UserEntity {
+  static toDomainWithOrgRoles(props: User, org: Organization, userOrgRoles: string[]): UserEntity {
     const id: IEntityID<string> = {
       value: props.id,
       _id: props.id,
       get: () => props.id,
     };
-    const mappedOrgRoles: Map<string, string[]> = new Map();
-
-    if (props.organizations) {
-      for (const org of props.organizations) {
-        const roleIds = org.user_organization_roles.map((role) => role.role_id);
-        mappedOrgRoles.set(org.organization_id, roleIds);
-      }
-    }
 
     return UserEntity.create({
       id: id,
@@ -37,7 +22,7 @@ export class UserMapper {
       last_name: props.last_name,
       created_at: props.created_at,
       updated_at: props.updated_at,
-      organization_roles: props.organizations ? Array.from(mappedOrgRoles.entries()).map(([orgId, roleIds]) => ({ organization_id: orgId, role_ids: roleIds })) : [],
+      organization_roles: org ? [{ organization_id: org.id, role_ids: userOrgRoles }] : [],
     });
   }
 
@@ -84,9 +69,15 @@ export class UserMapper {
     };
   }
 
-  static toResponseDto(user: Prisma.UserCreateInput): UserResponseDto {
+  static toResponseDto(user: UserEntity, orgs: Organization[], roles: Role[]): UserResponseDto {
+    const orgMapper: Map<string, Organization> = new Map(orgs.map((org) => [org.id, org]));
+    const roleMapper: Map<string, Role> = new Map(roles.map((role) => [role.id, role]));
+    const userOrgRoles: OrgRolesResDto[] = user.org_roles.map((orgRole) => ({
+      roles: orgRole.role_ids.map((roleId) => roleMapper.get(roleId)!),
+      ...orgMapper.get(orgRole.organization_id)!,
+    }));
     return {
-      id: user.id!,
+      id: user.id.value,
       email: user.email,
       username: user.username,
       first_name: user.first_name,
@@ -94,6 +85,7 @@ export class UserMapper {
       status: user.status || AccessControlStatus.ACTIVE,
       created_at: user.created_at as Date,
       updated_at: user.updated_at as Date,
+      organization_roles: userOrgRoles,
     };
   }
 }

@@ -1,4 +1,3 @@
-import { ListOrganizationsQuery } from '../../application/dtos/queries/organization-query.dto';
 import { Organization } from '../entities/organization.entity';
 
 export const ORGANIZATION_REPO = 'ORGANIZATION_REPO';
@@ -8,7 +7,7 @@ export interface IOrganizationRepository {
   create(organization: Organization): Promise<Organization>;
   findById(id: string): Promise<Organization | null>;
   findBySlug(slug: string): Promise<Organization | null>;
-  findAll(): Promise<Organization[]>;
+  findByIds(ids: string[]): Promise<Organization[]>;
   update(id: string, organization: Organization): Promise<Organization>;
   delete(id: string): Promise<void>;
 
@@ -26,4 +25,6 @@ export interface IOrganizationRepository {
   organizationHasRole(organizationId: string, roleId: string): Promise<boolean>;
   handleListOrganizationsByJoiner(joinerId: string): Promise<Organization[]>
   assignRoleToUser(organizationId: string, userId: string, roleId: string): Promise<void>
+  unassignRoleFromUser(organizationId: string, userId: string, roleId: string): Promise<void>
+  findUserRoles(organizationId: string, userId: string): Promise<string[]>
 }

@@ -12,7 +12,7 @@ export interface IRoleRepository
   create(role: RoleEntity): Promise<RoleEntity>;
   findById(id: string): Promise<RoleEntity | null>;
   findBySlug(slug: string, organization_id: string): Promise<RoleEntity | null>;
-  findAll(): Promise<RoleEntity[]>;
+  findByIds(ids: string[]): Promise<RoleEntity[]>;
   update(id: string, role: RoleEntity): Promise<RoleEntity>;
   delete(id: string): Promise<void>;
 

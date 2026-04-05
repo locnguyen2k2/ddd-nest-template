@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import {
     LoginArgs,
     LogoutArgs,
@@ -10,16 +10,28 @@ import { AuthResponseDto, TokenResponseDto, UserResponseDto } from '@/modules/ia
 import { BusinessException } from '@/common/http/business-exception';
 import { ErrorEnum } from '@/common/exception.enum';
 import { AuthMapper } from '@/modules/iam/infrastructure/persistence/mappers/auth.mapper';
+import { ROLE_REPO } from '@/modules/iam/domain/repositories/role.repository';
+import { IRoleRepository } from '@/modules/iam/domain/repositories/role.repository';
+import { ORGANIZATION_REPO } from '@/modules/iam/domain/repositories/organization.repository';
+import { IOrganizationRepository } from '@/modules/iam/domain/repositories/organization.repository';
+import { OrganizationMapper } from '@/modules/iam/infrastructure/persistence/mappers/organization.mapper';
+import { RoleMapper } from '@/modules/iam/infrastructure/persistence/mappers/role.mapper';
 
 @Injectable()
 export class AuthCmdHandler {
-    constructor(private readonly authDomainService: AuthDomainService) { }
+    constructor(private readonly authDomainService: AuthDomainService, @Inject(ROLE_REPO) private readonly roleRepo: IRoleRepository, @Inject(ORGANIZATION_REPO) private readonly orgRepo: IOrganizationRepository) { }
 
     async login(args: LoginArgs, orgID: string): Promise<AuthResponseDto> {
         try {
             const validUser = await this.authDomainService.validateUser(args.username, args.password, orgID);
-            const { refresh_token, access_token, expires_in } = await this.authDomainService.prepareTokens(validUser);
-            return AuthMapper.toResponseDto(expires_in, refresh_token, access_token, validUser);
+            const [tokenInfo, orgs, roles] = await Promise.all([
+                this.authDomainService.prepareTokens(validUser),
+                this.orgRepo.findByIds(validUser.org_roles.map(org => org.organization_id)),
+                this.roleRepo.findByIds(validUser.org_roles.flatMap(org => org.role_ids))
+            ]);
+            const orgsPrisma = orgs.map(org => OrganizationMapper.toPrisma(org));
+            const rolesPrisma = roles.map(role => RoleMapper.toPrisma(role));
+            return AuthMapper.toResponseDto(tokenInfo, validUser, orgsPrisma, rolesPrisma);
         } catch (error) {
             throw new BusinessException(ErrorEnum.REQUEST_VALIDATION_ERROR, 'Login failed');
         }

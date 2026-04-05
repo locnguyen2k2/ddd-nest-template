@@ -5,6 +5,7 @@ import {
   HttpStatus,
   HttpCode,
   UseGuards,
+  Get,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -12,6 +13,7 @@ import {
   ApiResponse,
   ApiHeader,
   ApiHeaders,
+  ApiBearerAuth,
 } from '@nestjs/swagger';
 import { RegisterUserDto, LoginUserDto, VerifyAccessTokenDto, RefreshTokenDto, LogoutDto } from '@/modules/iam/presentation/dtos/req/user.dto';
 import { AuthResponseDto, UserResponseDto, TokenResponseDto } from '@/modules/iam/presentation/dtos/res/user-response.dto';
@@ -24,7 +26,10 @@ import { API_VERS, HeaderKeys } from '@/common/constant';
 import { BusinessException } from '@/common/http/business-exception';
 import { ErrorEnum } from '@/common/exception.enum';
 import { HeadersAuthGuard } from '../guards/headers-auth.guard';
-import { GetHeaderKey, HeaderKey } from '@/common/decorators';
+import { GetHeaderKey, HeaderKey, User } from '@/common/decorators';
+import { UserQueryHandler } from '../../application/services/user/user.query.handler';
+import { JwtAuthGuard } from '../guards/jwt-auth.guard';
+import { IPayload } from '../../domain/services/auth.service';
 
 @ApiTags('users')
 @Controller(API_VERS.V1 + '/users')
@@ -32,7 +37,31 @@ export class UserController {
   constructor(
     private readonly userCmdHandler: UserCmdHandler,
     private readonly authCmdHandler: AuthCmdHandler,
+    private readonly userQueryHandler: UserQueryHandler,
   ) { }
+
+  @Get('me')
+  @ApiBearerAuth()
+  @UseGuards(HeadersAuthGuard)
+  @ApiOperation({ summary: 'Get current user' })
+  @ApiResponse({
+    status: 200,
+    description: 'Current user retrieved successfully',
+    type: UserResponseDto,
+  })
+  @ApiHeader({
+    name: HeaderKeys.ORG_ID,
+    required: true,
+    description: 'Organization ID',
+  })
+  @HeaderKey(HeaderKeys.ORG_ID)
+  @UseGuards(HeadersAuthGuard, JwtAuthGuard)
+  async me(
+    @GetHeaderKey(HeaderKeys.ORG_ID) orgId: string,
+    @User() user: IPayload,
+  ): Promise<UserResponseDto> {
+    return await this.userQueryHandler.profile(user.sub, orgId);
+  }
 
   @Post('register')
   @ApiOperation({ summary: 'Register a new user' })

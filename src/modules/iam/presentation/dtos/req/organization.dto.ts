@@ -18,6 +18,9 @@ export class AssignRoleToUserDto {
   userId!: string;
 }
 
+export class UnassignRoleFromUserDto extends AssignRoleToUserDto {
+}
+
 export class CreateOrganizationDto {
   @ApiProperty()
   @IsString()

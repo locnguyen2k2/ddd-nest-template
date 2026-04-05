@@ -36,4 +36,31 @@ export class OrgSerevice {
             return false;
         }
     }
+
+    async validateUnassignRoleFromUser(userId: string, roleId: string, orgId: string): Promise<boolean> {
+        try {
+            const [orgHasUser, orgHasRole, existingOrg, userHasRole] = await Promise.all([
+                this.orgRepo.organizationHasUser(orgId, userId),
+                this.orgRepo.organizationHasRole(orgId, roleId),
+                this.orgRepo.findById(orgId),
+                this.roleRepo.userHasRole(userId, roleId, orgId)
+            ])
+
+            switch (true) {
+                case !orgHasUser:
+                    throw new BusinessException(ErrorEnum.RECORD_NOT_FOUND, 'User not found in organization')
+                case !orgHasRole:
+                    throw new BusinessException(ErrorEnum.RECORD_NOT_FOUND, 'Role not found in organization')
+                case !existingOrg:
+                    throw new BusinessException(ErrorEnum.RECORD_NOT_FOUND, 'Organization not found')
+                case !userHasRole:
+                    throw new BusinessException(ErrorEnum.RECORD_NOT_FOUND, 'User does not have this role')
+                default:
+                    return true
+            }
+        } catch (e: any) {
+            console.dir(e);
+            return false;
+        }
+    }
 }

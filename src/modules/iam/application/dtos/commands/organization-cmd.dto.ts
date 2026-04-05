@@ -18,6 +18,9 @@ export class AssignRoleToUserArgs {
   }
 }
 
+export class UnassignRoleFromUserArgs extends AssignRoleToUserArgs {
+}
+
 export class CreateOrganizationArgs {
   @IsString()
   @IsNotEmpty()

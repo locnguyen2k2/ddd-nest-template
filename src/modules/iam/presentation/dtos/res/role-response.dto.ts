@@ -13,7 +13,7 @@ export class FeaturePermissionResponseDto {
   status!: AccessControlStatus;
 }
 
-export class RoleResponseDto {
+export class RoleBaseResDto {
   @ApiProperty()
   id!: string;
 
@@ -24,7 +24,7 @@ export class RoleResponseDto {
   slug!: string;
 
   @ApiProperty({ required: false })
-  description?: string;
+  description?: string | null;
 
   @ApiProperty()
   created_at!: Date;
@@ -33,17 +33,19 @@ export class RoleResponseDto {
   updated_at!: Date;
 
   @ApiProperty({ required: false })
-  parent_role_id?: string;
+  parent_role_id?: string | null;
 
   @ApiProperty({ required: false })
-  created_by?: string;
+  created_by?: string | null;
 
   @ApiProperty({ required: false })
-  updated_by?: string;
+  updated_by?: string | null;
 
   @ApiProperty()
   status!: string;
+}
 
+export class RoleResponseDto extends RoleBaseResDto {
   @ApiProperty()
   feature_permission!: FeaturePermissionResponseDto[]
 }

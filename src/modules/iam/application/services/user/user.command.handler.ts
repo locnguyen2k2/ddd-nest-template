@@ -11,6 +11,12 @@ import { AuthResponseDto, UserResponseDto } from '@/modules/iam/presentation/dto
 import { AuthDomainService } from '@/modules/iam/domain/services/auth.service';
 import { Password } from '@/modules/iam/domain/vo/password.vo';
 import { AuthMapper } from '@/modules/iam/infrastructure/persistence/mappers/auth.mapper';
+import { ROLE_REPO } from '@/modules/iam/domain/repositories/role.repository';
+import { IRoleRepository } from '@/modules/iam/domain/repositories/role.repository';
+import { ORGANIZATION_REPO } from '@/modules/iam/domain/repositories/organization.repository';
+import { IOrganizationRepository } from '@/modules/iam/domain/repositories/organization.repository';
+import { OrganizationMapper } from '@/modules/iam/infrastructure/persistence/mappers/organization.mapper';
+import { RoleMapper } from '@/modules/iam/infrastructure/persistence/mappers/role.mapper';
 
 @Injectable()
 export class UserCmdHandler {
@@ -18,6 +24,8 @@ export class UserCmdHandler {
     @Inject(USER_REPO) private readonly userRepo: UserRepository,
     private readonly userService: UserService,
     private readonly authService: AuthDomainService,
+    @Inject(ROLE_REPO) private readonly roleRepo: IRoleRepository,
+    @Inject(ORGANIZATION_REPO) private readonly orgRepo: IOrganizationRepository,
   ) { }
 
   async register(args: RegisterUserArgs): Promise<AuthResponseDto> {
@@ -32,7 +40,7 @@ export class UserCmdHandler {
     const [isUsernameExisted, isEmailExisted] =
       await Promise.all([
         await this.userService.usernameIsExisted(args.username),
-        await this.userRepo.findByEmail(args.email),
+        await this.userService.emailIsExisted(args.email),
       ]);
 
     switch (true) {
@@ -53,8 +61,15 @@ export class UserCmdHandler {
 
     await this.userRepo.create(userDomain);
 
-    const { refresh_token, access_token, expires_in } = await this.authService.prepareTokens(userDomain);
-    return AuthMapper.toResponseDto(expires_in, refresh_token, access_token, userDomain);
+    const [tokensInfo, orgs, roles] = await Promise.all([
+      this.authService.prepareTokens(userDomain),
+      this.orgRepo.findByIds(userDomain.org_roles.map((orgRole) => orgRole.organization_id)),
+      this.roleRepo.findByIds(userDomain.org_roles.flatMap((orgRole) => orgRole.role_ids)),
+    ]);
+
+    const orgsPrisma = orgs.map(org => OrganizationMapper.toPrisma(org));
+    const rolesPrisma = roles.map(role => RoleMapper.toPrisma(role));
+    return AuthMapper.toResponseDto(tokensInfo, userDomain, orgsPrisma, rolesPrisma);
   }
 
   async updateProfile(args: UpdateProfileArgs): Promise<UserResponseDto> {

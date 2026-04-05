@@ -1,6 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
+import { RoleBaseResDto } from './role-response.dto';
 
-export class OrganizationResponseDto {
+export class OrgBaseResDto {
   @ApiProperty()
   id!: string;
 
@@ -11,7 +12,7 @@ export class OrganizationResponseDto {
   slug!: string;
 
   @ApiProperty({ required: false })
-  description?: string;
+  description?: string | null;
 
   @ApiProperty()
   created_at!: Date;
@@ -20,9 +21,14 @@ export class OrganizationResponseDto {
   updated_at!: Date;
 }
 
+export class OrgRolesResDto extends OrgBaseResDto {
+  @ApiProperty()
+  roles!: RoleBaseResDto[];
+}
+
 export class ListOrganizationsResponseDto {
-  @ApiProperty({ type: [OrganizationResponseDto] })
-  organizations!: OrganizationResponseDto[];
+  @ApiProperty({ type: [OrgBaseResDto] })
+  organizations!: OrgBaseResDto[];
 
   @ApiProperty()
   pagination!: {

@@ -58,6 +58,54 @@ export class CacheAdapter implements CachePort {
     }
   }
 
+  async getByPattern<T>(pattern: string): Promise<T[]> {
+    const keys = await this.scanKeys(pattern);
+
+    if (keys.length === 0) {
+      return [];
+    }
+
+    const values = await this.client.mget(...keys);
+    return values
+      .map((value) => (value ? JSON.parse(value) : null))
+      .filter((value) => value !== null) as T[];
+  }
+
+  async mget<T>(keys: string[]): Promise<(T | null)[]> {
+    if (keys.length === 0) {
+      return [];
+    }
+
+    const values = await this.client.mget(...keys);
+
+    return values.map((value) => {
+      if (!value) {
+        return null;
+      }
+
+      try {
+        return JSON.parse(value) as T;
+      } catch {
+        return value as unknown as T;
+      }
+    });
+  }
+
+  async mset<T>(
+    entries: Record<string, { value: T; ttl?: number }>,
+  ): Promise<void> {
+    const pipeline = this.client.pipeline();
+
+    for (const [key, entry] of Object.entries(entries)) {
+      const serialized = JSON.stringify(entry.value);
+      const effectiveTtl = entry.ttl ?? this.cacheConfigs.defaultTTL;
+
+      pipeline.setex(key, effectiveTtl, serialized);
+    }
+
+    await pipeline.exec();
+  }
+
   async exists(key: string): Promise<boolean> {
     const result = await this.client.exists(key);
     return result === 1;

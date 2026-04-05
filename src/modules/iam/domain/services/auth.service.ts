@@ -40,16 +40,25 @@ export class AuthDomainService {
     }
 
     async validateUser(username: string, password: string, orgID: string): Promise<UserEntity> {
-        const user = await this.userRepo.findByUsernameOrEmail(username, orgID);
-        if (!user) {
+        const [user] = await Promise.all([
+            this.userRepo.findByKey(username),
+        ]);
+
+        switch (true) {
+            case !user:
+                throw new BusinessException(ErrorEnum.RECORD_NOT_FOUND);
+            case user && !user.validateCredentials(password):
+                throw new BusinessException(ErrorEnum.PASSWORD_INVALID);
+            default:
+                break;
+        }
+
+        const userWithOrgRoles = await this.userRepo.findByIDWithOrgRoles(user.id.value, orgID);
+        if (!userWithOrgRoles) {
             throw new BusinessException(ErrorEnum.RECORD_NOT_FOUND);
         }
 
-        if (!user.validateCredentials(password)) {
-            throw new BusinessException(ErrorEnum.PASSWORD_INVALID);
-        }
-
-        return user;
+        return userWithOrgRoles;
     }
 
     async prepareTokens(user: UserEntity): Promise<{
@@ -156,7 +165,7 @@ export class AuthDomainService {
                 throw new BusinessException(ErrorEnum.UNAUTHORIZED);
             }
 
-            const user = await this.userRepo.findByID(payload.sub);
+            const user = await this.userRepo.findByKey(payload.sub);
             if (!user) {
                 throw new BusinessException(ErrorEnum.RECORD_NOT_FOUND);
             }

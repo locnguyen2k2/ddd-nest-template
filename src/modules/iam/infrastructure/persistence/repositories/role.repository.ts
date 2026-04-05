@@ -1,7 +1,7 @@
 import {
   IRoleRepository,
 } from '@/modules/iam/domain/repositories/role.repository';
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { RoleEntity } from '@/modules/iam/domain/entities/role.entity';
 import { RoleMapper } from '../mappers/role.mapper';
 import { PrismaAdapter } from '@/shared/infrastructure/adapters/prisma.adapter';
@@ -21,11 +21,26 @@ import { AccessControlStatus } from '@internal/rbac/client';
 import { BusinessException } from '@/common/http/business-exception';
 import { ErrorEnum } from '@/common/exception.enum';
 import { RoleResponseDto } from '@/modules/iam/presentation/dtos/res/role-response.dto';
+import { CacheRepository } from '@/shared/infrastructure/presistence/cache.repository';
+import { ConfigKeyPaths } from '@/config';
+import { CACHE_PORT, CachePort } from '@/shared/application/ports/cache.port';
+import { ConfigService } from '@nestjs/config';
 
 @Injectable()
-export class RoleRepository implements IRoleRepository {
+export class RoleRepository extends CacheRepository implements IRoleRepository {
+  protected readonly boundedContext: string = 'iam';
+  protected readonly aggregateType: string = 'role';
+  protected readonly ttlConfig: { [key: string]: number } = {
+    default: 3600,
+  };
   private readonly logger = new Logger(RoleRepository.name);
-  constructor(private readonly rbacDBService: PrismaAdapter) { }
+  constructor(
+    private readonly rbacDBService: PrismaAdapter,
+    redisConfig: ConfigService<ConfigKeyPaths>,
+    @Inject(CACHE_PORT) cachePort: CachePort,
+  ) {
+    super(redisConfig, cachePort);
+  }
 
   @LogExecutionTime()
   async getRoleFeaturePermissions(role_id: string): Promise<RoleEntity> {
@@ -237,10 +252,20 @@ export class RoleRepository implements IRoleRepository {
   }
 
   @LogExecutionTime()
-  async findAll(): Promise<RoleEntity[]> {
+  async findByIds(ids: string[]): Promise<RoleEntity[]> {
     try {
-      const prismaRoles = await this.rbacDBService.role.findMany();
-      return prismaRoles.map((role) => RoleMapper.toDomain(role));
+      const items = await this.getManyWithCache(
+        ids,
+        async (ids) => await this.rbacDBService.role.findMany({
+          where: {
+            id: {
+              in: ids,
+            },
+          },
+        }),
+        (role) => role.id,
+      );
+      return items.map((role) => RoleMapper.toDomain(role));
     } catch (e: any) {
       this.logger.debug(e);
       throw new BusinessException(ErrorEnum.REQUEST_FAILED_TO_QUERY);

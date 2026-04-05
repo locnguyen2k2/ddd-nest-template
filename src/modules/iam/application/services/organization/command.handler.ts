@@ -5,6 +5,7 @@ import {
   UpdateOrganizationArgs,
   DeleteOrganizationArgs,
   AssignRoleToUserArgs,
+  UnassignRoleFromUserArgs,
 } from '../../dtos/commands/organization-cmd.dto';
 import { Organization } from '@/modules/iam/domain/entities/organization.entity';
 import { Slug } from '@/modules/iam/domain/vo/slug.vo';
@@ -31,6 +32,16 @@ export class OrganizationCommandHandler {
     }
 
     return await this.organizationRepo.assignRoleToUser(command.orgId, command.userId, command.roleId);
+  }
+
+  async handleUnassignRoleFromUser(
+    command: UnassignRoleFromUserArgs,
+  ): Promise<void> {
+    const isValid = await this.orgService.validateUnassignRoleFromUser(command.userId, command.roleId, command.orgId);
+    if (!isValid) {
+      throw new BusinessException(ErrorEnum.REQUEST_VALIDATION_ERROR, 'Invalid role, organization or user');
+    }
+    return await this.organizationRepo.unassignRoleFromUser(command.orgId, command.userId, command.roleId);
   }
 
   async handleCreateOrganization(

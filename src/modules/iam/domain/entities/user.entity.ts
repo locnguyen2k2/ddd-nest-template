@@ -1,7 +1,6 @@
 import { AccessControlStatus } from '@/common/enum';
 import { AggregateRoot, IEntityID } from '@/shared/domain/entities/base.entity';
 import { Password } from '../vo/password.vo';
-import { UserService } from '../services/user.service';
 
 export interface IOrgRoles {
   organization_id: string;

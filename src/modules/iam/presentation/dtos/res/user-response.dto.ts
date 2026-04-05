@@ -2,6 +2,7 @@ import { AccessControlStatus } from '@internal/rbac/client';
 import { ApiProperty } from '@nestjs/swagger';
 import { IsEnum, IsNumber, IsString } from 'class-validator';
 import { Type } from 'class-transformer';
+import { OrgRolesResDto } from './organization-response.dto';
 
 export class TokenResponseDto {
   @ApiProperty()
@@ -33,16 +34,6 @@ export class TokenResponseDto {
   }
 }
 
-export class OrgRoleResponseDto {
-  @ApiProperty()
-  @IsString()
-  organization_id!: string;
-  
-  @ApiProperty()
-  @IsString()
-  role_ids!: string[];
-}
-
 export class UserResponseDto {
   @ApiProperty()
   @IsString()
@@ -70,7 +61,7 @@ export class UserResponseDto {
   updated_at: Date;
   @ApiProperty()
   @IsString()
-  organization_roles?: OrgRoleResponseDto[];
+  organization_roles?: OrgRolesResDto[];
 
   constructor(
     id: string,
@@ -81,7 +72,7 @@ export class UserResponseDto {
     status: AccessControlStatus,
     created_at: Date,
     updated_at: Date,
-    organization_roles?: OrgRoleResponseDto[],
+    organization_roles?: OrgRolesResDto[],
   ) {
     this.id = id;
     this.email = email;

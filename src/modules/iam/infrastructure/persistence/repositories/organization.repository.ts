@@ -30,6 +30,25 @@ export class OrganizationRepository
   }
 
   @LogExecutionTime()
+  async findUserRoles(organizationId: string, userId: string): Promise<string[]> {
+    try {
+      const userOrgRoels = await this.getWithCache(
+        `org:${organizationId}:user:${userId}:roles`,
+        async () => {
+          const userRoles = await this.rbacDBService.userOrganizationRole.findMany({
+            where: { organization_id: organizationId, user_id: userId },
+            select: { role_id: true },
+          });
+          return userRoles.map((ur) => ur.role_id);
+        },
+      );
+      return userOrgRoels || [];
+    } catch (e: any) {
+      throw new BusinessException(ErrorEnum.REQUEST_FAILED_TO_QUERY);
+    }
+  }
+
+  @LogExecutionTime()
   async assignRoleToUser(organizationId: string, userId: string, roleId: string): Promise<void> {
     try {
       await this.rbacDBService.userOrganizationRole.create({
@@ -39,6 +58,25 @@ export class OrganizationRepository
           role_id: roleId,
         },
       });
+      await this.invalidateCache(`org:${organizationId}:user:${userId}:roles`);
+    } catch (e: any) {
+      throw new BusinessException(ErrorEnum.REQUEST_FAILED_TO_QUERY);
+    }
+  }
+
+  @LogExecutionTime()
+  async unassignRoleFromUser(organizationId: string, userId: string, roleId: string): Promise<void> {
+    try {
+      await this.rbacDBService.userOrganizationRole.delete({
+        where: {
+          user_id_organization_id_role_id: {
+            organization_id: organizationId,
+            user_id: userId,
+            role_id: roleId,
+          },
+        },
+      });
+      await this.invalidateCache(`org:${organizationId}:user:${userId}:roles`);
     } catch (e: any) {
       throw new BusinessException(ErrorEnum.REQUEST_FAILED_TO_QUERY);
     }
@@ -160,9 +198,20 @@ export class OrganizationRepository
   }
 
   @LogExecutionTime()
-  async findAll(): Promise<Organization[]> {
-    const organizations = await this.rbacDBService.organization.findMany();
-    return organizations.map((org) => OrganizationMapper.toDomain(org));
+  async findByIds(ids: string[]): Promise<Organization[]> {
+    const items = await this.getManyWithCache(
+      ids,
+      async (ids) => {
+        return await this.rbacDBService.organization.findMany({
+          where: {
+            id: {
+              in: ids,
+            },
+          },
+        });
+      },
+      (org) => org.id);
+    return items.map((org) => OrganizationMapper.toDomain(org));
   }
 
   @LogExecutionTime()

@@ -63,7 +63,15 @@ export class UserService {
     if (!this.isUsername(username) && !this.isEmail(username)) {
       throw new BusinessException('400|Invalid username');
     }
-    const user = await this.userRepository.findByUsernameOrEmail(username);
+    const user = await this.userRepository.findByUsername(username);
+    return user !== null;
+  }
+
+  async emailIsExisted(email: string): Promise<boolean> {
+    if (!this.isEmail(email)) {
+      throw new BusinessException('400|Invalid email');
+    }
+    const user = await this.userRepository.findByEmail(email);
     return user !== null;
   }
 }
