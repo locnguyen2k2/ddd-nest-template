@@ -18,12 +18,14 @@ import {
   ApiParam,
   ApiBearerAuth,
   ApiHeaders,
+  ApiHeader,
 } from '@nestjs/swagger';
-import { CreateOrganizationDto } from '@/modules/iam/presentation/dtos/req/organization.dto';
+import { CreateOrganizationDto, CursorOrganizationsQuery, PaginateOrganizationsQuery } from '@/modules/iam/presentation/dtos/req/organization.dto';
 import { UpdateOrganizationDto } from '@/modules/iam/presentation/dtos/req/organization.dto';
 import {
+  CursorOrganizationsResponseDto,
   OrgBaseResDto,
-  ListOrganizationsResponseDto,
+  PaginateOrganizationsResponseDto,
 } from '@/modules/iam/presentation/dtos/res/organization-response.dto';
 import { OrganizationCommandHandler } from '@/modules/iam/application/services/organization/command.handler';
 import { OrganizationQueryHandler } from '@/modules/iam/application/services/organization/query.handler';
@@ -35,7 +37,6 @@ import {
 import {
   GetOrganizationByIdQuery,
   GetOrganizationBySlugQuery,
-  ListOrganizationsQuery,
 } from '@/modules/iam/application/dtos/queries/organization-query.dto';
 import { OrganizationMapper } from '@/modules/iam/infrastructure/persistence/mappers/organization.mapper';
 import { API_VERS, HeaderKeys } from '@/common/constant';
@@ -44,14 +45,65 @@ import { IPayload } from '../../domain/services/auth.service';
 import { User, Permissions, HeaderKey, GetHeaderKey } from '@/common/decorators';
 import { HeadersAuthGuard } from '../guards/headers-auth.guard';
 import { AssignRoleToUserDto } from '../dtos/req/organization.dto';
+import { PermissionAction } from '@/common/enum';
 
-@ApiTags('organizations')
-@Controller(API_VERS.V1 + '/organizations')
+const name = 'organizations'
+
+@ApiTags(`${name}`)
+@Controller(API_VERS.V1 + `/${name}`)
 export class OrganizationController {
   constructor(
     private readonly commandHandler: OrganizationCommandHandler,
     private readonly queryHandler: OrganizationQueryHandler,
   ) { }
+
+  @Get()
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'List organizations with pagination' })
+  @ApiResponse({
+    status: 200,
+    description: 'Organizations retrieved successfully',
+    type: PaginateOrganizationsQuery,
+  })
+  @ApiHeader({ name: HeaderKeys.PROJECT_ID, required: true })
+  @HeaderKey(HeaderKeys.PROJECT_ID)
+  @Permissions(`${name}:${PermissionAction.READ}`)
+  @UseGuards(JwtAuthGuard, HeadersAuthGuard)
+  async pagination(
+    @Query() listQuery: PaginateOrganizationsQuery,
+  ): Promise<PaginateOrganizationsResponseDto> {
+    const result = await this.queryHandler.handlePaginate(listQuery);
+
+    return {
+      organizations: result.data.map((organization) =>
+        OrganizationMapper.toResponseDto(organization),
+      ),
+      paginated: result.paginated,
+    };
+  }
+
+  @Get('cursor')
+  @ApiOperation({ summary: 'List organizations with cursor pagination' })
+  @ApiResponse({
+    status: 200,
+    description: 'Organizations retrieved successfully',
+    type: CursorOrganizationsResponseDto,
+  })
+  @HeaderKey(HeaderKeys.PROJECT_ID)
+  @Permissions(`${name}:${PermissionAction.READ}`)
+  @UseGuards(JwtAuthGuard, HeadersAuthGuard)
+  async cursorPagination(
+    @Query() listQuery: CursorOrganizationsQuery,
+  ): Promise<CursorOrganizationsResponseDto> {
+    const result = await this.queryHandler.handleCursorPaginate(listQuery);
+
+    return {
+      organizations: result.data.map((organization) =>
+        OrganizationMapper.toResponseDto(organization),
+      ),
+      paginated: result.paginated,
+    };
+  }
 
   @Delete('/unassign-role')
   // @ApiBearerAuth()
@@ -60,16 +112,12 @@ export class OrganizationController {
     status: 200,
     description: 'Role unassigned successfully',
   })
-  @ApiHeaders([
-    {
-      name: HeaderKeys.ORG_ID,
-      required: true,
-      description: 'Organization ID',
-    },
-  ])
+  @ApiHeader({ name: HeaderKeys.PROJECT_ID, required: true })
   @HeaderKey(HeaderKeys.ORG_ID)
   @ApiResponse({ status: 404, description: 'Role, organization or user not found' })
-  @UseGuards(HeadersAuthGuard)
+  @HeaderKey(HeaderKeys.PROJECT_ID)
+  @Permissions(`${name}:${PermissionAction.UPDATE}`)
+  @UseGuards(JwtAuthGuard, HeadersAuthGuard)
   async unassignRoleFromUser(@Body() dto: AssignRoleToUserDto, @GetHeaderKey(HeaderKeys.ORG_ID) orgId: string): Promise<void> {
     await this.commandHandler.handleUnassignRoleFromUser({ ...dto });
   }
@@ -81,16 +129,12 @@ export class OrganizationController {
     status: 200,
     description: 'Role assigned successfully',
   })
-  @ApiHeaders([
-    {
-      name: HeaderKeys.ORG_ID,
-      required: true,
-      description: 'Organization ID',
-    },
-  ])
+  @ApiHeader({ name: HeaderKeys.PROJECT_ID, required: true })
   @HeaderKey(HeaderKeys.ORG_ID)
   @ApiResponse({ status: 404, description: 'Role, organization or user not found' })
-  @UseGuards(HeadersAuthGuard)
+  @HeaderKey(HeaderKeys.PROJECT_ID)
+  @Permissions(`${name}:${PermissionAction.CREATE}`)
+  @UseGuards(JwtAuthGuard, HeadersAuthGuard)
   async assignRoleToUser(@Body() dto: AssignRoleToUserDto, @GetHeaderKey(HeaderKeys.ORG_ID) orgId: string): Promise<void> {
     await this.commandHandler.handleAssignRoleToUser({ ...dto });
   }
@@ -104,7 +148,10 @@ export class OrganizationController {
     description: 'Organization joined successfully',
   })
   @ApiResponse({ status: 404, description: 'Organization not found' })
-  @UseGuards(JwtAuthGuard)
+  @ApiHeader({ name: HeaderKeys.PROJECT_ID, required: true })
+  @HeaderKey(HeaderKeys.PROJECT_ID)
+  @Permissions(`${name}:${PermissionAction.CREATE}`)
+  @UseGuards(JwtAuthGuard, HeadersAuthGuard)
   async joinOrganization(@User() user: IPayload, @Param('id') id: string): Promise<void> {
     await this.commandHandler.handleJoinOrganization({ userId: user.sub, organizationId: id });
   }
@@ -118,19 +165,16 @@ export class OrganizationController {
     type: [OrgBaseResDto],
   })
   @ApiResponse({ status: 404, description: 'User not found' })
-  @Permissions(`organization:get`)
+  @Permissions(`organization:read`)
   @ApiHeaders([
-    {
-      name: HeaderKeys.ORG_ID,
-      required: true,
-    },
     {
       name: HeaderKeys.PROJECT_ID,
       required: true,
     }
   ])
-  @HeaderKey(HeaderKeys.ORG_ID, HeaderKeys.PROJECT_ID)
-  @UseGuards(HeadersAuthGuard, JwtAuthGuard)
+  @HeaderKey(HeaderKeys.PROJECT_ID)
+  @Permissions(`${name}:${PermissionAction.READ}`)
+  @UseGuards(JwtAuthGuard, HeadersAuthGuard)
   async myOrganizations(@User() user: IPayload): Promise<OrgBaseResDto[]> {
     const organizations = await this.queryHandler.handleListOrganizationsByJoiner(user.sub);
     return organizations.map(OrganizationMapper.toResponseDto);
@@ -148,6 +192,10 @@ export class OrganizationController {
     status: 409,
     description: 'Organization with slug already exists',
   })
+  @ApiHeader({ name: HeaderKeys.PROJECT_ID, required: true })
+  @HeaderKey(HeaderKeys.PROJECT_ID)
+  @Permissions(`${name}:${PermissionAction.CREATE}`)
+  @UseGuards(JwtAuthGuard, HeadersAuthGuard)
   async create(
     @Body() createOrganizationDto: CreateOrganizationDto,
   ): Promise<OrgBaseResDto> {
@@ -166,6 +214,10 @@ export class OrganizationController {
     type: OrgBaseResDto,
   })
   @ApiResponse({ status: 404, description: 'Organization not found' })
+  @ApiHeader({ name: HeaderKeys.PROJECT_ID, required: true })
+  @HeaderKey(HeaderKeys.PROJECT_ID)
+  @Permissions(`${name}:${PermissionAction.READ}`)
+  @UseGuards(JwtAuthGuard, HeadersAuthGuard)
   async getById(@Param('id') id: string): Promise<OrgBaseResDto> {
     const query = new GetOrganizationByIdQuery({ id });
     const organization =
@@ -187,6 +239,10 @@ export class OrganizationController {
     type: OrgBaseResDto,
   })
   @ApiResponse({ status: 404, description: 'Organization not found' })
+  @ApiHeader({ name: HeaderKeys.PROJECT_ID, required: true })
+  @HeaderKey(HeaderKeys.PROJECT_ID)
+  @Permissions(`${name}:${PermissionAction.READ}`)
+  @UseGuards(JwtAuthGuard, HeadersAuthGuard)
   async getBySlug(
     @Param('slug') slug: string,
   ): Promise<OrgBaseResDto> {
@@ -215,6 +271,10 @@ export class OrganizationController {
     status: 409,
     description: 'Organization with slug already exists',
   })
+  @ApiHeader({ name: HeaderKeys.PROJECT_ID, required: true })
+  @HeaderKey(HeaderKeys.PROJECT_ID)
+  @Permissions(`${name}:${PermissionAction.UPDATE}`)
+  @UseGuards(JwtAuthGuard, HeadersAuthGuard)
   async update(
     @Param('id') id: string,
     @Body() updateOrganizationDto: UpdateOrganizationDto,
@@ -237,6 +297,10 @@ export class OrganizationController {
   })
   @ApiResponse({ status: 404, description: 'Organization not found' })
   @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiHeader({ name: HeaderKeys.PROJECT_ID, required: true })
+  @HeaderKey(HeaderKeys.PROJECT_ID)
+  @Permissions(`${name}:${PermissionAction.DELETE}`)
+  @UseGuards(JwtAuthGuard, HeadersAuthGuard)
   async delete(@Param('id') id: string): Promise<void> {
     const command = new DeleteOrganizationArgs({ id });
     await this.commandHandler.handleDeleteOrganization(command);

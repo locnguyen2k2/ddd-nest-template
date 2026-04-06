@@ -7,6 +7,9 @@ import {
   ListOrganizationsQuery,
 } from '../../dtos/queries/organization-query.dto';
 import { IOrganizationRepository } from '@/modules/iam/domain/repositories/organization.repository';
+import { async } from 'rxjs';
+import { LogExecutionTime } from '@/common/decorators/log-execution.decorator';
+import { CursorOrganizationsQuery, PaginateOrganizationsQuery } from '@/modules/iam/presentation/dtos/req/organization.dto';
 
 @Injectable()
 export class OrganizationQueryHandler {
@@ -14,6 +17,16 @@ export class OrganizationQueryHandler {
     @Inject(ORGANIZATION_REPO)
     private readonly organizationRepository: IOrganizationRepository,
   ) { }
+
+  @LogExecutionTime()
+  async handlePaginate(query: PaginateOrganizationsQuery) {
+    return await this.organizationRepository.paginate(query);
+  }
+
+  @LogExecutionTime()
+  async handleCursorPaginate(query: CursorOrganizationsQuery) {
+    return await this.organizationRepository.cursorPagination(query);
+  }
 
   async handleGetOrganizationById(
     query: GetOrganizationByIdQuery,

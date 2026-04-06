@@ -9,13 +9,14 @@ import {
   Query,
   HttpStatus,
   HttpCode,
+  UseGuards,
 } from '@nestjs/common';
 import {
   ApiTags,
   ApiOperation,
   ApiResponse,
   ApiParam,
-  ApiQuery,
+  ApiHeader,
 } from '@nestjs/swagger';
 import { AssignPermissionToRoleArgs, CreateRoleDto } from '@/modules/iam/presentation/dtos/req/role.dto';
 import { UpdateRoleDto } from '@/modules/iam/presentation/dtos/req/role.dto';
@@ -27,21 +28,25 @@ import {
 import { RoleCommandHandler } from '@/modules/iam/application/services/role/role.command.handler';
 import { RoleQueryHandler } from '@/modules/iam/application/services/role/role.query.handler';
 import {
-  CreateRoleArgs,
   DeleteRoleArgs,
   UpdateRoleArgs,
 } from '@/modules/iam/application/dtos/commands/role-cmd.dto';
 import {
   CursorRolesQuery,
-  GetRoleByIdQuery,
   GetRoleBySlugQuery,
   PaginateRolesQuery,
 } from '@/modules/iam/application/dtos/queries/role-query.dto';
 import { RoleMapper } from '@/modules/iam/infrastructure/persistence/mappers/role.mapper';
-import { API_VERS } from '@/common/constant';
+import { API_VERS, HeaderKeys } from '@/common/constant';
+import { HeaderKey, Permissions } from '@/common/decorators';
+import { PermissionAction } from '@/common/enum';
+import { HeadersAuthGuard } from '../guards/headers-auth.guard';
+import { JwtAuthGuard } from '../guards/jwt-auth.guard';
 
-@ApiTags('roles')
-@Controller(API_VERS.V1 + '/roles')
+const name = 'roles';
+
+@ApiTags(name)
+@Controller(API_VERS.V1 + `/${name}`)
 export class RoleController {
   constructor(
     private readonly commandHandler: RoleCommandHandler,
@@ -56,6 +61,10 @@ export class RoleController {
   })
   @ApiResponse({ status: 400, description: 'Bad Request' })
   @ApiResponse({ status: 404, description: 'Role or permission not found' })
+  @ApiHeader({ name: HeaderKeys.PROJECT_ID, required: true })
+  @HeaderKey(HeaderKeys.PROJECT_ID)
+  @Permissions(`${name}:${PermissionAction.CREATE}`)
+  @UseGuards(JwtAuthGuard, HeadersAuthGuard)
   async assignPermissionToRole(@Body() assignPermissionToRoleDto: AssignPermissionToRoleArgs): Promise<void> {
     await this.commandHandler.handleAssignPermissionToRole(assignPermissionToRoleDto);
   }
@@ -69,6 +78,10 @@ export class RoleController {
   })
   @ApiResponse({ status: 400, description: 'Bad Request' })
   @ApiResponse({ status: 409, description: 'Role with slug already exists' })
+  @ApiHeader({ name: HeaderKeys.PROJECT_ID, required: true })
+  @HeaderKey(HeaderKeys.PROJECT_ID)
+  @Permissions(`${name}:${PermissionAction.CREATE}`)
+  @UseGuards(JwtAuthGuard, HeadersAuthGuard)
   async create(@Body() createRoleDto: CreateRoleDto): Promise<RoleResponseDto> {
     const role = await this.commandHandler.handleCreateRole(createRoleDto);
     return RoleMapper.toResponseDto(RoleMapper.toPrisma(role));
@@ -83,6 +96,10 @@ export class RoleController {
     type: RoleResponseDto,
   })
   @ApiResponse({ status: 404, description: 'Role not found' })
+  @ApiHeader({ name: HeaderKeys.PROJECT_ID, required: true })
+  @HeaderKey(HeaderKeys.PROJECT_ID)
+  @Permissions(`${name}:${PermissionAction.READ}`)
+  @UseGuards(JwtAuthGuard, HeadersAuthGuard)
   async getById(@Param('id') id: string): Promise<RoleResponseDto> {
     const role = await this.queryHandler.handleGetRolePermissions(id);
 
@@ -102,6 +119,10 @@ export class RoleController {
     type: RoleResponseDto,
   })
   @ApiResponse({ status: 404, description: 'Role not found' })
+  @ApiHeader({ name: HeaderKeys.PROJECT_ID, required: true })
+  @HeaderKey(HeaderKeys.PROJECT_ID)
+  @Permissions(`${name}:${PermissionAction.READ}`)
+  @UseGuards(JwtAuthGuard, HeadersAuthGuard)
   async getBySlug(@Param('slug') slug: string): Promise<RoleResponseDto> {
     const query = new GetRoleBySlugQuery({ slug });
     const role = await this.queryHandler.handleGetRoleBySlug(query);
@@ -120,6 +141,10 @@ export class RoleController {
     description: 'Roles retrieved successfully',
     type: PaginateRolesResponseDto,
   })
+  @ApiHeader({ name: HeaderKeys.PROJECT_ID, required: true })
+  @HeaderKey(HeaderKeys.PROJECT_ID)
+  @Permissions(`${name}:${PermissionAction.READ}`)
+  @UseGuards(JwtAuthGuard, HeadersAuthGuard)
   async pagination(
     @Query() listQuery: PaginateRolesQuery,
   ): Promise<PaginateRolesResponseDto> {
@@ -138,6 +163,10 @@ export class RoleController {
     description: 'Roles retrieved successfully',
     type: CursorRolesResponseDto,
   })
+  @ApiHeader({ name: HeaderKeys.PROJECT_ID, required: true })
+  @HeaderKey(HeaderKeys.PROJECT_ID)
+  @Permissions(`${name}:${PermissionAction.READ}`)
+  @UseGuards(JwtAuthGuard, HeadersAuthGuard)
   async cursorPagination(
     @Query() listQuery: CursorRolesQuery,
   ): Promise<CursorRolesResponseDto> {
@@ -160,6 +189,10 @@ export class RoleController {
   @ApiResponse({ status: 400, description: 'Bad Request' })
   @ApiResponse({ status: 404, description: 'Role not found' })
   @ApiResponse({ status: 409, description: 'Role with slug already exists' })
+  @ApiHeader({ name: HeaderKeys.PROJECT_ID, required: true })
+  @HeaderKey(HeaderKeys.PROJECT_ID)
+  @Permissions(`${name}:${PermissionAction.UPDATE}`)
+  @UseGuards(JwtAuthGuard, HeadersAuthGuard)
   async update(
     @Param('id') id: string,
     @Body() updateRoleDto: UpdateRoleDto,
@@ -175,6 +208,10 @@ export class RoleController {
   @ApiResponse({ status: 204, description: 'Role deleted successfully' })
   @ApiResponse({ status: 404, description: 'Role not found' })
   @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiHeader({ name: HeaderKeys.PROJECT_ID, required: true })
+  @HeaderKey(HeaderKeys.PROJECT_ID)
+  @Permissions(`${name}:${PermissionAction.DELETE}`)
+  @UseGuards(JwtAuthGuard, HeadersAuthGuard)
   async delete(@Param('id') id: string): Promise<void> {
     const command = new DeleteRoleArgs({ id });
     await this.commandHandler.handleDeleteRole(command);

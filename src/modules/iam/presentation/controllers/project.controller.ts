@@ -9,6 +9,7 @@ import {
   Query,
   HttpStatus,
   HttpCode,
+  UseGuards,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -16,6 +17,7 @@ import {
   ApiResponse,
   ApiParam,
   ApiQuery,
+  ApiHeader,
 } from '@nestjs/swagger';
 import {
   CreateProjectDto,
@@ -26,7 +28,7 @@ import {
   PaginateProjectsResponseDto,
   CursorProjectsResponseDto,
 } from '@/modules/iam/presentation/dtos/res/project-response.dto';
-import { API_VERS } from '@/common/constant';
+import { API_VERS, HeaderKeys } from '@/common/constant';
 import { ProjectCmdHandler } from '../../application/services/project/project.cmd.handler';
 import { ProjectQueryHandler } from '../../application/services/project/project.query.handler';
 import {
@@ -36,9 +38,15 @@ import {
   PaginateProjectsQuery,
 } from '../../application/dtos/queries/project-query.dto';
 import { ProjectMapper } from '../../infrastructure/persistence/mappers/project.mapper';
+import { PermissionAction } from '@/common/enum';
+import { JwtAuthGuard } from '../guards/jwt-auth.guard';
+import { HeadersAuthGuard } from '../guards/headers-auth.guard';
+import { HeaderKey, Permissions } from '@/common/decorators'
 
-@ApiTags('projects')
-@Controller(API_VERS.V1 + '/projects')
+const name = 'projects';
+
+@ApiTags(name)
+@Controller(API_VERS.V1 + `/${name}`)
 export class ProjectController {
   constructor(
     private readonly projectCmdHandler: ProjectCmdHandler,
@@ -55,6 +63,10 @@ export class ProjectController {
   })
   @ApiResponse({ status: 400, description: 'Bad Request' })
   @ApiResponse({ status: 409, description: 'Project with slug already exists' })
+  @ApiHeader({ name: HeaderKeys.PROJECT_ID, required: true })
+  @HeaderKey(HeaderKeys.PROJECT_ID)
+  @Permissions(`${name}:${PermissionAction.CREATE}`)
+  @UseGuards(JwtAuthGuard, HeadersAuthGuard)
   async create(@Body() createProjectDto: CreateProjectDto): Promise<ProjectResponseDto> {
     const project = await this.projectCmdHandler.handleCreate(createProjectDto);
     return ProjectMapper.toResponseDto(ProjectMapper.toPrisma(project));
@@ -70,6 +82,10 @@ export class ProjectController {
     type: ProjectResponseDto,
   })
   @ApiResponse({ status: 404, description: 'Project not found' })
+  @ApiHeader({ name: HeaderKeys.PROJECT_ID, required: true })
+  @HeaderKey(HeaderKeys.PROJECT_ID)
+  @Permissions(`${name}:${PermissionAction.READ}`)
+  @UseGuards(JwtAuthGuard, HeadersAuthGuard)
   async getById(@Param('id') id: string): Promise<ProjectResponseDto> {
     const query = new GetProjectByIdQuery({ id });
     const project = await this.prjectQueryHandler.handlerGetByID(query);
@@ -95,6 +111,10 @@ export class ProjectController {
     type: ProjectResponseDto,
   })
   @ApiResponse({ status: 404, description: 'Project not found' })
+  @ApiHeader({ name: HeaderKeys.PROJECT_ID, required: true })
+  @HeaderKey(HeaderKeys.PROJECT_ID)
+  @Permissions(`${name}:${PermissionAction.READ}`)
+  @UseGuards(JwtAuthGuard, HeadersAuthGuard)
   async getBySlug(
     @Param('slug') slug: string,
     @Query('organization_id') organization_id: string,
@@ -140,6 +160,10 @@ export class ProjectController {
     description: 'Projects retrieved successfully',
     type: PaginateProjectsResponseDto,
   })
+  @ApiHeader({ name: HeaderKeys.PROJECT_ID, required: true })
+  @HeaderKey(HeaderKeys.PROJECT_ID)
+  @Permissions(`${name}:${PermissionAction.READ}`)
+  @UseGuards(JwtAuthGuard, HeadersAuthGuard)
   async paginate(
     @Query() listQuery: PaginateProjectsQuery,
   ): Promise<PaginateProjectsResponseDto> {
@@ -176,6 +200,10 @@ export class ProjectController {
     description: 'Projects retrieved successfully',
     type: CursorProjectsResponseDto,
   })
+  @ApiHeader({ name: HeaderKeys.PROJECT_ID, required: true })
+  @HeaderKey(HeaderKeys.PROJECT_ID)
+  @Permissions(`${name}:${PermissionAction.READ}`)
+  @UseGuards(JwtAuthGuard, HeadersAuthGuard)
   async cursorPagination(
     @Query() listQuery: CursorProjectsQuery,
   ): Promise<CursorProjectsResponseDto> {
@@ -204,6 +232,10 @@ export class ProjectController {
   @ApiResponse({ status: 400, description: 'Bad Request' })
   @ApiResponse({ status: 404, description: 'Project not found' })
   @ApiResponse({ status: 409, description: 'Project with slug already exists' })
+  @ApiHeader({ name: HeaderKeys.PROJECT_ID, required: true })
+  @HeaderKey(HeaderKeys.PROJECT_ID)
+  @Permissions(`${name}:${PermissionAction.UPDATE}`)
+  @UseGuards(JwtAuthGuard, HeadersAuthGuard)
   async update(
     @Param('id') id: string,
     @Body() updateProjectDto: UpdateProjectDto,
@@ -225,6 +257,10 @@ export class ProjectController {
   @ApiResponse({ status: 204, description: 'Project deleted successfully' })
   @ApiResponse({ status: 404, description: 'Project not found' })
   @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiHeader({ name: HeaderKeys.PROJECT_ID, required: true })
+  @HeaderKey(HeaderKeys.PROJECT_ID)
+  @Permissions(`${name}:${PermissionAction.DELETE}`)
+  @UseGuards(JwtAuthGuard, HeadersAuthGuard)
   async delete(
     @Param('id') id: string,
     @Query('organization_id') organization_id: string,

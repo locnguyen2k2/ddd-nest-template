@@ -48,9 +48,13 @@ export class JwtAuthGuard implements CanActivate {
             };
 
             if (requiredPermissions.length > 0) {
-                const orgId = this.extractOrgIdFromHeader(request);
                 const projectId = this.extractProjectIdFromHeader(request);
-                const hasPermission = await this.userQueryHandler.hasPermission(userInfo.id, requiredPermissions, orgId || '', projectId || '');
+
+                if (!projectId) {
+                    throw new BusinessException(`400: Project ID is required`);
+                }
+
+                const hasPermission = await this.userQueryHandler.hasPermission(userInfo.id, requiredPermissions, projectId);
                 if (!hasPermission) {
                     throw new BusinessException(ErrorEnum.ACCESS_DENIED);
                 }

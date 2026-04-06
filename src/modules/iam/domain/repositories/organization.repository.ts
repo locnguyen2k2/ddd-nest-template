@@ -1,8 +1,9 @@
 import { Organization } from '../entities/organization.entity';
+import { IPaginate, ICursor } from '@/shared/domain/repositories/base.repository';
 
 export const ORGANIZATION_REPO = 'ORGANIZATION_REPO';
 
-export interface IOrganizationRepository {
+export interface IOrganizationRepository extends IPaginate<Organization>, ICursor<Organization> {
   // Organization operations
   create(organization: Organization): Promise<Organization>;
   findById(id: string): Promise<Organization | null>;

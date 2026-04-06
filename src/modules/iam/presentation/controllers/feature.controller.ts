@@ -9,19 +9,18 @@ import {
   Query,
   HttpStatus,
   HttpCode,
+  UseGuards,
 } from '@nestjs/common';
 import {
   ApiTags,
   ApiOperation,
   ApiResponse,
   ApiParam,
-  ApiQuery,
 } from '@nestjs/swagger';
 import { CreateFeatureDto } from '@/modules/iam/presentation/dtos/req/feature.dto';
 import { UpdateFeatureDto } from '@/modules/iam/presentation/dtos/req/feature.dto';
 import {
   FeatureResponseDto,
-  ListFeaturesResponseDto,
   PaginateFeaturesResponseDto,
   CursorFeaturesResponseDto,
 } from '@/modules/iam/presentation/dtos/res/feature-response.dto';
@@ -35,15 +34,20 @@ import {
 import {
   GetFeatureByIdQuery,
   GetFeatureBySlugQuery,
-  ListFeaturesQuery,
   PaginateFeaturesQuery,
   CursorFeaturesQuery,
 } from '@/modules/iam/application/dtos/queries/feature-query.dto';
 import { FeatureMapper } from '@/modules/iam/infrastructure/persistence/mappers/feature.mapper';
-import { API_VERS } from '@/common/constant';
+import { API_VERS, HeaderKeys } from '@/common/constant';
+import { JwtAuthGuard } from '../guards/jwt-auth.guard';
+import { HeaderKey, Permissions } from '@/common/decorators'
+import { PermissionAction } from '@/common/enum';
+import { HeadersAuthGuard } from '../guards/headers-auth.guard';
 
-@ApiTags('features')
-@Controller(API_VERS.V1 + '/features')
+const name = 'features';
+
+@ApiTags(name)
+@Controller(API_VERS.V1 + `/${name}`)
 export class FeatureController {
   constructor(
     private readonly commandHandler: FeatureCommandHandler,
@@ -59,6 +63,9 @@ export class FeatureController {
   })
   @ApiResponse({ status: 400, description: 'Bad Request' })
   @ApiResponse({ status: 409, description: 'Feature with slug already exists' })
+  @HeaderKey(HeaderKeys.PROJECT_ID)
+  @Permissions(`${name}:${PermissionAction.CREATE}`)
+  @UseGuards(JwtAuthGuard, HeadersAuthGuard)
   async create(
     @Body() createFeatureDto: CreateFeatureDto,
   ): Promise<FeatureResponseDto> {
@@ -76,6 +83,9 @@ export class FeatureController {
     type: FeatureResponseDto,
   })
   @ApiResponse({ status: 404, description: 'Feature not found' })
+  @HeaderKey(HeaderKeys.PROJECT_ID)
+  @Permissions(`${name}:${PermissionAction.READ}`)
+  @UseGuards(JwtAuthGuard, HeadersAuthGuard)
   async getById(@Param('id') id: string): Promise<FeatureResponseDto> {
     const query = new GetFeatureByIdQuery({ id });
     const feature = await this.queryHandler.handleGetFeatureById(query);
@@ -98,6 +108,9 @@ export class FeatureController {
     type: FeatureResponseDto,
   })
   @ApiResponse({ status: 404, description: 'Feature not found' })
+  @HeaderKey(HeaderKeys.PROJECT_ID)
+  @Permissions(`${name}:${PermissionAction.READ}`)
+  @UseGuards(JwtAuthGuard, HeadersAuthGuard)
   async getBySlug(
     @Param('slug') slug: string,
     @Query('organization_id') organization_id: string,
@@ -119,6 +132,9 @@ export class FeatureController {
     description: 'Features retrieved successfully',
     type: PaginateFeaturesResponseDto,
   })
+  @HeaderKey(HeaderKeys.PROJECT_ID)
+  @Permissions(`${name}:${PermissionAction.READ}`)
+  @UseGuards(JwtAuthGuard, HeadersAuthGuard)
   async pagination(
     @Query() listQuery: PaginateFeaturesQuery,
   ): Promise<PaginateFeaturesResponseDto> {
@@ -139,6 +155,9 @@ export class FeatureController {
     description: 'Features retrieved successfully',
     type: CursorFeaturesResponseDto,
   })
+  @HeaderKey(HeaderKeys.PROJECT_ID)
+  @Permissions(`${name}:${PermissionAction.READ}`)
+  @UseGuards(JwtAuthGuard, HeadersAuthGuard)
   async cursorPagination(
     @Query() listQuery: CursorFeaturesQuery,
   ): Promise<CursorFeaturesResponseDto> {
@@ -163,6 +182,9 @@ export class FeatureController {
   @ApiResponse({ status: 400, description: 'Bad Request' })
   @ApiResponse({ status: 404, description: 'Feature not found' })
   @ApiResponse({ status: 409, description: 'Feature with slug already exists' })
+  @HeaderKey(HeaderKeys.PROJECT_ID)
+  @Permissions(`${name}:${PermissionAction.UPDATE}`)
+  @UseGuards(JwtAuthGuard, HeadersAuthGuard)
   async update(
     @Param('id') id: string,
     @Body() updateFeatureDto: UpdateFeatureDto,
@@ -183,6 +205,9 @@ export class FeatureController {
   @ApiResponse({ status: 204, description: 'Feature deleted successfully' })
   @ApiResponse({ status: 404, description: 'Feature not found' })
   @HttpCode(HttpStatus.NO_CONTENT)
+  @HeaderKey(HeaderKeys.PROJECT_ID)
+  @Permissions(`${name}:${PermissionAction.DELETE}`)
+  @UseGuards(JwtAuthGuard, HeadersAuthGuard)
   async delete(
     @Param('id') id: string,
     @Query('organization_id') organization_id: string,

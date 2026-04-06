@@ -10,6 +10,9 @@ import { CacheRepository } from '@/shared/infrastructure/presistence/cache.repos
 import { ConfigKeyPaths } from '@/config';
 import { CACHE_PORT, CachePort } from '@/shared/application/ports/cache.port';
 import { ConfigService } from '@nestjs/config';
+import { cursorHelper, paginateHelper, SortableFieldEnum, SortedEnum } from '@/common/pagination';
+import { CursorOrganizationsQuery, PaginateOrganizationsQuery } from '@/modules/iam/presentation/dtos/req/organization.dto';
+import { Prisma } from "@internal/rbac/client"
 
 @Injectable()
 export class OrganizationRepository
@@ -27,6 +30,36 @@ export class OrganizationRepository
     @Inject(CACHE_PORT) cachePort: CachePort,
   ) {
     super(redisConfig, cachePort);
+  }
+
+  @LogExecutionTime()
+  async paginate(pageOptions: PaginateOrganizationsQuery) {
+    const { data = [], paginated } =
+      await paginateHelper<Prisma.OrganizationGetPayload<{}>>({
+        query: this.rbacDBService.organization,
+        pageOptions,
+      });
+
+    return {
+      data: data.map((item) => OrganizationMapper.toDomain(item)),
+      paginated,
+    };
+  }
+
+  @LogExecutionTime()
+  async cursorPagination(pageOptions: CursorOrganizationsQuery) {
+    const { data = [], paginated } =
+      await cursorHelper<Prisma.OrganizationGetPayload<{}>>({
+        query: this.rbacDBService.organization,
+        pageOptions,
+        cursorField: SortableFieldEnum.CREATED_AT,
+        orderDirection: SortedEnum.DESC,
+      });
+
+    return {
+      data: data.map((item) => OrganizationMapper.toDomain(item)),
+      paginated,
+    };
   }
 
   @LogExecutionTime()

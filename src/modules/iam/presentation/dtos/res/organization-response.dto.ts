@@ -1,5 +1,8 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { RoleBaseResDto } from './role-response.dto';
+import { CursorPaginationDto } from '@/common/pagination';
+import { Type } from 'class-transformer';
+import { PaginationDto } from '@/common/pagination';
 
 export class OrgBaseResDto {
   @ApiProperty()
@@ -37,4 +40,22 @@ export class ListOrganizationsResponseDto {
     limit: number;
     totalPages: number;
   };
+}
+
+export class PaginateOrganizationsResponseDto {
+  @ApiProperty({ type: [OrgBaseResDto] })
+  organizations!: OrgBaseResDto[];
+
+  @ApiProperty({ type: PaginationDto })
+  @Type(() => PaginationDto)
+  paginated!: PaginationDto;
+}
+
+export class CursorOrganizationsResponseDto {
+  @ApiProperty({ type: [OrgBaseResDto] })
+  organizations!: OrgBaseResDto[];
+
+  @ApiProperty({ type: CursorPaginationDto })
+  @Type(() => CursorPaginationDto)
+  paginated!: CursorPaginationDto;
 }

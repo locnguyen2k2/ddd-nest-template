@@ -16,29 +16,29 @@ export class UserService {
     @Inject(ROLE_REPO) private readonly roleRepository: IRoleRepository
   ) { }
 
-  async canAccess(userRoleIDs: string[], feature: string, action: PermissionAction, projectId: string): Promise<boolean> {
+  async canAccess(featureId: string, action: PermissionAction, projectId: string): Promise<boolean> {
     try {
-      const [featureEntity, permission] = await Promise.all([
-        this.featureRepository.findOneBySlug(feature, projectId),
+      const [rfps, permission] = await Promise.all([
+        this.featureRepository.findRFPsByFeatureId(featureId),
         this.permissionRepository.findByAction(action)
       ]);
 
       switch (true) {
-        case !featureEntity:
+        case !rfps:
           return false;
         case !permission:
           return false;
       }
 
       // Filter RFPs by permission ID
-      const listRFPs = featureEntity.RFPs.filter(rfp => rfp.permission_id === permission.id.value);
+      const listRFPs = rfps.filter(rfp => rfp.permission_id === permission.id.value);
 
       let isValid = false;
       for (const rfp of listRFPs) {
         const roleChain = await this.roleRepository.getRoleChain(rfp.role_id);
         // const role = await this.roleRepository.findById(rfp.role_id);
         // console.log(role?.name, rfp.role_id, roleChain, featureEntity.slug, action, );
-        isValid = await this.roleRepository.hasPermission(roleChain, featureEntity.id.value, permission.id.value);
+        isValid = await this.roleRepository.hasPermission(roleChain, rfp.feature_id, permission.id.value);
         if (isValid) {
           break;
         }

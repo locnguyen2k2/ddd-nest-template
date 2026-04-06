@@ -1,3 +1,4 @@
+import { IRFP } from '../../infrastructure/persistence/repositories/feature.repository';
 import { Feature } from '../entities/feature.entity';
 import {
   IPaginate,
@@ -12,4 +13,5 @@ export interface IFeatureRepository
   create(data: any): Promise<Feature>;
   update(id: string, data: any): Promise<Feature>;
   delete(id: string): Promise<void>;
+  findRFPsByFeatureId(featureId: string): Promise<IRFP[] | null>;
 }

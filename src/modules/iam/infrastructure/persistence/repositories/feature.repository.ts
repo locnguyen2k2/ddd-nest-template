@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { IFeatureRepository } from '@/modules/iam/domain/repositories/feature.repository';
 import { FeatureMapper } from '../mappers/feature.mapper';
 import { PrismaAdapter } from '@/shared/infrastructure/adapters/prisma.adapter';
@@ -13,7 +13,7 @@ import {
     CursorFeaturesQuery,
     PaginateFeaturesQuery,
 } from '@/modules/iam/application/dtos/queries/feature-query.dto';
-import { Prisma, Role } from '@internal/rbac/client';
+import { Prisma } from '@internal/rbac/client';
 import { CacheRepository } from '@/shared/infrastructure/presistence/cache.repository';
 import { ConfigService } from '@nestjs/config';
 import { Inject } from '@nestjs/common';
@@ -22,6 +22,16 @@ import { CACHE_PORT, CachePort } from '@/shared/application/ports/cache.port';
 import { Feature } from '@/modules/iam/domain/entities/feature.entity';
 import { BusinessException } from '@/common/http/business-exception';
 import { ErrorEnum } from '@/common/exception.enum';
+
+export interface IRFP {
+    role_id: string,
+    feature_id: string,
+    permission_id: string,
+    created_at: Date | null,
+    updated_at: Date | null,
+    created_by: string | null,
+    updated_by: string | null
+}
 
 @Injectable()
 export class FeatureRepository
@@ -78,13 +88,10 @@ export class FeatureRepository
         const item = await this.getWithCache(id, async () => {
             return await this.rbacDBService.feature.findUnique({
                 where: { id },
-                include: {
-                    role_feature_permissions: true,
-                },
             });
         });
 
-        return item ? FeatureMapper.toDomainWithRoles(item) : null;
+        return item ? FeatureMapper.toDomain(item) : null;
     }
 
     @LogExecutionTime()
@@ -92,31 +99,32 @@ export class FeatureRepository
         slug: string,
         project_id: string,
     ): Promise<Feature | null> {
-        // const item = await this.getWithCache(`${slug}:${project_id}`, async () => {
-        //     return await this.rbacDBService.feature.findUnique({
-        //         where: {
-        //             project_id_slug: {
-        //                 slug,
-        //                 project_id,
-        //             },
-        //         },
-        //         include: {
-        //             role_feature_permissions: true,
-        //         },
-        //     });
-        // });
-        const item = await this.rbacDBService.feature.findUnique({
-            where: {
-                project_id_slug: {
-                    slug,
-                    project_id,
+        const referenceCachedKey = `slug:${slug}:${project_id}`;
+        const item = await this.getWithReference(referenceCachedKey,
+            (feature) => feature.id,
+            async () => {
+                return await this.rbacDBService.feature.findUnique({
+                    where: {
+                        project_id_slug: {
+                            slug,
+                            project_id,
+                        },
+                    },
+                });
+            });
+        return item ? FeatureMapper.toDomain(item) : null;
+    }
+
+    @LogExecutionTime()
+    async findRFPsByFeatureId(featureId: string): Promise<IRFP[] | null> {
+        const item = await this.getWithCache(`rfp:${featureId}`, async () => {
+            return await this.rbacDBService.roleFeaturePermission.findMany({
+                where: {
+                    feature_id: featureId,
                 },
-            },
-            include: {
-                role_feature_permissions: true,
-            },
+            });
         });
-        return item ? FeatureMapper.toDomainWithRoles(item) : null;
+        return item;
     }
 
     @LogExecutionTime()

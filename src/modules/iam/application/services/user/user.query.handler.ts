@@ -10,6 +10,8 @@ import { ROLE_REPO, IRoleRepository } from "@/modules/iam/domain/repositories/ro
 import { UserMapper } from "@/modules/iam/infrastructure/persistence/mappers/user.mapper";
 import { OrganizationMapper } from "@/modules/iam/infrastructure/persistence/mappers/organization.mapper";
 import { RoleMapper } from "@/modules/iam/infrastructure/persistence/mappers/role.mapper";
+import { FEATURE_REPO, IFeatureRepository } from "@/modules/iam/domain/repositories/feature.repository";
+import { LogExecutionTime } from "@/common/decorators/log-execution.decorator";
 
 @Injectable()
 export class UserQueryHandler {
@@ -17,28 +19,32 @@ export class UserQueryHandler {
         @Inject(USER_REPO) private readonly userRepository: IUserRepository,
         @Inject(ORGANIZATION_REPO) private readonly organizationRepository: IOrganizationRepository,
         @Inject(ROLE_REPO) private readonly roleRepository: IRoleRepository,
-        @Inject(PROJECT_REPO) private readonly projectRepository: IProjectRepository
+        @Inject(PROJECT_REPO) private readonly projectRepository: IProjectRepository,
+        @Inject(FEATURE_REPO) private readonly featureRepository: IFeatureRepository
     ) { }
 
-    async hasPermission(userId: string, permissions: string[], onOrgID: string, onProjectID: string): Promise<boolean> {
+    @LogExecutionTime()
+    async hasPermission(userId: string, permissions: string[], onProjectID: string): Promise<boolean> {
         const permission = permissions[0];
-        const [user, project] = await Promise.all([
-            this.userRepository.findByIDWithOrgRoles(userId, onOrgID),
-            this.projectRepository.findById(onProjectID),
-        ]);
-        const [featureKey, actionKey] = permission.split(':');
-        const orgRole = user?.org_roles.find(org => org.organization_id === onOrgID);
-
-        switch (true) {
-            case !user:
-                throw new BusinessException(ErrorEnum.RECORD_NOT_FOUND)
-            case !project:
-                throw new BusinessException(ErrorEnum.RECORD_NOT_FOUND)
-            default:
-                return await this.userService.canAccess(orgRole?.role_ids || [], featureKey, actionKey.toUpperCase() as PermissionAction, onProjectID);
+        const project = await this.projectRepository.findById(onProjectID);
+        if (!project) {
+            throw new BusinessException(ErrorEnum.RECORD_NOT_FOUND, 'Organization not found');
         }
+        const onOrgID = project.organizationID;
+        const [featureKey, actionKey] = permission.split(':');
+        const [user, feature] = await Promise.all([
+            this.userRepository.findByIDWithOrgRoles(userId, onOrgID),
+            this.featureRepository.findOneBySlug(featureKey, onProjectID)
+        ]);
+
+        if (!user) {
+            throw new BusinessException(ErrorEnum.RECORD_NOT_FOUND);
+        }
+
+        return await this.userService.canAccess(feature?.id.value, actionKey.toUpperCase() as PermissionAction, onProjectID);
     }
 
+    @LogExecutionTime()
     async profile(userId: string, orgId: string) {
         const [user] = await Promise.all([
             this.userRepository.findByIDWithOrgRoles(userId, orgId),

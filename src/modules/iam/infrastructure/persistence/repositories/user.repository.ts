@@ -50,7 +50,7 @@ export class UserRepository extends CacheRepository implements IUserRepository {
 
   async findByIDWithOrgRoles(userId: string, organization_id: string): Promise<UserEntity | null> {
     const [user, org, userOrgRoles, hasUser] = await Promise.all([
-      this.findByKey(userId),
+      this.findById(userId),
       this.orgRepo.findById(organization_id),
       this.orgRepo.findUserRoles(organization_id, userId),
       this.orgRepo.organizationHasUser(organization_id, userId),
@@ -68,14 +68,10 @@ export class UserRepository extends CacheRepository implements IUserRepository {
     return UserMapper.toDomainWithOrgRoles(UserMapper.toPrisma(user), OrganizationMapper.toPrisma(org), userOrgRoles);
   }
 
-  async findByKey(userKey: string): Promise<UserEntity | null> {
-    const item = await this.getWithCache(userKey, async () => await this.rbacDBService.user.findFirst({
+  async findById(id: string): Promise<UserEntity | null> {
+    const item = await this.getWithCache(id, async () => await this.rbacDBService.user.findUnique({
       where: {
-        OR: [
-          { id: userKey },
-          { email: userKey },
-          { username: userKey },
-        ],
+        id: id,
       },
     }));
     if (!item) return null;

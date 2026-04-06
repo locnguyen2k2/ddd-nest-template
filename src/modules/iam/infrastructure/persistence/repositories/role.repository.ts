@@ -129,7 +129,7 @@ export class RoleRepository extends CacheRepository implements IRoleRepository {
   }
 
   @LogExecutionTime()
-  async getRoleChain(role_id: string, depth: number = 10): Promise<string[]> {
+  async getRoleChain(role_id: string, depth: number = 100): Promise<string[]> {
     try {
       const role = await this.rbacDBService.$queryRaw`
                 WITH RECURSIVE role_chain AS (

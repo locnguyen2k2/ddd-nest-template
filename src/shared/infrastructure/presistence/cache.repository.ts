@@ -137,4 +137,31 @@ export abstract class CacheRepository {
     const pattern = this.buildPatternForAggregate();
     await this.cachePort.deleteByPattern(pattern);
   }
+
+  protected async getWithReference<T>(
+    key: string,
+    idGetter: (item: T) => string,
+    fetchFromDb: () => Promise<T | null>,
+    version?: number | string,
+  ): Promise<T | null> {
+    const referenceCacheKey = this.buildKey(key, version);
+    const cachedId = await this.cachePort.get<string>(referenceCacheKey);
+
+    if (cachedId) {
+      return await this.getWithCache(cachedId, () => fetchFromDb(), version);
+    }
+
+    const entity = await fetchFromDb();
+
+    if (entity) {
+      const ttl = this.ttlConfig['default'] ?? 3600;
+      const id = idGetter(entity);
+      await Promise.all([
+        this.cachePort.set(referenceCacheKey, id, ttl),
+        this.cachePort.set(this.buildKey(id, version), entity, ttl),
+      ]);
+    }
+
+    return entity;
+  }
 }

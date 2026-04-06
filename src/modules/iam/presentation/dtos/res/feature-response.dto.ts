@@ -46,19 +46,6 @@ export class FeatureResponseDto {
   role_permission?: RolePermissionResponseDto[];
 }
 
-export class ListFeaturesResponseDto {
-  @ApiProperty({ type: [FeatureResponseDto] })
-  features!: FeatureResponseDto[];
-
-  @ApiProperty()
-  pagination!: {
-    total: number;
-    page: number;
-    limit: number;
-    totalPages: number;
-  };
-}
-
 export class PaginateFeaturesResponseDto {
   @ApiProperty({ type: [FeatureResponseDto] })
   features!: FeatureResponseDto[];

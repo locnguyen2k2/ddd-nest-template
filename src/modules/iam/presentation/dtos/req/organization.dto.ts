@@ -1,5 +1,6 @@
 import { IsString, IsOptional, IsNotEmpty, MaxLength } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
+import { BaseCursorPageOptionDto, BasePageOptionDto } from '@/common/pagination';
 
 export class AssignRoleToUserDto {
   @ApiProperty()
@@ -60,3 +61,8 @@ export class UpdateOrganizationDto {
   @MaxLength(500)
   description?: string;
 }
+
+
+export class PaginateOrganizationsQuery extends BasePageOptionDto { }
+
+export class CursorOrganizationsQuery extends BaseCursorPageOptionDto { }

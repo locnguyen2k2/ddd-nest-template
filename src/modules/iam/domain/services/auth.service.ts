@@ -41,7 +41,7 @@ export class AuthDomainService {
 
     async validateUser(username: string, password: string, orgID: string): Promise<UserEntity> {
         const [user] = await Promise.all([
-            this.userRepo.findByKey(username),
+            this.userRepo.findByUsername(username),
         ]);
 
         switch (true) {
@@ -159,16 +159,19 @@ export class AuthDomainService {
                 secret: this.jwtConfigs.secret,
             });
 
-            const isBlacklisted =
-                await this.blacklistRepo.isTokenBlacklisted(accessToken);
-            if (isBlacklisted) {
-                throw new BusinessException(ErrorEnum.UNAUTHORIZED);
+            const [isBlacklisted, user] = await Promise.all([
+                this.blacklistRepo.isTokenBlacklisted(accessToken),
+                this.userRepo.findById(payload.sub)
+            ]);
+
+            switch (true) {
+                case isBlacklisted:
+                    throw new BusinessException(ErrorEnum.UNAUTHORIZED);
+                case !user:
+                    throw new BusinessException(ErrorEnum.RECORD_NOT_FOUND);
+                default: break;
             }
 
-            const user = await this.userRepo.findByKey(payload.sub);
-            if (!user) {
-                throw new BusinessException(ErrorEnum.RECORD_NOT_FOUND);
-            }
 
             return new UserResponseDto(
                 user.id.value,

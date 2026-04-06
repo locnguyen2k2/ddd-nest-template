@@ -16,11 +16,13 @@ import { ORGANIZATION_REPO } from '@/modules/iam/domain/repositories/organizatio
 import { IOrganizationRepository } from '@/modules/iam/domain/repositories/organization.repository';
 import { OrganizationMapper } from '@/modules/iam/infrastructure/persistence/mappers/organization.mapper';
 import { RoleMapper } from '@/modules/iam/infrastructure/persistence/mappers/role.mapper';
+import { LogExecutionTime } from '@/common/decorators/log-execution.decorator';
 
 @Injectable()
 export class AuthCmdHandler {
     constructor(private readonly authDomainService: AuthDomainService, @Inject(ROLE_REPO) private readonly roleRepo: IRoleRepository, @Inject(ORGANIZATION_REPO) private readonly orgRepo: IOrganizationRepository) { }
 
+    @LogExecutionTime()
     async login(args: LoginArgs, orgID: string): Promise<AuthResponseDto> {
         try {
             const validUser = await this.authDomainService.validateUser(args.username, args.password, orgID);
@@ -37,6 +39,7 @@ export class AuthCmdHandler {
         }
     }
 
+    @LogExecutionTime()
     async logout(userId: string, args: LogoutArgs): Promise<void> {
         await this.authDomainService.logout(
             userId,
@@ -45,10 +48,12 @@ export class AuthCmdHandler {
         );
     }
 
+    @LogExecutionTime()
     async refreshToken(args: RefreshTokenArgs): Promise<TokenResponseDto> {
         return await this.authDomainService.refreshToken(args.refreshToken);
     }
 
+    @LogExecutionTime()
     async verifyAccessToken(args: VerifyAccessTokenArgs): Promise<UserResponseDto> {
         return await this.authDomainService.verifyAccessToken(args.accessToken);
     }

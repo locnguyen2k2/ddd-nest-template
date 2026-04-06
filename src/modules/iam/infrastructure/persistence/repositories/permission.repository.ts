@@ -2,7 +2,7 @@ import { IPermissionRepository } from '@/modules/iam/domain/repositories/permiss
 import { PermissionEntity } from '@/modules/iam/domain/entities/permission.entity';
 import { PrismaAdapter } from '@/shared/infrastructure/adapters/prisma.adapter';
 import { PermissionMapper } from '../mappers/permission.mapper';
-import { Injectable, Logger } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 import { LogExecutionTime } from '@/common/decorators/log-execution.decorator';
 import { PermissionAction } from '@internal/rbac/client';
 import { BusinessException } from '@/common/http/business-exception';
@@ -10,11 +10,24 @@ import { ErrorEnum } from '@/common/exception.enum';
 import { CursorPermissionQuery, PaginatePermissionQuery } from '@/modules/iam/application/dtos/queries/permission-query.dto';
 import { PermissionResponseDto } from '@/modules/iam/presentation/dtos/res/permission-response.dto';
 import { cursorHelper, paginateHelper, SortableFieldEnum, SortedEnum } from '@/common/pagination';
+import { ConfigService } from '@nestjs/config';
+import { ConfigKeyPaths } from '@/config';
+import { CACHE_PORT, CachePort } from '@/shared/application/ports/cache.port';
+import { CacheRepository } from '@/shared/infrastructure/presistence/cache.repository';
 
 @Injectable()
-export class PermissionRepository implements IPermissionRepository {
+export class PermissionRepository extends CacheRepository implements IPermissionRepository {
   private readonly logger = new Logger(PermissionRepository.name);
-  constructor(private readonly rbacDBService: PrismaAdapter) { }
+  protected readonly boundedContext: string = 'iam';
+  protected readonly aggregateType: string = 'permission';
+  protected readonly ttlConfig: { [key: string]: number } = {
+    default: 3600,
+  };
+  constructor(private readonly rbacDBService: PrismaAdapter, redisConfig: ConfigService<ConfigKeyPaths>,
+    @Inject(CACHE_PORT) cachePort: CachePort,
+  ) {
+    super(redisConfig, cachePort);
+  }
 
   @LogExecutionTime()
   async create(permission: PermissionEntity): Promise<PermissionEntity | null> {
@@ -28,23 +41,28 @@ export class PermissionRepository implements IPermissionRepository {
   }
   @LogExecutionTime()
   async findById(id: string): Promise<PermissionEntity | null> {
-    const found = await this.rbacDBService.permission.findUnique({
-      where: { id },
-      include: {
-        role_feature_permissions: true,
-      },
+    const item = await this.getWithCache(id, async () => {
+      return await this.rbacDBService.permission.findUnique({
+        where: { id },
+        include: {
+          role_feature_permissions: true,
+        },
+      });
     });
-    if (!found) return null;
-    return PermissionMapper.toDomain(found);
+    if (!item) return null;
+    return PermissionMapper.toDomain(item);
   }
   @LogExecutionTime()
   async findByAction(action: PermissionAction): Promise<PermissionEntity | null> {
+    const reference = `action:${action}`;
     const where = { action };
-    const found = await this.rbacDBService.permission.findFirst({
-      where,
+    const item = await this.getWithReference(reference, (permission) => permission.id, async () => {
+      return await this.rbacDBService.permission.findFirst({
+        where,
+      });
     });
-    if (!found) return null;
-    return PermissionMapper.toDomain(found);
+    if (!item) return null;
+    return PermissionMapper.toDomain(item);
   }
   @LogExecutionTime()
   async findByActionWithRFPs(action: PermissionAction): Promise<PermissionEntity | null> {
@@ -76,6 +94,7 @@ export class PermissionRepository implements IPermissionRepository {
         description: permission.description,
       },
     });
+    await this.invalidateCache(id);
     return PermissionMapper.toDomain(updated);
   }
   @LogExecutionTime()
@@ -83,6 +102,7 @@ export class PermissionRepository implements IPermissionRepository {
     await this.rbacDBService.permission.delete({
       where: { id },
     });
+    await this.invalidateCache(id);
   }
 
   @LogExecutionTime()
