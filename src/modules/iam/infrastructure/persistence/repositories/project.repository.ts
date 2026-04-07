@@ -93,6 +93,11 @@ export class ProjectRepository extends CacheRepository implements IProjectReposi
         await paginateHelper<ProjectResponseDto>({
           query: this.rbacDBService.project,
           pageOptions,
+          filterOptions: [
+            {
+              organization_id: pageOptions.organization_id,
+            }
+          ],
         });
 
       return {
@@ -114,7 +119,14 @@ export class ProjectRepository extends CacheRepository implements IProjectReposi
           pageOptions,
           cursorField: SortableFieldEnum.CREATED_AT,
           orderDirection: SortedEnum.DESC,
+          filterOptions: [
+            {
+              organization_id: pageOptions.organization_id,
+            }
+          ],
         });
+
+      console.log(paginated)
 
       return {
         data: data,

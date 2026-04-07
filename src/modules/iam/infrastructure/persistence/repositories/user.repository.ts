@@ -48,11 +48,28 @@ export class UserRepository extends CacheRepository implements IUserRepository {
     await this.invalidateCache(id);
   }
 
+  async findOrgRoles(userId: string): Promise<UserEntity | null> {
+    const [user, org, userOrgRoles] = await Promise.all([
+      this.findById(userId),
+      this.orgRepo.findUserOrganizations(userId),
+      this.orgRepo.findOrgRoles(userId),
+    ]);
+
+    switch (true) {
+      case !user:
+        throw new BusinessException(ErrorEnum.RECORD_NOT_FOUND, 'User not found');
+      case !org || org.length === 0:
+        throw new BusinessException(ErrorEnum.RECORD_NOT_FOUND, 'Organization not found');
+    }
+
+    return UserMapper.toDomainWithOrgRoles(UserMapper.toPrisma(user), org.map(item => OrganizationMapper.toPrisma(item)), userOrgRoles);
+  }
+
   async findByIDWithOrgRoles(userId: string, organization_id: string): Promise<UserEntity | null> {
     const [user, org, userOrgRoles, hasUser] = await Promise.all([
       this.findById(userId),
       this.orgRepo.findById(organization_id),
-      this.orgRepo.findUserRoles(organization_id, userId),
+      this.orgRepo.findUserOrgRoles(organization_id, userId),
       this.orgRepo.organizationHasUser(organization_id, userId),
     ]);
 
@@ -65,7 +82,7 @@ export class UserRepository extends CacheRepository implements IUserRepository {
         throw new BusinessException(ErrorEnum.RECORD_NOT_FOUND, 'User not found in organization');
     }
 
-    return UserMapper.toDomainWithOrgRoles(UserMapper.toPrisma(user), OrganizationMapper.toPrisma(org), userOrgRoles);
+    return UserMapper.toDomainWithOrgRoles(UserMapper.toPrisma(user), [OrganizationMapper.toPrisma(org)], new Map<string, string[]>([[organization_id, userOrgRoles]]));
   }
 
   async findById(id: string): Promise<UserEntity | null> {

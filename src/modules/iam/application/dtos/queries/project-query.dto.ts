@@ -27,6 +27,14 @@ export class GetProjectBySlugQuery {
     }
 }
 
-export class PaginateProjectsQuery extends BasePageOptionDto { }
+export class PaginateProjectsQuery extends BasePageOptionDto {
+    @IsOptional()
+    @IsString()
+    organization_id?: string;
+}
 
-export class CursorProjectsQuery extends BaseCursorPageOptionDto { }
+export class CursorProjectsQuery extends BaseCursorPageOptionDto {
+    @IsOptional()
+    @IsString()
+    organization_id?: string;
+}

@@ -41,13 +41,12 @@ export class Organization extends AggregateRoot<Organization, string> {
   }
 
   static create(props: ICreateOrganizationProps): Organization {
-    const now = new Date();
     const organization = new Organization(props.id, {
       name: props.name,
       slug: props.slug,
       description: props.description,
-      created_at: now,
-      updated_at: now,
+      created_at: props.created_at,
+      updated_at: props.updated_at,
     });
     organization.addDomainEvent(
       new OrganizationCreatedEvent({
@@ -55,8 +54,8 @@ export class Organization extends AggregateRoot<Organization, string> {
         name: props.name,
         slug: props.slug.value,
         description: props.description,
-        createdAt: now,
-        updatedAt: now,
+        createdAt: props.created_at ?? new Date(),
+        updatedAt: props.updated_at ?? new Date(),
       }),
     );
 

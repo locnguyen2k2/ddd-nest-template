@@ -8,5 +8,6 @@ export interface IUserRepository {
   findById(id: string): Promise<UserEntity | null>;
   findByEmail(email: string): Promise<UserEntity | null>;
   findByUsername(username: string): Promise<UserEntity | null>;
-  findByIDWithOrgRoles(userKey: string, organization_id: string): Promise<UserEntity | null>
+  findByIDWithOrgRoles(userId: string, organization_id: string): Promise<UserEntity | null>
+  findOrgRoles(userId: string): Promise<UserEntity | null>
 }

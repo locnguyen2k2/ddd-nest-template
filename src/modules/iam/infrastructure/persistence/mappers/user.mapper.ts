@@ -6,7 +6,7 @@ import { IEntityID } from '@/shared/domain/entities/base.entity';
 import { AccessControlStatus, Organization, Prisma, Role, User } from '@internal/rbac/client';
 
 export class UserMapper {
-  static toDomainWithOrgRoles(props: User, org: Organization, userOrgRoles: string[]): UserEntity {
+  static toDomainWithOrgRoles(props: User, orgs: Organization[], userOrgRoles: Map<string, string[]>): UserEntity {
     const id: IEntityID<string> = {
       value: props.id,
       _id: props.id,
@@ -22,7 +22,7 @@ export class UserMapper {
       last_name: props.last_name,
       created_at: props.created_at,
       updated_at: props.updated_at,
-      organization_roles: org ? [{ organization_id: org.id, role_ids: userOrgRoles }] : [],
+      organization_roles: orgs ? orgs.map((org) => ({ organization_id: org.id, role_ids: userOrgRoles.get(org.id) || [] })) : [],
     });
   }
 

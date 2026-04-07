@@ -65,13 +65,12 @@ export class OrganizationController {
     description: 'Organizations retrieved successfully',
     type: PaginateOrganizationsQuery,
   })
-  @ApiHeader({ name: HeaderKeys.PROJECT_ID, required: true })
-  @HeaderKey(HeaderKeys.PROJECT_ID)
-  @Permissions(`${name}:${PermissionAction.READ}`)
-  @UseGuards(JwtAuthGuard, HeadersAuthGuard)
+  @UseGuards(JwtAuthGuard)
   async pagination(
     @Query() listQuery: PaginateOrganizationsQuery,
+    @User() user: IPayload,
   ): Promise<PaginateOrganizationsResponseDto> {
+    listQuery.userId = user.sub;
     const result = await this.queryHandler.handlePaginate(listQuery);
 
     return {
@@ -89,12 +88,12 @@ export class OrganizationController {
     description: 'Organizations retrieved successfully',
     type: CursorOrganizationsResponseDto,
   })
-  @HeaderKey(HeaderKeys.PROJECT_ID)
-  @Permissions(`${name}:${PermissionAction.READ}`)
-  @UseGuards(JwtAuthGuard, HeadersAuthGuard)
+  @UseGuards(JwtAuthGuard)
   async cursorPagination(
     @Query() listQuery: CursorOrganizationsQuery,
+    @User() user: IPayload,
   ): Promise<CursorOrganizationsResponseDto> {
+    listQuery.userId = user.sub;
     const result = await this.queryHandler.handleCursorPaginate(listQuery);
 
     return {
@@ -163,16 +162,7 @@ export class OrganizationController {
     type: [OrgBaseResDto],
   })
   @ApiResponse({ status: 404, description: 'User not found' })
-  @Permissions(`organization:read`)
-  @ApiHeaders([
-    {
-      name: HeaderKeys.PROJECT_ID,
-      required: true,
-    }
-  ])
-  @HeaderKey(HeaderKeys.PROJECT_ID)
-  @Permissions(`${name}:${PermissionAction.READ}`)
-  @UseGuards(JwtAuthGuard, HeadersAuthGuard)
+  @UseGuards(JwtAuthGuard)
   async myOrganizations(@User() user: IPayload): Promise<OrgBaseResDto[]> {
     const organizations = await this.queryHandler.handleListOrganizationsByJoiner(user.sub);
     return organizations.map(OrganizationMapper.toResponseDto);

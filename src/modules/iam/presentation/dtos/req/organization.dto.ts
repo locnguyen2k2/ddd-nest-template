@@ -63,6 +63,10 @@ export class UpdateOrganizationDto {
 }
 
 
-export class PaginateOrganizationsQuery extends BasePageOptionDto { }
+export class PaginateOrganizationsQuery extends BasePageOptionDto {
+  userId?: string;
+}
 
-export class CursorOrganizationsQuery extends BaseCursorPageOptionDto { }
+export class CursorOrganizationsQuery extends BaseCursorPageOptionDto {
+  userId?: string;
+}

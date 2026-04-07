@@ -27,9 +27,7 @@ export class UserQueryHandler {
     async hasPermission(userId: string, permissions: string[], onProjectID: string): Promise<boolean> {
         const permission = permissions[0];
         const project = await this.projectRepository.findById(onProjectID);
-        if (!project) {
-            throw new BusinessException(ErrorEnum.RECORD_NOT_FOUND, 'Organization not found');
-        }
+        if (!project) throw new BusinessException(ErrorEnum.RECORD_NOT_FOUND, 'Organization not found');
         const onOrgID = project.organizationID;
         const [featureKey, actionKey] = permission.split(':');
         const [user, feature] = await Promise.all([
@@ -37,17 +35,15 @@ export class UserQueryHandler {
             this.featureRepository.findOneBySlug(featureKey, onProjectID)
         ]);
 
-        if (!user) {
-            throw new BusinessException(ErrorEnum.RECORD_NOT_FOUND);
-        }
+        if (!user) throw new BusinessException(ErrorEnum.RECORD_NOT_FOUND);
 
         return await this.userService.canAccess(feature?.id.value, actionKey.toUpperCase() as PermissionAction, onProjectID);
     }
 
     @LogExecutionTime()
-    async profile(userId: string, orgId: string) {
+    async profile(userId: string) {
         const [user] = await Promise.all([
-            this.userRepository.findByIDWithOrgRoles(userId, orgId),
+            this.userRepository.findOrgRoles(userId),
         ]);
         if (!user) {
             throw new BusinessException(ErrorEnum.RECORD_NOT_FOUND);

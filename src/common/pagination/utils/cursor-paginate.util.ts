@@ -130,14 +130,14 @@ export const cursorHelper = async <T>({
       const firstRecord = resultEntities[0];
       const lastRecord = resultEntities[resultEntities.length - 1];
 
-      if (hasNextPage && lastRecord && lastRecord?.cursorField) {
+      if (hasNextPage && lastRecord && lastRecord[cursorField]) {
         nextCursor = encodeCursor(
           lastRecord.id,
           lastRecord[cursorField].toISOString(),
         );
       }
 
-      if (hasPrevPage && firstRecord && firstRecord?.cursorField) {
+      if (hasPrevPage && firstRecord && firstRecord[cursorField]) {
         prevCursor = encodeCursor(
           firstRecord.id,
           firstRecord[cursorField].toISOString(),

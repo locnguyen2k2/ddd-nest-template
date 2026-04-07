@@ -41,7 +41,8 @@ import { ProjectMapper } from '../../infrastructure/persistence/mappers/project.
 import { PermissionAction } from '@/common/enum';
 import { JwtAuthGuard } from '../guards/jwt-auth.guard';
 import { HeadersAuthGuard } from '../guards/headers-auth.guard';
-import { HeaderKey, Permissions } from '@/common/decorators'
+import { GetHeaderKey, HeaderKey, Permissions, User } from '@/common/decorators'
+import { IPayload } from '../../domain/services/auth.service';
 
 const name = 'projects';
 
@@ -131,42 +132,18 @@ export class ProjectController {
 
   @Get()
   @ApiOperation({ summary: 'List projects with pagination' })
-  @ApiQuery({
-    name: 'page',
-    required: false,
-    type: Number,
-    description: 'Page number (default: 1)',
-  })
-  @ApiQuery({
-    name: 'limit',
-    required: false,
-    type: Number,
-    description: 'Items per page (default: 10, max: 100)',
-  })
-  @ApiQuery({
-    name: 'search',
-    required: false,
-    type: String,
-    description: 'Search term',
-  })
-  @ApiQuery({
-    name: 'organization_id',
-    required: false,
-    type: String,
-    description: 'Filter by organization',
-  })
   @ApiResponse({
     status: 200,
     description: 'Projects retrieved successfully',
     type: PaginateProjectsResponseDto,
   })
-  @ApiHeader({ name: HeaderKeys.PROJECT_ID, required: true })
-  @HeaderKey(HeaderKeys.PROJECT_ID)
-  @Permissions(`${name}:${PermissionAction.READ}`)
+  @HeaderKey(HeaderKeys.ORG_ID)
   @UseGuards(JwtAuthGuard, HeadersAuthGuard)
   async paginate(
     @Query() listQuery: PaginateProjectsQuery,
+    @GetHeaderKey(HeaderKeys.ORG_ID) orgId: string,
   ): Promise<PaginateProjectsResponseDto> {
+    listQuery.organization_id = orgId;
     const result = await this.prjectQueryHandler.handlePaginate(listQuery);
 
     return {
@@ -200,13 +177,13 @@ export class ProjectController {
     description: 'Projects retrieved successfully',
     type: CursorProjectsResponseDto,
   })
-  @ApiHeader({ name: HeaderKeys.PROJECT_ID, required: true })
-  @HeaderKey(HeaderKeys.PROJECT_ID)
-  @Permissions(`${name}:${PermissionAction.READ}`)
+  @HeaderKey(HeaderKeys.ORG_ID)
   @UseGuards(JwtAuthGuard, HeadersAuthGuard)
   async cursorPagination(
     @Query() listQuery: CursorProjectsQuery,
+    @GetHeaderKey(HeaderKeys.ORG_ID) orgId: string,
   ): Promise<CursorProjectsResponseDto> {
+    listQuery.organization_id = orgId;
     const result = await this.prjectQueryHandler.handleCursorPaginate(listQuery);
 
     return {

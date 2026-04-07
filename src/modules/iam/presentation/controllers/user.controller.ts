@@ -42,25 +42,17 @@ export class UserController {
 
   @Get('me')
   @ApiBearerAuth()
-  @UseGuards(HeadersAuthGuard)
   @ApiOperation({ summary: 'Get current user' })
   @ApiResponse({
     status: 200,
     description: 'Current user retrieved successfully',
     type: UserResponseDto,
   })
-  @ApiHeader({
-    name: HeaderKeys.ORG_ID,
-    required: true,
-    description: 'Organization ID',
-  })
-  @HeaderKey(HeaderKeys.ORG_ID)
-  @UseGuards(HeadersAuthGuard, JwtAuthGuard)
+  @UseGuards(JwtAuthGuard)
   async me(
-    @GetHeaderKey(HeaderKeys.ORG_ID) orgId: string,
     @User() user: IPayload,
   ): Promise<UserResponseDto> {
-    return await this.userQueryHandler.profile(user.sub, orgId);
+    return await this.userQueryHandler.profile(user.sub);
   }
 
   @Post('register')

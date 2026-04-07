@@ -23,9 +23,12 @@ export interface IOrganizationRepository extends IPaginate<Organization>, ICurso
 
   // Validation operations
   organizationHasUser(organizationId: string, userId: string): Promise<boolean>;
+  userJoinedAnyOrganization(userId: string): Promise<boolean>;
   organizationHasRole(organizationId: string, roleId: string): Promise<boolean>;
   handleListOrganizationsByJoiner(joinerId: string): Promise<Organization[]>
   assignRoleToUser(organizationId: string, userId: string, roleId: string): Promise<void>
   unassignRoleFromUser(organizationId: string, userId: string, roleId: string): Promise<void>
-  findUserRoles(organizationId: string, userId: string): Promise<string[]>
+  findUserOrgRoles(organizationId: string, userId: string): Promise<string[]>
+  findOrgRoles(userId: string): Promise<Map<string, string[]>>
+  findUserOrganizations(userId: string): Promise<Organization[]>
 }
