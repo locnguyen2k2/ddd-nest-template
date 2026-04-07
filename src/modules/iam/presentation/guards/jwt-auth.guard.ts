@@ -69,10 +69,6 @@ export class JwtAuthGuard implements CanActivate {
         return !!result;
     }
 
-    private extractOrgIdFromHeader(request: any): string | null {
-        return request.headers[HeaderKeys.ORG_ID] || null;
-    }
-
     private extractProjectIdFromHeader(request: any): string | null {
         return request.headers[HeaderKeys.PROJECT_ID] || null;
     }

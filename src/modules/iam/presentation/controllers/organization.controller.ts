@@ -113,12 +113,11 @@ export class OrganizationController {
     description: 'Role unassigned successfully',
   })
   @ApiHeader({ name: HeaderKeys.PROJECT_ID, required: true })
-  @HeaderKey(HeaderKeys.ORG_ID)
   @ApiResponse({ status: 404, description: 'Role, organization or user not found' })
   @HeaderKey(HeaderKeys.PROJECT_ID)
   @Permissions(`${name}:${PermissionAction.UPDATE}`)
   @UseGuards(JwtAuthGuard, HeadersAuthGuard)
-  async unassignRoleFromUser(@Body() dto: AssignRoleToUserDto, @GetHeaderKey(HeaderKeys.ORG_ID) orgId: string): Promise<void> {
+  async unassignRoleFromUser(@Body() dto: AssignRoleToUserDto,): Promise<void> {
     await this.commandHandler.handleUnassignRoleFromUser({ ...dto });
   }
 
@@ -130,12 +129,11 @@ export class OrganizationController {
     description: 'Role assigned successfully',
   })
   @ApiHeader({ name: HeaderKeys.PROJECT_ID, required: true })
-  @HeaderKey(HeaderKeys.ORG_ID)
   @ApiResponse({ status: 404, description: 'Role, organization or user not found' })
   @HeaderKey(HeaderKeys.PROJECT_ID)
   @Permissions(`${name}:${PermissionAction.CREATE}`)
   @UseGuards(JwtAuthGuard, HeadersAuthGuard)
-  async assignRoleToUser(@Body() dto: AssignRoleToUserDto, @GetHeaderKey(HeaderKeys.ORG_ID) orgId: string): Promise<void> {
+  async assignRoleToUser(@Body() dto: AssignRoleToUserDto): Promise<void> {
     await this.commandHandler.handleAssignRoleToUser({ ...dto });
   }
 

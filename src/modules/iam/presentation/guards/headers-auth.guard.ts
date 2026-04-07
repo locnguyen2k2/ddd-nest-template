@@ -51,8 +51,6 @@ export class HeadersAuthGuard implements CanActivate {
                 if (!org) {
                     throw new BusinessException(ErrorEnum.RECORD_NOT_FOUND, 'Organization not found');
                 }
-            } else {
-                throw new BusinessException(ErrorEnum.REQUEST_FAILED_TO_EXECUTE, 'Organization ID is required');
             }
         } else {
             throw new BusinessException(ErrorEnum.REQUEST_FAILED_TO_EXECUTE, 'Header key is required');
