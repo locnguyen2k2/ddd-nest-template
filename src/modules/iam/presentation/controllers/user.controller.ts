@@ -85,19 +85,9 @@ export class UserController {
     description: 'User logged in successfully',
     type: AuthResponseDto,
   })
-  @ApiHeaders([
-    {
-      name: HeaderKeys.ORG_ID,
-      required: true,
-      description: 'Organization ID',
-    },
-  ])
   @ApiResponse({ status: 401, description: 'Unauthorized - Invalid credentials' })
-  @HeaderKey(HeaderKeys.ORG_ID)
-  @UseGuards(HeadersAuthGuard)
   @HttpCode(HttpStatus.OK)
   async login(
-    @GetHeaderKey(HeaderKeys.ORG_ID) orgID: string,
     @Body() loginUserDto: LoginUserDto,
   ): Promise<AuthResponseDto> {
     try {
@@ -106,7 +96,7 @@ export class UserController {
         loginUserDto.password,
       );
 
-      return await this.authCmdHandler.login(command, orgID);
+      return await this.authCmdHandler.login(command);
     } catch (error: any) {
       throw new BusinessException(ErrorEnum.UNAUTHORIZED, error?.message);
     }

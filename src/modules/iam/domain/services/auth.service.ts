@@ -39,7 +39,7 @@ export class AuthDomainService {
         this.jwtConfigs = this.configService.get<IJwtConfig>(jwtConfigKey)!;
     }
 
-    async validateUser(username: string, password: string, orgID: string): Promise<UserEntity> {
+    async validateUser(username: string, password: string): Promise<UserEntity> {
         const [user] = await Promise.all([
             this.userRepo.findByUsername(username),
         ]);
@@ -53,7 +53,7 @@ export class AuthDomainService {
                 break;
         }
 
-        const userWithOrgRoles = await this.userRepo.findByIDWithOrgRoles(user.id.value, orgID);
+        const userWithOrgRoles = await this.userRepo.findOrgRoles(user.id.value);
         if (!userWithOrgRoles) {
             throw new BusinessException(ErrorEnum.RECORD_NOT_FOUND);
         }

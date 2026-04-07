@@ -23,9 +23,9 @@ export class AuthCmdHandler {
     constructor(private readonly authDomainService: AuthDomainService, @Inject(ROLE_REPO) private readonly roleRepo: IRoleRepository, @Inject(ORGANIZATION_REPO) private readonly orgRepo: IOrganizationRepository) { }
 
     @LogExecutionTime()
-    async login(args: LoginArgs, orgID: string): Promise<AuthResponseDto> {
+    async login(args: LoginArgs): Promise<AuthResponseDto> {
         try {
-            const validUser = await this.authDomainService.validateUser(args.username, args.password, orgID);
+            const validUser = await this.authDomainService.validateUser(args.username, args.password);
             const [tokenInfo, orgs, roles] = await Promise.all([
                 this.authDomainService.prepareTokens(validUser),
                 this.orgRepo.findByIds(validUser.org_roles.map(org => org.organization_id)),
