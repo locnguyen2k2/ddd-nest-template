@@ -15,7 +15,7 @@ import {
   ApiHeaders,
   ApiBearerAuth,
 } from '@nestjs/swagger';
-import { RegisterUserDto, LoginUserDto, VerifyAccessTokenDto, RefreshTokenDto, LogoutDto } from '@/modules/iam/presentation/dtos/req/user.dto';
+import { RegisterUserDto, LoginUserDto, VerifyAccessTokenDto, RefreshTokenDto, LogoutDto, CheckPermissionDto } from '@/modules/iam/presentation/dtos/req/user.dto';
 import { AuthResponseDto, UserResponseDto, TokenResponseDto } from '@/modules/iam/presentation/dtos/res/user-response.dto';
 import { UserCmdHandler } from '@/modules/iam/application/services/user/user.command.handler';
 import { AuthCmdHandler } from '@/modules/iam/application/services/auth/auth.command.handler';
@@ -39,6 +39,23 @@ export class UserController {
     private readonly authCmdHandler: AuthCmdHandler,
     private readonly userQueryHandler: UserQueryHandler,
   ) { }
+
+  @Post('check-permission')
+  @ApiOperation({ summary: 'Check user permission' })
+  @ApiResponse({
+    status: 200,
+    description: 'User permission checked successfully',
+    type: Boolean,
+  })
+  @HeaderKey(HeaderKeys.PROJECT_ID)
+  @UseGuards(JwtAuthGuard, HeadersAuthGuard)
+  async checkPermission(
+    @User() user: IPayload,
+    @Body() dto: CheckPermissionDto,
+    @GetHeaderKey(HeaderKeys.PROJECT_ID) projectID: string,
+  ): Promise<boolean> {
+    return await this.userQueryHandler.hasPermission(user.sub, dto.permission.map(p => `${p.feature}:${p.action}`), projectID);
+  }
 
   @Get('me')
   @ApiBearerAuth()
