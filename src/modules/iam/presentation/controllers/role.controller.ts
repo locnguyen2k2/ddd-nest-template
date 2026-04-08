@@ -151,7 +151,7 @@ export class RoleController {
     const result = await this.queryHandler.handlePaginate(listQuery);
 
     return {
-      roles: result.data,
+      data: result.data,
       paginated: result.paginated,
     };
   }
@@ -173,7 +173,7 @@ export class RoleController {
     const result = await this.queryHandler.handleCursorPaginate(listQuery);
 
     return {
-      roles: result.data,
+      data: result.data,
       paginated: result.paginated,
     };
   }

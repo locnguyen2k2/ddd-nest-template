@@ -44,7 +44,7 @@ export class ListOrganizationsResponseDto {
 
 export class PaginateOrganizationsResponseDto {
   @ApiProperty({ type: [OrgBaseResDto] })
-  organizations!: OrgBaseResDto[];
+  data!: OrgBaseResDto[];
 
   @ApiProperty({ type: PaginationDto })
   @Type(() => PaginationDto)
@@ -53,7 +53,7 @@ export class PaginateOrganizationsResponseDto {
 
 export class CursorOrganizationsResponseDto {
   @ApiProperty({ type: [OrgBaseResDto] })
-  organizations!: OrgBaseResDto[];
+  data!: OrgBaseResDto[];
 
   @ApiProperty({ type: CursorPaginationDto })
   @Type(() => CursorPaginationDto)

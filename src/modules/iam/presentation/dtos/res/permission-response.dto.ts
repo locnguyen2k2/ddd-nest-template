@@ -30,7 +30,7 @@ export class PermissionResponseDto {
 
 export class PaginatePermissionResponseDto {
   @ApiProperty({ type: [PermissionResponseDto] })
-  permissions!: PermissionResponseDto[];
+  data!: PermissionResponseDto[];
 
   @ApiProperty({ type: PaginationDto })
   @Type(() => PaginationDto)
@@ -39,7 +39,7 @@ export class PaginatePermissionResponseDto {
 
 export class CursorPermissionResponseDto {
   @ApiProperty({ type: [PermissionResponseDto] })
-  permissions!: PermissionResponseDto[];
+  data!: PermissionResponseDto[];
 
   @ApiProperty({ type: CursorPaginationDto })
   paginated!: CursorPaginationDto;

@@ -184,7 +184,7 @@ export class AuthDomainService {
                 user.updated_at,
             );
         } catch (error) {
-            throw new BusinessException(ErrorEnum.UNAUTHORIZED);
+            throw new BusinessException(ErrorEnum.TOKEN_IS_INVALID);
         }
     }
 

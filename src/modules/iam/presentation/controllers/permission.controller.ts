@@ -114,7 +114,7 @@ export class PermissionController {
     const result = await this.queryHandler.handlePaginate(listQuery);
 
     return {
-      permissions: result.data,
+      data: result.data,
       paginated: result.paginated,
     };
   }
@@ -136,7 +136,7 @@ export class PermissionController {
     const result = await this.queryHandler.handleCursorPaginate(listQuery);
 
     return {
-      permissions: result.data.map((permission: any) => PermissionMapper.toResponseDto(permission)),
+      data: result.data.map((permission: any) => PermissionMapper.toResponseDto(permission)),
       paginated: result.paginated,
     };
   }

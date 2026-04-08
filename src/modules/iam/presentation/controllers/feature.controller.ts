@@ -141,7 +141,7 @@ export class FeatureController {
     const result = await this.queryHandler.handlePaginate(listQuery);
 
     return {
-      features: result.data.map((feature) =>
+      data: result.data.map((feature) =>
         FeatureMapper.toResponseDto(feature),
       ),
       paginated: result.paginated,
@@ -164,7 +164,7 @@ export class FeatureController {
     const result = await this.queryHandler.handleCursorPaginate(listQuery);
 
     return {
-      features: result.data.map((feature) =>
+      data: result.data.map((feature) =>
         FeatureMapper.toResponseDto(feature),
       ),
       paginated: result.paginated,

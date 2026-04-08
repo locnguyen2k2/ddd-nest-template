@@ -37,10 +37,10 @@ export class JwtAuthGuard implements CanActivate {
         }
 
         let result: IPayload | null = null;
+        const [userInfo] = await Promise.all([
+            this.authCmdHandler.verifyAccessToken(new VerifyAccessTokenArgs(token)),
+        ]);
         try {
-            const [userInfo] = await Promise.all([
-                this.authCmdHandler.verifyAccessToken(new VerifyAccessTokenArgs(token)),
-            ]);
             result = {
                 sub: userInfo.id,
                 email: userInfo.email,

@@ -11,7 +11,7 @@ export enum ErrorEnum {
 
   REQUIRED_FIELD_MISSING = '400|Required field missing',
   TOKEN_IS_REQUIRED = '401|Token is required',
-  TOKEN_IS_INVALID = '401|Token is invalid',
+  TOKEN_IS_INVALID = '420|Token is invalid or expired',
 
   REQUEST_FAILED_TO_EXECUTE = '400|Request failed to execute',
   REQUEST_FAILED_TO_QUERY = '400|Request failed to query',

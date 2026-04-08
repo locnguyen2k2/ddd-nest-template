@@ -147,7 +147,7 @@ export class ProjectController {
     const result = await this.prjectQueryHandler.handlePaginate(listQuery);
 
     return {
-      projects: result.data,
+      data: result.data,
       paginated: result.paginated,
     };
   }
@@ -187,7 +187,7 @@ export class ProjectController {
     const result = await this.prjectQueryHandler.handleCursorPaginate(listQuery);
 
     return {
-      projects: result.data,
+      data: result.data,
       paginated: result.paginated,
     };
   }

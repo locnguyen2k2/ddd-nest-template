@@ -74,7 +74,7 @@ export class OrganizationController {
     const result = await this.queryHandler.handlePaginate(listQuery);
 
     return {
-      organizations: result.data.map((organization) =>
+      data: result.data.map((organization) =>
         OrganizationMapper.toResponseDto(organization),
       ),
       paginated: result.paginated,
@@ -97,7 +97,7 @@ export class OrganizationController {
     const result = await this.queryHandler.handleCursorPaginate(listQuery);
 
     return {
-      organizations: result.data.map((organization) =>
+      data: result.data.map((organization) =>
         OrganizationMapper.toResponseDto(organization),
       ),
       paginated: result.paginated,

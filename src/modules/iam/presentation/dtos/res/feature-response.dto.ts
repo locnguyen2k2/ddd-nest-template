@@ -48,7 +48,7 @@ export class FeatureResponseDto {
 
 export class PaginateFeaturesResponseDto {
   @ApiProperty({ type: [FeatureResponseDto] })
-  features!: FeatureResponseDto[];
+  data!: FeatureResponseDto[];
 
   @ApiProperty({ type: PaginationDto })
   @Type(() => PaginationDto)
@@ -57,7 +57,7 @@ export class PaginateFeaturesResponseDto {
 
 export class CursorFeaturesResponseDto {
   @ApiProperty({ type: [FeatureResponseDto] })
-  features!: FeatureResponseDto[];
+  data!: FeatureResponseDto[];
 
   @ApiProperty({ type: CursorPaginationDto })
   @Type(() => CursorPaginationDto)

@@ -52,7 +52,7 @@ export class RoleResponseDto extends RoleBaseResDto {
 
 export class PaginateRolesResponseDto {
   @ApiProperty({ type: [RoleResponseDto] })
-  roles!: RoleResponseDto[];
+  data!: RoleResponseDto[];
 
   @ApiProperty({ type: PaginationDto })
   @Type(() => PaginationDto)
@@ -61,7 +61,7 @@ export class PaginateRolesResponseDto {
 
 export class CursorRolesResponseDto {
   @ApiProperty({ type: [RoleResponseDto] })
-  roles!: RoleResponseDto[];
+  data!: RoleResponseDto[];
 
   @ApiProperty({ type: CursorPaginationDto })
   paginated!: CursorPaginationDto;

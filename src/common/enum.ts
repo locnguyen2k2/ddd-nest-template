@@ -10,3 +10,8 @@ export enum PermissionAction {
   UPDATE = 'UPDATE',
   DELETE = 'DELETE',
 }
+
+export enum AdminRoles {
+  ADMIN = 'admin',
+  SUPER_ADMIN = 'super-admin',
+}
