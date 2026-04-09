@@ -260,7 +260,7 @@ export class OrganizationController {
     description: 'Organization with slug already exists',
   })
   @ApiHeader({ name: HeaderKeys.PROJECT_ID, required: true })
-  @HeaderKey(HeaderKeys.PROJECT_ID)
+  @HeaderKey(HeaderKeys.ORG_ID)
   @Permissions(`${name}:${PermissionAction.UPDATE}`)
   @UseGuards(JwtAuthGuard, HeadersAuthGuard)
   async update(
