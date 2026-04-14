@@ -1,3 +1,4 @@
+import { BasePageOptionDto, BaseCursorPageOptionDto } from '@/common/pagination';
 import { ApiProperty } from '@nestjs/swagger';
 import { IsString, IsNotEmpty, IsOptional } from 'class-validator';
 
@@ -5,17 +6,17 @@ export class CreateAttributeDto {
   @ApiProperty({ example: 'USER' })
   @IsString()
   @IsNotEmpty()
-  entity_type: string;
+  entity_type!: string;
 
   @ApiProperty({ example: 'department' })
   @IsString()
   @IsNotEmpty()
-  key: string;
+  key!: string;
 
   @ApiProperty({ example: 'STRING' })
   @IsString()
   @IsNotEmpty()
-  data_type: string;
+  data_type!: string;
 
   @ApiProperty({ required: false })
   @IsString()
@@ -43,4 +44,10 @@ export class UpdateAttributeDto {
   @IsString()
   @IsOptional()
   description?: string;
+}
+
+export class PaginateAttributesQuery extends BasePageOptionDto {
+}
+
+export class CursorAttributesQuery extends BaseCursorPageOptionDto {
 }

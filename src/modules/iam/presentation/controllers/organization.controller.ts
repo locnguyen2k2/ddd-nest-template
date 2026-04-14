@@ -133,9 +133,37 @@ export class OrganizationController {
   })
   @ApiResponse({ status: 404, description: 'User not found' })
   @UseGuards(JwtAuthGuard)
-  async myOrganizations(@User() user: IPayload): Promise<OrgBaseResDto[]> {
-    const organizations = await this.queryHandler.handleListOrganizationsByJoiner(user.sub);
-    return organizations.map(OrganizationMapper.toResponseDto);
+  async myOrganizations(@Query() listQuery: PaginateOrganizationsQuery, @User() user: IPayload): Promise<PaginateOrganizationsResponseDto> {
+    const result = await this.queryHandler.handleListOrganizationsByJoiner(listQuery, user.sub);
+    return {
+      data: result.data.map((organization) =>
+        OrganizationMapper.toResponseDto(organization),
+      ),
+      paginated: result.paginated,
+    };
+  }
+
+  @Get('joined/cursor')
+  @ApiOperation({ summary: 'List organizations with cursor pagination' })
+  @ApiResponse({
+    status: 200,
+    description: 'Organizations retrieved successfully',
+    type: CursorOrganizationsResponseDto,
+  })
+  @UseGuards(JwtAuthGuard)
+  async cursorPaginationJoinedOrgs(
+    @Query() listQuery: CursorOrganizationsQuery,
+    @User() user: IPayload,
+  ): Promise<CursorOrganizationsResponseDto> {
+    listQuery.userId = user.sub;
+    const result = await this.queryHandler.handleCursorPaginate(listQuery);
+
+    return {
+      data: result.data.map((organization) =>
+        OrganizationMapper.toResponseDto(organization),
+      ),
+      paginated: result.paginated,
+    };
   }
 
   @Post()

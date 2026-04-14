@@ -2,6 +2,7 @@ import { ApiProperty, ApiPropertyOptional, PartialType } from '@nestjs/swagger';
 import { IsEnum, IsNotEmpty, IsOptional, IsString } from 'class-validator';
 import { Effect } from '../../../domain/entities/policy.entity';
 import { IsJsonLogic } from '@/common/validators/json-logic.validator';
+import { BasePageOptionDto, BaseCursorPageOptionDto } from '@/common/pagination';
 
 export class CreatePolicyDto {
   @ApiProperty({ example: 'Create Project Policy' })
@@ -36,3 +37,9 @@ export class CreatePolicyDto {
 }
 
 export class UpdatePolicyDto extends PartialType(CreatePolicyDto) { }
+
+export class PaginatePoliciesQuery extends BasePageOptionDto {
+}
+
+export class CursorPoliciesQuery extends BaseCursorPageOptionDto {
+}

@@ -1,6 +1,7 @@
 import { PermissionAction } from "@/common/enum";
 import { ApiProperty } from "@nestjs/swagger";
 import { IsEnum, IsNotEmpty, IsOptional, IsString, MaxLength } from "class-validator";
+import { BasePageOptionDto, BaseCursorPageOptionDto } from "@/common/pagination";
 
 export class CreatePermissionDto {
     @ApiProperty()
@@ -42,4 +43,10 @@ export class UpdatePermissionDto {
     @MaxLength(100)
     @IsEnum(PermissionAction)
     action?: PermissionAction;
+}
+
+export class PaginatePermissionQuery extends BasePageOptionDto {
+}
+
+export class CursorPermissionQuery extends BaseCursorPageOptionDto {
 }

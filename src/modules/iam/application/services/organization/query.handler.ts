@@ -10,6 +10,7 @@ import { IOrganizationRepository } from '@/modules/iam/domain/repositories/organ
 import { async } from 'rxjs';
 import { LogExecutionTime } from '@/common/decorators/log-execution.decorator';
 import { CursorOrganizationsQuery, PaginateOrganizationsQuery } from '@/modules/iam/presentation/dtos/req/organization.dto';
+import { PaginateOrganizationsResponseDto } from '@/modules/iam/presentation/dtos/res/organization-response.dto';
 
 @Injectable()
 export class OrganizationQueryHandler {
@@ -28,6 +29,16 @@ export class OrganizationQueryHandler {
     return await this.organizationRepository.cursorPagination(query);
   }
 
+  @LogExecutionTime()
+  async handleCursorOrganizationsByJoiner(query: CursorOrganizationsQuery, joinerId: string) {
+    try {
+      return await this.organizationRepository.cursorPaginationByJoiner(query, joinerId);
+    } catch (error) {
+      console.error('Error listing organizations by joiner:', error);
+    }
+    return null;
+  }
+
   async handleGetOrganizationById(
     query: GetOrganizationByIdQuery,
   ): Promise<Organization | null> {
@@ -40,13 +51,12 @@ export class OrganizationQueryHandler {
     return await this.organizationRepository.findBySlug(query.slug);
   }
 
-  async handleListOrganizationsByJoiner(joinerId: string): Promise<Organization[]> {
-    let organizations: Organization[] = [];
+  async handleListOrganizationsByJoiner(query: PaginateOrganizationsQuery, joinerId: string) {
     try {
-      organizations = await this.organizationRepository.handleListOrganizationsByJoiner(joinerId);
+      return await this.organizationRepository.handleListOrganizationsByJoiner(query, joinerId);
     } catch (error) {
       console.error('Error listing organizations by joiner:', error);
     }
-    return organizations;
+    return null;
   }
 }

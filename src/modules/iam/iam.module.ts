@@ -59,6 +59,11 @@ import { AttributeCommandHandler } from './application/services/attributes/comma
 import { AttributeQueryHandler } from './application/services/attributes/query.handler';
 import { ATTRIBUTE_REPO } from './domain/repositories/attribute.repository';
 import { AttributeRepository } from './infrastructure/persistence/repositories/attribute.repository';
+import { RoleCommandHandler } from './application/services/role/command.handler';
+import { RoleQueryHandler } from './application/services/role/query.handler';
+import { ROLE_REPO } from './domain/repositories/role.repository';
+import { RoleRepository } from './infrastructure/persistence/repositories/role.repository';
+import { RoleController } from './presentation/controllers/role.controller';
 
 const abacProviders = [
   PrismaPolicyRepository,
@@ -150,6 +155,12 @@ const attributeProviders = [
   AttributeRepository,
   { provide: ATTRIBUTE_REPO, useClass: AttributeRepository },
 ];
+const roleProviders = [
+  RoleCommandHandler,
+  RoleQueryHandler,
+  RoleRepository,
+  { provide: ROLE_REPO, useClass: RoleRepository },
+];
 
 const featureExports = [FeatureRepository];
 const organizationExports = [OrganizationRepository, OrgSerevice, TenantContextGuard];
@@ -161,10 +172,11 @@ const staffExports = [StaffRepository];
 const departmentExports = [DepartmentRepository, DepartmentCommandHandler, DepartmentQueryHandler];
 const memberExports = [MemberRepository, MemberCommandHandler, MemberQueryHandler];
 const attributeExports = [AttributeRepository, AttributeCommandHandler, AttributeQueryHandler];
+const roleExports = [RoleRepository, RoleCommandHandler, RoleQueryHandler];
 
 @Module({
   imports: [],
-  controllers: [FeatureController, OrganizationController, ProjectController, UserController, PolicyController, DepartmentController, MemberController],
+  controllers: [RoleController, FeatureController, OrganizationController, ProjectController, UserController, PolicyController, DepartmentController, MemberController],
   providers: [
     ...abacProviders,
     ...featureProviders,
@@ -176,6 +188,7 @@ const attributeExports = [AttributeRepository, AttributeCommandHandler, Attribut
     ...departmentProviders,
     ...memberProviders,
     ...attributeProviders,
+    ...roleProviders,
   ],
   exports: [
     ...featureExports,
@@ -188,6 +201,7 @@ const attributeExports = [AttributeRepository, AttributeCommandHandler, Attribut
     ...departmentExports,
     ...memberExports,
     ...attributeExports,
+    ...roleExports,
   ],
 })
 export class IamModule { }

@@ -1,3 +1,4 @@
+import { BaseCursorPageOptionDto, BasePageOptionDto } from '@/common/pagination';
 import {
   PasswordValidator,
   UsernameValidator,
@@ -119,4 +120,10 @@ export class LogoutDto {
   @IsNotEmpty()
   @IsString()
   refresh_token!: string;
+}
+
+export class PaginateUsersQuery extends BasePageOptionDto {
+}
+
+export class CursorUsersQuery extends BaseCursorPageOptionDto {
 }

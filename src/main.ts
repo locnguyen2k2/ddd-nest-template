@@ -29,15 +29,15 @@ async function bootstrap() {
     fastifyAdapter,
   );
 
-  app.enableCors({
-    origin: '*',
-    allowedHeaders: [
-      'Content-Type',
-      'Authorization',
-      'organization-id',
-      'project-id',
-    ],
-  });
+  // app.enableCors({
+  //   origin: '*',
+  //   allowedHeaders: [
+  //     'Content-Type',
+  //     'Authorization',
+  //     'organization-id',
+  //     'project-id',
+  //   ],
+  // });
 
   const configService = app.get(ConfigService<ConfigKeyPaths>);
   const { port, basicAuthPassword, basicAuthUsername } =

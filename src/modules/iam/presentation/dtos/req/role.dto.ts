@@ -1,20 +1,8 @@
 import { IsString, IsOptional, IsNotEmpty, MaxLength } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
-import { BaseCursorPageOptionDto, BasePageOptionDto } from '@/common/pagination';
+import { BasePageOptionDto, BaseCursorPageOptionDto } from '@/common/pagination';
 
-export class PaginateProjectsQuery extends BasePageOptionDto {
-  @ApiProperty({ required: false })
-  @IsString()
-  @IsOptional()
-  userId?: string;
-
-  @ApiProperty({ required: false })
-  @IsString()
-  @IsOptional()
-  organization_id?: string;
-}
-
-export class CreateProjectDto {
+export class CreateRoleDto {
   @ApiProperty()
   @IsString()
   @IsNotEmpty()
@@ -32,14 +20,9 @@ export class CreateProjectDto {
   @IsOptional()
   @MaxLength(500)
   description?: string;
-
-  @ApiProperty()
-  @IsString()
-  @IsNotEmpty()
-  organization_id!: string;
 }
 
-export class UpdateProjectDto {
+export class UpdateRoleDto {
   @ApiProperty({ required: false })
   @IsString()
   @IsOptional()
@@ -62,16 +45,10 @@ export class UpdateProjectDto {
   @IsString()
   @IsOptional()
   organization_id?: string;
-
-  @ApiProperty({ required: false })
-  @IsString()
-  @IsOptional()
-  updated_by?: string;
 }
 
-export class CursorProjectsQuery extends BaseCursorPageOptionDto {
-  @ApiProperty({ required: false })
-  @IsString()
-  @IsOptional()
-  organization_id?: string;
+export class PaginateRolesQuery extends BasePageOptionDto {
+}
+
+export class CursorRolesQuery extends BaseCursorPageOptionDto {
 }

@@ -2,9 +2,8 @@ export interface CreateRoleArgs {
   name: string;
   slug: string;
   description?: string;
-  permissions?: string[];
   organization_id: string;
-  parent_role_id?: string;
+  attributes?: Record<string, any>;
 }
 
 export interface UpdateRoleArgs {
@@ -12,17 +11,11 @@ export interface UpdateRoleArgs {
   name?: string;
   slug?: string;
   description?: string;
-  permissions?: string[];
   organization_id: string;
-  parent_id?: string;
+  attributes?: Record<string, any>;
 }
 
 export interface DeleteRoleArgs {
   id: string;
-}
-
-export interface AssignPermissionToRoleArgs {
-  role_id: string;
-  permission_id: string;
-  feature_id: string;
+  organization_id: string;
 }

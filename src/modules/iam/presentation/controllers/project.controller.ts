@@ -23,6 +23,7 @@ import {
   CreateProjectDto,
   PaginateProjectsQuery,
   UpdateProjectDto,
+  CursorProjectsQuery,
 } from '@/modules/iam/presentation/dtos/req/project.dto';
 import {
   ProjectResponseDto,
@@ -33,7 +34,6 @@ import { API_VERS, HeaderKeys, StorageKeys } from '@/common/constant';
 import { ProjectCmdHandler } from '../../application/services/project/cmd.handler';
 import { ProjectQueryHandler } from '../../application/services/project/query.handler';
 import {
-  CursorProjectsQuery,
   GetProjectByIdQuery,
   GetProjectBySlugQuery,
 } from '../../application/dtos/queries/project-query.dto';
@@ -185,28 +185,6 @@ export class ProjectController {
   // READ - Cursor Pagination
   @Get('cursor')
   @ApiOperation({ summary: 'List projects with cursor pagination' })
-  @ApiQuery({
-    name: 'cursor',
-    required: false,
-    description: 'Cursor for pagination',
-  })
-  @ApiQuery({
-    name: 'limit',
-    required: false,
-    type: Number,
-    description: 'Items per page (default: 10, max: 100)',
-  })
-  @ApiQuery({
-    name: 'organization_id',
-    required: false,
-    type: String,
-    description: 'Filter by organization',
-  })
-  @ApiResponse({
-    status: 200,
-    description: 'Projects retrieved successfully',
-    type: CursorProjectsResponseDto,
-  })
   @ApiHeader({
     name: HeaderKeys.ORG_ID,
     required: true,

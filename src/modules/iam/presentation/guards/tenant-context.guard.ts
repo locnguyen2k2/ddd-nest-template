@@ -24,12 +24,12 @@ export class TenantContextGuard implements CanActivate {
     const orgSlug = (request.headers[HeaderKeys.ORG_SLUG] || request.params.orgSlug) as string;
 
     if (!orgId && !orgSlug) {
-      throw new BusinessException(ErrorEnum.REQUEST_FAILED_TO_EXECUTE);
+      throw new BusinessException(ErrorEnum.REQUEST_FAILED_TO_EXECUTE, "Organization ID or slug is required");
     }
 
     const user = request.user;
     if (!user || !user.sub) {
-      throw new BusinessException(ErrorEnum.UNAUTHORIZED);
+      throw new BusinessException(ErrorEnum.UNAUTHORIZED, "User not found");
     }
 
     let organization: Organization | null = null;
@@ -40,7 +40,7 @@ export class TenantContextGuard implements CanActivate {
     }
 
     if (!organization) {
-      throw new BusinessException(ErrorEnum.RECORD_NOT_FOUND);
+      throw new BusinessException(ErrorEnum.RECORD_NOT_FOUND, "Organization not found");
     }
 
     const hasAccess = await this.organizationRepository.organizationHasUser(
@@ -49,7 +49,7 @@ export class TenantContextGuard implements CanActivate {
     );
 
     if (!hasAccess) {
-      throw new BusinessException(ErrorEnum.RECORD_NOT_FOUND);
+      throw new BusinessException(ErrorEnum.RECORD_NOT_FOUND, "User does not have access to this organization");
     }
 
     this.cls.set(StorageKeys.ORG_ID, organization.id.value);

@@ -24,6 +24,7 @@ model User {
     created_staffs Staff[] @relation("StaffsCreatedBy")
     created_organizations Organization[] @relation("OrganizationCreatedBy")
     created_projects Project[] @relation("ProjectCreatedBy")
+    created_roles Role[] @relation("RoleCreatedBy")
 
     @@index([email])
     @@index([username])
@@ -139,10 +140,16 @@ model Role {
   slug            String
   organization_id String   @db.Uuid
   attributes Json @default("{}")
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+  created_by   String?  @db.Uuid
+  updated_by   String?  @db.Uuid
+  status AccessControlStatus @default(ACTIVE)
   
   staff           Staff[] @relation("RoleToStaff")
   
   organization    Organization @relation("OrganizationToRole", fields: [organization_id], references: [id])
+  created_by_user User? @relation("RoleCreatedBy", fields: [created_by], references: [id], onDelete: SetNull)
 
   @@unique([organization_id, slug])
 }

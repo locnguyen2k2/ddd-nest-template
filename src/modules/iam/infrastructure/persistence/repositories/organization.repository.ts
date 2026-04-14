@@ -76,13 +76,67 @@ export class OrganizationRepository
   }
 
   @LogExecutionTime()
-  async handleListOrganizationsByJoiner(joinerId: string): Promise<Organization[]> {
+  async cursorPaginationByJoiner(query: CursorOrganizationsQuery, joinerId: string) {
     try {
-      const organizations = await this.rbacDBService.organization.findMany({
-        where: { staffs: { some: { user_id: joinerId } } },
-      });
-      return organizations.map(OrganizationMapper.toDomain);
+      const { data = [], paginated } =
+        await cursorHelper<Prisma.OrganizationGetPayload<{}>>({
+          query: this.rbacDBService.organization,
+          pageOptions: query,
+          cursorField: SortableFieldEnum.CREATED_AT,
+          orderDirection: SortedEnum.DESC,
+          filterOptions: [
+            {
+              users: {
+                some: {
+                  user_id: joinerId,
+                },
+              },
+            },
+          ],
+        });
+
+      return {
+        data: data.map((item) => OrganizationMapper.toDomain(item)),
+        paginated,
+      };
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  @LogExecutionTime()
+  async handleListOrganizationsByJoiner(query: PaginateOrganizationsQuery, joinerId: string) {
+    try {
+      const filterOptions: any[] = [];
+
+      if (query.userId) {
+        filterOptions.push({
+          users: {
+            some: {
+              user_id: query.userId,
+            },
+          },
+        })
+      }
+
+      const { data = [], paginated } =
+        await paginateHelper<Prisma.OrganizationGetPayload<{}>>({
+          query: this.rbacDBService.organization,
+          pageOptions: query,
+          filterOptions: [
+            ...filterOptions,
+            {
+              staffs: { some: { user_id: joinerId } }
+            }
+          ],
+        });
+
+      return {
+        data: data.map((item) => OrganizationMapper.toDomain(item)),
+        paginated,
+      };
     } catch (e: any) {
+      console.log(e);
       throw new BusinessException(ErrorEnum.REQUEST_FAILED_TO_QUERY);
     }
   }

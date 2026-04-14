@@ -1,3 +1,5 @@
+import { CursorPageDto } from '@/common/pagination/dtos/cursor-page-options.dto';
+import { CursorOrganizationsQuery, PaginateOrganizationsQuery } from '../../presentation/dtos/req/organization.dto';
 import { Organization } from '../entities/organization.entity';
 import { IPaginate, ICursor } from '@/shared/domain/repositories/base.repository';
 
@@ -28,6 +30,7 @@ export interface IOrganizationRepository extends IPaginate<Organization>, ICurso
   // Validation operations
   organizationHasUser(organizationId: string, userId: string): Promise<boolean>;
   userJoinedAnyOrganization(userId: string): Promise<boolean>;
-  handleListOrganizationsByJoiner(joinerId: string): Promise<Organization[]>
+  handleListOrganizationsByJoiner(query: PaginateOrganizationsQuery, joinerId: string);
+  cursorPaginationByJoiner(query: CursorOrganizationsQuery, joinerId: string): Promise<CursorPageDto<Organization>>;
   findStaffs(userId: string): Promise<Organization[]>
 }
