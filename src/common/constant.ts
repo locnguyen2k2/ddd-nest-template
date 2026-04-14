@@ -11,8 +11,16 @@ export const KEYS = {
 
 export const HeaderKeys = {
   ORG_ID: 'organization-id',
+  ORG_SLUG: 'organization-slug',
   PROJECT_ID: 'project-id',
 }
+
+export const StorageKeys = {
+  ORG_ID: 'org_id',
+  ORG_SLUG: 'org_slug',
+  PROJECT_ID: 'project_id',
+  ORG: 'org',
+} as const;
 
 export const API_VERS = {
   V1: 'apis/v1',

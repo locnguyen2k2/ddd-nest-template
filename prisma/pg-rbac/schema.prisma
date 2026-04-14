@@ -17,37 +17,16 @@ model User {
     status      AccessControlStatus @default(ACTIVE)
     created_at   DateTime @default(now())
     updated_at   DateTime @updatedAt
+    attributes   Json     @default("{}")
 
-    organizations UserOrganization[]
-    created_permissions Permission[] @relation("PermissionCreatedBy")
+    staffs Staff[] @relation("UserToStaff")
     created_features Feature[] @relation("FeatureCreatedBy")
-    created_roles Role[] @relation("RoleCreatedBy")
-    created_user_organizations UserOrganization[] @relation("UserOrganizationCreatedBy")
-    created_role_feature_permissions RoleFeaturePermission[] @relation("RoleFeaturePermissionCreatedBy")
-    created_user_organization_roles UserOrganizationRole[] @relation("UserOrganizationRoleCreatedBy")
+    created_staffs Staff[] @relation("StaffsCreatedBy")
     created_organizations Organization[] @relation("OrganizationCreatedBy")
     created_projects Project[] @relation("ProjectCreatedBy")
 
     @@index([email])
     @@index([username])
-}
-
-model Permission {
-    id          String   @id @default(uuid(7)) @db.Uuid
-    name        String
-    description String?
-    action      PermissionAction
-    created_at   DateTime @default(now())
-    updated_at   DateTime @updatedAt
-    created_by   String?  @db.Uuid
-    updated_by   String?  @db.Uuid
-
-    role_feature_permissions RoleFeaturePermission[]
-    
-    created_by_user User? @relation("PermissionCreatedBy", fields: [created_by], references: [id], onDelete: SetNull)
-
-    @@unique([action])
-    @@index([action])
 }
 
 model Organization {
@@ -57,16 +36,44 @@ model Organization {
     description String?
     created_at   DateTime @default(now())
     updated_at   DateTime @updatedAt
+    attributes   Json     @default("{}")
     created_by   String?  @db.Uuid
     updated_by   String?  @db.Uuid
 
-    roles Role[]
-    users UserOrganization[]
-    projects Project[]
+    staffs Staff[] @relation("OrganizationToStaff")
+    projects Project[] @relation("OrganizationToProject")
+    departments Department[] @relation("OrganizationToDepartment")
+    roles Role[] @relation("OrganizationToRole")
+    policies Policy[] @relation("OrganizationToPolicy")
     
     created_by_user User? @relation("OrganizationCreatedBy", fields: [created_by], references: [id], onDelete: SetNull)
 
     @@index([slug])
+}
+
+model Staff {
+    id          String   @id @default(uuid(7)) @db.Uuid
+    organization_id String @db.Uuid
+    user_id String @db.Uuid
+    department_id String? @db.Uuid
+    role_id String? @db.Uuid
+    status AccessControlStatus @default(ACTIVE)
+    created_at DateTime @default(now())
+    updated_at DateTime @updatedAt
+    created_by String? @db.Uuid
+    updated_by String? @db.Uuid
+    context_attributes Json @default("{}")
+
+    members Member[] @relation("MemberToStaff")
+    
+    user User @relation("UserToStaff", fields: [user_id], references: [id], onDelete: Cascade)
+    organization Organization @relation("OrganizationToStaff", fields: [organization_id], references: [id], onDelete: Cascade)
+    department Department? @relation("DepartmentToStaff", fields: [department_id], references: [id], onDelete: SetNull)
+    role Role? @relation("RoleToStaff", fields: [role_id], references: [id], onDelete: SetNull)
+
+    created_by_user User? @relation("StaffsCreatedBy", fields: [created_by], references: [id], onDelete: SetNull)
+
+    @@unique([user_id, organization_id])
 }
 
 model Project {
@@ -75,18 +82,79 @@ model Project {
     slug        String   @unique
     description String?
     organization_id String @db.Uuid
+    department_id String? @db.Uuid
     created_at   DateTime @default(now())
     updated_at   DateTime @updatedAt
+    attributes   Json     @default("{}")
     created_by   String?  @db.Uuid
     updated_by   String?  @db.Uuid
 
-    features Feature[]
+    features Feature[] @relation("FeatureToProject")
+    members Member[] @relation("MemberToProject")
     
-    organization Organization @relation(fields: [organization_id], references: [id], onDelete: Cascade)
-    
+    organization Organization @relation("OrganizationToProject", fields: [organization_id], references: [id], onDelete: Cascade)
+    department Department? @relation("DepartmentToProject", fields: [department_id], references: [id], onDelete: SetNull)
     created_by_user User? @relation("ProjectCreatedBy", fields: [created_by], references: [id], onDelete: SetNull)
 
     @@index([slug])
+}
+
+model Member {
+    id String @id @default(uuid(7)) @db.Uuid
+    staff_id String @db.Uuid
+    project_id String @db.Uuid
+    status AccessControlStatus @default(ACTIVE)
+    context_attributes Json @default("{}")
+    
+    created_at DateTime @default(now())
+    updated_at DateTime @updatedAt
+    
+    staff Staff @relation("MemberToStaff", fields: [staff_id], references: [id], onDelete: Cascade)
+    project Project @relation("MemberToProject", fields: [project_id], references: [id], onDelete: Cascade)
+    
+    @@unique([staff_id, project_id])
+}
+
+model Department {
+  id              String   @id @default(uuid(7)) @db.Uuid
+  name            String
+  slug            String   @unique
+  created_at      DateTime @default(now())
+  updated_at      DateTime @updatedAt
+  attributes Json @default("{}") 
+  
+  organization_id String   @db.Uuid
+  
+  staffs           Staff[] @relation("DepartmentToStaff")
+  projects        Project[] @relation("DepartmentToProject")
+  
+  organization    Organization @relation("OrganizationToDepartment", fields: [organization_id], references: [id])
+
+  @@unique([organization_id, slug])
+}
+
+model Role {
+  id              String   @id @default(uuid(7)) @db.Uuid
+  name            String
+  slug            String
+  organization_id String   @db.Uuid
+  attributes Json @default("{}")
+  
+  staff           Staff[] @relation("RoleToStaff")
+  
+  organization    Organization @relation("OrganizationToRole", fields: [organization_id], references: [id])
+
+  @@unique([organization_id, slug])
+}
+
+model Attributes {
+  id          String   @id @default(uuid(7)) @db.Uuid
+  entity_type String   // e.g., "USER", "PROJECT", "ORGANIZATION"
+  key         String   // e.g., "clearance", "department"
+  data_type   String   // e.g., "NUMBER", "STRING", "BOOLEAN"
+  description String?
+
+  @@unique([entity_type, key])
 }
 
 model Feature {
@@ -98,13 +166,12 @@ model Feature {
     status      AccessControlStatus @default(ACTIVE)
     created_at   DateTime @default(now())
     updated_at   DateTime @updatedAt
+    attributes   Json     @default("{}")
     created_by   String?  @db.Uuid
     updated_by   String?  @db.Uuid
     
-    project Project @relation(fields: [project_id], references: [id], onDelete: Cascade)
+    project Project @relation("FeatureToProject", fields: [project_id], references: [id], onDelete: Cascade)
 
-    role_feature_permissions RoleFeaturePermission[]
-    
     created_by_user User? @relation("FeatureCreatedBy", fields: [created_by], references: [id], onDelete: SetNull)
 
     @@index([slug])
@@ -112,96 +179,30 @@ model Feature {
     @@unique([project_id, slug])
 }
 
-model Role {
-    id          String   @id @default(uuid(7)) @db.Uuid
-    name        String
-    slug        String
-    organization_id String @db.Uuid
-    parent_role_id  String?  @db.Uuid
-    description String?
-    created_at   DateTime @default(now())
-    updated_at   DateTime @updatedAt
-    created_by   String?  @db.Uuid
-    updated_by   String?  @db.Uuid
-    status      AccessControlStatus @default(ACTIVE)
+model Policy {
+    id             String   @id @default(uuid(7)) @db.Uuid
+    name           String
+    description    String?
+    effect         Effect   @default(ALLOW)
+    action         String   
+    resource       String   
+    condition      Json     
+    organization_id String?  @db.Uuid
+    created_at     DateTime @default(now())
+    updated_at     DateTime @updatedAt
     
-    organization Organization @relation(fields: [organization_id], references: [id], onDelete: Cascade)
-    
-    role_feature_permissions RoleFeaturePermission[]
-    user_organization_roles UserOrganizationRole[]
-    parent_role Role? @relation("RoleHierarchy", fields: [parent_role_id], references: [id], onDelete: SetNull)
-    child_roles Role[] @relation("RoleHierarchy")
-    
-    created_by_user User? @relation("RoleCreatedBy", fields: [created_by], references: [id], onDelete: SetNull)
-
-    @@index([slug])
-    @@unique([organization_id, slug])
+    organization   Organization? @relation("OrganizationToPolicy", fields: [organization_id], references: [id])
+    @@index([action, resource])
 }
 
-model UserOrganization {
-    organization_id String @db.Uuid
-    user_id String @db.Uuid
-    
-    status AccessControlStatus @default(ACTIVE)
-    created_at DateTime @default(now())
-    updated_at DateTime @updatedAt
-    created_by String? @db.Uuid
-    updated_by String? @db.Uuid
-    
-    user User @relation(fields: [user_id], references: [id], onDelete: Cascade)
-    organization Organization @relation(fields: [organization_id], references: [id], onDelete: Cascade)
-
-    user_organization_roles UserOrganizationRole[]
-    
-    created_by_user User? @relation("UserOrganizationCreatedBy", fields: [created_by], references: [id], onDelete: SetNull)
-
-    @@id([user_id, organization_id])
+enum Effect {
+    ALLOW
+    DENY
 }
 
-model RoleFeaturePermission {
-    role_id String @db.Uuid
-    feature_id String @db.Uuid
-    permission_id String @db.Uuid
-
-    status AccessControlStatus @default(ACTIVE)
-    created_at DateTime @default(now())
-    updated_at DateTime @updatedAt
-    created_by String? @db.Uuid
-    updated_by String? @db.Uuid
-    
-    role Role @relation(fields: [role_id], references: [id], onDelete: Cascade)
-    feature Feature @relation(fields: [feature_id], references: [id], onDelete: Cascade)
-    permission Permission @relation(fields: [permission_id], references: [id], onDelete: Cascade)
-    
-    created_by_user User? @relation("RoleFeaturePermissionCreatedBy", fields: [created_by], references: [id], onDelete: SetNull)
-    
-    @@id([role_id, feature_id, permission_id])
-}
-
-model UserOrganizationRole {
-    role_id String @db.Uuid
-    user_id String @db.Uuid
-    organization_id String @db.Uuid
-
-    status AccessControlStatus @default(ACTIVE)
-    created_at DateTime @default(now())
-    updated_at DateTime @updatedAt
-    created_by String? @db.Uuid
-    updated_by String? @db.Uuid
-    
-    user_organization UserOrganization @relation(fields: [user_id, organization_id], references: [user_id, organization_id], onDelete: Cascade)
-    role Role @relation(fields: [role_id], references: [id], onDelete: Cascade)
-    
-    created_by_user User? @relation("UserOrganizationRoleCreatedBy", fields: [created_by], references: [id], onDelete: SetNull)
-    
-    @@id([user_id, organization_id, role_id])
-}
-
-enum PermissionAction {
-    CREATE
-    READ
-    UPDATE
-    DELETE
+enum TIER {
+    ENTERPRISE
+    BASIC
 }
 
 enum AccessControlStatus {

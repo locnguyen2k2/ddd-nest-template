@@ -1,10 +1,12 @@
 import { AccessControlStatus } from '@/common/enum';
 import { AggregateRoot, IEntityID } from '@/shared/domain/entities/base.entity';
 import { Password } from '../vo/password.vo';
+import { Attributes } from '../vo/attributes.vo';
 
-export interface IOrgRoles {
+export interface IStaff {
   organization_id: string;
-  role_ids: string[];
+  status: AccessControlStatus;
+  context_attributes?: Attributes;
 }
 
 export interface IUserBaseInfo {
@@ -16,7 +18,8 @@ export interface IUserBaseInfo {
   id: IEntityID<string>;
   created_at?: Date;
   updated_at?: Date;
-  organization_roles?: IOrgRoles[];
+  organizations?: IStaff[];
+  attributes?: Attributes;
 }
 
 export interface IUpdateUserArgs {
@@ -34,7 +37,8 @@ export class UserEntity extends AggregateRoot<UserEntity, string> {
   private readonly _created_at: Date;
   private readonly _updated_at: Date;
   private readonly _status: AccessControlStatus;
-  private readonly _org_roles: IOrgRoles[];
+  private readonly _organizations: IStaff[];
+  private readonly _attributes: Attributes;
 
   private constructor(props: IUserBaseInfo) {
     super(props.id);
@@ -47,18 +51,12 @@ export class UserEntity extends AggregateRoot<UserEntity, string> {
     this._created_at = props.created_at ?? new Date();
     this._updated_at = props.updated_at ?? new Date();
     this._status = AccessControlStatus.ACTIVE;
-    this._org_roles = props.organization_roles ?? [];
+    this._organizations = props.organizations ?? [];
+    this._attributes = props.attributes ?? Attributes.create({});
   }
 
   canAuthenticate() {
     return this._status === AccessControlStatus.ACTIVE;
-  }
-
-  validateCredentials(password: string) {
-    if (!this._password.match(password)) {
-      return false;
-    }
-    return this.canAuthenticate();
   }
 
   static create(props: IUserBaseInfo) {
@@ -91,7 +89,10 @@ export class UserEntity extends AggregateRoot<UserEntity, string> {
   get status() {
     return this._status;
   }
-  get org_roles() {
-    return this._org_roles;
+  get organizations() {
+    return this._organizations;
+  }
+  get attributes() {
+    return this._attributes;
   }
 }

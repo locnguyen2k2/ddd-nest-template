@@ -2,26 +2,6 @@ import { IsString, IsOptional, IsNotEmpty, MaxLength } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 import { BaseCursorPageOptionDto, BasePageOptionDto } from '@/common/pagination';
 
-export class AssignRoleToUserDto {
-  @ApiProperty()
-  @IsString()
-  @IsNotEmpty()
-  roleId!: string;
-
-  @ApiProperty()
-  @IsString()
-  @IsNotEmpty()
-  orgId!: string;
-
-  @ApiProperty()
-  @IsString()
-  @IsNotEmpty()
-  userId!: string;
-}
-
-export class UnassignRoleFromUserDto extends AssignRoleToUserDto {
-}
-
 export class CreateOrganizationDto {
   @ApiProperty()
   @IsString()

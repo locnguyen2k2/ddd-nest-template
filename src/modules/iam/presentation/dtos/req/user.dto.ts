@@ -59,7 +59,7 @@ export class LoginUserDto {
   @ApiProperty()
   @IsNotEmpty()
   @IsString()
-  @Validate(UsernameValidator)
+  // @Validate(UsernameValidator)
   username!: string;
 
   @ApiProperty()

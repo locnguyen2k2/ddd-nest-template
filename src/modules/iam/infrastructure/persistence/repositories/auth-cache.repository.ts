@@ -7,12 +7,12 @@ import {
   ISessionRepository,
   ITokenBlacklistRepository,
 } from '@/modules/iam/domain/repositories/auth.repository';
+import { LogExecutionTime } from '@/common/decorators/log-execution.decorator';
 
 @Injectable()
 export class SessionCacheRepository
   extends CacheRepository
-  implements ISessionRepository
-{
+  implements ISessionRepository {
   protected readonly boundedContext: string = 'iam';
   protected readonly aggregateType: string = 'session';
   protected readonly ttlConfig: { [key: string]: number } = {
@@ -44,8 +44,7 @@ export class SessionCacheRepository
 @Injectable()
 export class TokenBlacklistCacheRepository
   extends CacheRepository
-  implements ITokenBlacklistRepository
-{
+  implements ITokenBlacklistRepository {
   protected readonly boundedContext: string = 'iam';
   protected readonly aggregateType: string = 'blacklist';
   protected readonly ttlConfig: { [key: string]: number } = {
@@ -59,11 +58,13 @@ export class TokenBlacklistCacheRepository
     super(configService, port);
   }
 
+  @LogExecutionTime()
   async blacklistToken(token: string, ttl: number): Promise<void> {
     const key = this.buildKey(token);
     await this.port.set(key, true, ttl);
   }
 
+  @LogExecutionTime()
   async isTokenBlacklisted(token: string): Promise<boolean> {
     const key = this.buildKey(token);
     return await this.port.exists(key);

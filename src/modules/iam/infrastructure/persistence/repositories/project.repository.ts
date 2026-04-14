@@ -40,7 +40,7 @@ export class ProjectRepository extends CacheRepository implements IProjectReposi
   }
 
   async create(project: ProjectEntity): Promise<ProjectEntity> {
-    const toPrisma = ProjectMapper.toPrisma(project);
+    const toPrisma = ProjectMapper.toPrismaCreate(project);
     const prj = await this.rbacDBService.project.create({
       data: toPrisma,
     });
@@ -72,7 +72,7 @@ export class ProjectRepository extends CacheRepository implements IProjectReposi
   }
 
   async update(id: string, project: ProjectEntity): Promise<ProjectEntity> {
-    const toPrisma = ProjectMapper.toPrisma(project);
+    const toPrisma = ProjectMapper.toPrismaUpdate(project);
     const prj = await this.rbacDBService.project.update({
       where: { id },
       data: toPrisma,
@@ -125,8 +125,6 @@ export class ProjectRepository extends CacheRepository implements IProjectReposi
             }
           ],
         });
-
-      console.log(paginated)
 
       return {
         data: data,

@@ -4,8 +4,7 @@ import configs from '@/config';
 import { SharedModules } from '@/shared/shared.modules';
 import { ScheduleModule } from '@nestjs/schedule';
 import { IamModule } from '@/modules/iam/iam.module';
-import { APP_GUARD } from '@nestjs/core';
-import { JwtAuthGuard } from './modules/iam/presentation/guards/jwt-auth.guard';
+import { ClsModule } from 'nestjs-cls';
 
 const modules = [IamModule];
 
@@ -19,6 +18,10 @@ const modules = [IamModule];
     }),
 
     ScheduleModule.forRoot(),
+    ClsModule.forRoot({
+      global: true,
+      middleware: { mount: true },
+    }),
     SharedModules,
     ...modules,
   ],

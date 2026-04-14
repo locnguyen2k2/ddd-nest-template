@@ -1,40 +1,24 @@
 import { BaseCursorPageOptionDto } from '@/common/pagination';
 import { BasePageOptionDto } from '@/common/pagination/dtos/page-options.dto';
-import { IsNotEmpty, IsString, IsOptional, IsNumber } from 'class-validator';
 
-export class GetProjectByIdQuery {
-    @IsString()
-    @IsNotEmpty()
+export interface GetProjectByIdQuery {
     id: string;
 
-    constructor(data: any) {
-        this.id = data.id;
-    }
+    organization_id?: string;
+
 }
 
-export class GetProjectBySlugQuery {
-    @IsString()
-    @IsNotEmpty()
+export interface GetProjectBySlugQuery {
     slug: string;
 
-    @IsString()
-    @IsNotEmpty()
     organization_id: string;
 
-    constructor(data: any) {
-        this.slug = data.slug;
-        this.organization_id = data.organization_id;
-    }
 }
 
-export class PaginateProjectsQuery extends BasePageOptionDto {
-    @IsOptional()
-    @IsString()
+export interface PaginateProjectsQuery extends BasePageOptionDto {
     organization_id?: string;
 }
 
-export class CursorProjectsQuery extends BaseCursorPageOptionDto {
-    @IsOptional()
-    @IsString()
+export interface CursorProjectsQuery extends BaseCursorPageOptionDto {
     organization_id?: string;
 }

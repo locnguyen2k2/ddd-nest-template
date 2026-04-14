@@ -17,59 +17,61 @@ import {
   ApiResponse,
   ApiParam,
 } from '@nestjs/swagger';
-import { CreateFeatureDto } from '@/modules/iam/presentation/dtos/req/feature.dto';
+import { CreateFeatureDto, CursorFeaturesQuery, PaginateFeaturesQuery } from '@/modules/iam/presentation/dtos/req/feature.dto';
 import { UpdateFeatureDto } from '@/modules/iam/presentation/dtos/req/feature.dto';
 import {
   FeatureResponseDto,
   PaginateFeaturesResponseDto,
   CursorFeaturesResponseDto,
 } from '@/modules/iam/presentation/dtos/res/feature-response.dto';
-import { FeatureCommandHandler } from '@/modules/iam/application/services/feature/feature.command.handler';
-import { FeatureQueryHandler } from '@/modules/iam/application/services/feature/feature.query.handler';
+import { FeatureCommandHandler } from '@/modules/iam/application/services/feature/command.handler';
+import { FeatureQueryHandler } from '@/modules/iam/application/services/feature/query.handler';
 import {
   CreateFeatureArgs,
   DeleteFeatureArgs,
   UpdateFeatureArgs,
 } from '@/modules/iam/application/dtos/commands/feature-cmd.dto';
-import {
-  GetFeatureByIdQuery,
-  GetFeatureBySlugQuery,
-  PaginateFeaturesQuery,
-  CursorFeaturesQuery,
-} from '@/modules/iam/application/dtos/queries/feature-query.dto';
 import { FeatureMapper } from '@/modules/iam/infrastructure/persistence/mappers/feature.mapper';
-import { API_VERS, HeaderKeys } from '@/common/constant';
+import { API_VERS, HeaderKeys, StorageKeys } from '@/common/constant';
 import { JwtAuthGuard } from '../guards/jwt-auth.guard';
 import { HeaderKey, Permissions } from '@/common/decorators'
 import { PermissionAction } from '@/common/enum';
+import { TenantContextGuard } from '../guards/tenant-context.guard';
+import { AbacGuard } from '../guards/abac.guard';
+import { ClsService } from 'nestjs-cls';
+import { MyClsStore } from '@/common/interfaces/cls-store.interface';
+import { CheckAbac } from '@/common/decorators/check-abac.decorator';
 import { HeadersAuthGuard } from '../guards/headers-auth.guard';
+import { GetFeatureByIdQuery, GetFeatureBySlugQuery } from '../../application/dtos/queries/feature-query.dto';
 
 const name = 'features';
 
 @ApiTags(name)
 @Controller(API_VERS.V1 + `/${name}`)
+@UseGuards(JwtAuthGuard, TenantContextGuard)
 export class FeatureController {
   constructor(
     private readonly commandHandler: FeatureCommandHandler,
     private readonly queryHandler: FeatureQueryHandler,
+    private readonly cls: ClsService<MyClsStore>,
   ) { }
 
   @Post()
   @ApiOperation({ summary: 'Create a new feature' })
-  @ApiResponse({
-    status: 201,
-    description: 'Feature created successfully',
-    type: FeatureResponseDto,
-  })
+  @ApiResponse({ status: 201, description: 'Feature created successfully', type: FeatureResponseDto, })
   @ApiResponse({ status: 400, description: 'Bad Request' })
   @ApiResponse({ status: 409, description: 'Feature with slug already exists' })
-  @HeaderKey(HeaderKeys.PROJECT_ID)
-  @Permissions(`${name}:${PermissionAction.CREATE}`)
-  @UseGuards(JwtAuthGuard, HeadersAuthGuard)
+  @HeaderKey(HeaderKeys.PROJECT_ID, HeaderKeys.ORG_ID)
+  @CheckAbac(PermissionAction.CREATE, 'Feature')
+  @UseGuards(JwtAuthGuard, HeadersAuthGuard, TenantContextGuard, AbacGuard)
   async create(
     @Body() createFeatureDto: CreateFeatureDto,
   ): Promise<FeatureResponseDto> {
-    const command = new CreateFeatureArgs(createFeatureDto);
+    const orgId = this.cls.get(StorageKeys.ORG_ID);
+    const command: CreateFeatureArgs = {
+      ...createFeatureDto,
+      organization_id: orgId,
+    };
     const feature = await this.commandHandler.handleCreateFeature(command);
     return FeatureMapper.toResponseDto(feature);
   }
@@ -83,20 +85,19 @@ export class FeatureController {
     type: FeatureResponseDto,
   })
   @ApiResponse({ status: 404, description: 'Feature not found' })
-  @HeaderKey(HeaderKeys.PROJECT_ID)
-  @Permissions(`${name}:${PermissionAction.READ}`)
-  @UseGuards(JwtAuthGuard, HeadersAuthGuard)
+  @HeaderKey(HeaderKeys.PROJECT_ID, HeaderKeys.ORG_ID)
+  @CheckAbac(PermissionAction.READ, 'Feature')
+  @UseGuards(JwtAuthGuard, HeadersAuthGuard, TenantContextGuard, AbacGuard)
   async getById(@Param('id') id: string): Promise<FeatureResponseDto> {
-    const query = new GetFeatureByIdQuery({ id });
+    const orgId = this.cls.get(StorageKeys.ORG_ID);
+    const query: GetFeatureByIdQuery = { id, organization_id: orgId };
     const feature = await this.queryHandler.handleGetFeatureById(query);
 
     if (!feature) {
       throw new Error('Feature not found');
     }
 
-    return FeatureMapper.toResponseDtoWithPermissions(
-      FeatureMapper.toPrismaWithPermissions(feature),
-    );
+    return FeatureMapper.toResponseDto(feature);
   }
 
   @Get('slug/:slug')
@@ -108,14 +109,14 @@ export class FeatureController {
     type: FeatureResponseDto,
   })
   @ApiResponse({ status: 404, description: 'Feature not found' })
-  @HeaderKey(HeaderKeys.PROJECT_ID)
-  @Permissions(`${name}:${PermissionAction.READ}`)
-  @UseGuards(JwtAuthGuard, HeadersAuthGuard)
+  @HeaderKey(HeaderKeys.PROJECT_ID, HeaderKeys.ORG_ID)
+  @CheckAbac(PermissionAction.READ, 'Feature')
+  @UseGuards(JwtAuthGuard, HeadersAuthGuard, TenantContextGuard, AbacGuard)
   async getBySlug(
     @Param('slug') slug: string,
-    @Query('organization_id') organization_id: string,
   ): Promise<FeatureResponseDto> {
-    const query = new GetFeatureBySlugQuery({ slug, organization_id });
+    const orgId = this.cls.get(StorageKeys.ORG_ID);
+    const query: GetFeatureBySlugQuery = { slug, organization_id: orgId };
     const feature = await this.queryHandler.handleGetFeatureBySlug(query);
 
     if (!feature) {
@@ -132,9 +133,9 @@ export class FeatureController {
     description: 'Features retrieved successfully',
     type: PaginateFeaturesResponseDto,
   })
-  @HeaderKey(HeaderKeys.PROJECT_ID)
-  @Permissions(`${name}:${PermissionAction.READ}`)
-  @UseGuards(JwtAuthGuard, HeadersAuthGuard)
+  @HeaderKey(HeaderKeys.PROJECT_ID, HeaderKeys.ORG_ID)
+  @CheckAbac(PermissionAction.READ, 'Feature')
+  @UseGuards(JwtAuthGuard, HeadersAuthGuard, TenantContextGuard, AbacGuard)
   async pagination(
     @Query() listQuery: PaginateFeaturesQuery,
   ): Promise<PaginateFeaturesResponseDto> {
@@ -155,9 +156,9 @@ export class FeatureController {
     description: 'Features retrieved successfully',
     type: CursorFeaturesResponseDto,
   })
-  @HeaderKey(HeaderKeys.PROJECT_ID)
-  @Permissions(`${name}:${PermissionAction.READ}`)
-  @UseGuards(JwtAuthGuard, HeadersAuthGuard)
+  @HeaderKey(HeaderKeys.PROJECT_ID, HeaderKeys.ORG_ID)
+  @CheckAbac(PermissionAction.READ, 'Feature')
+  @UseGuards(JwtAuthGuard, HeadersAuthGuard, TenantContextGuard, AbacGuard)
   async cursorPagination(
     @Query() listQuery: CursorFeaturesQuery,
   ): Promise<CursorFeaturesResponseDto> {
@@ -182,19 +183,19 @@ export class FeatureController {
   @ApiResponse({ status: 400, description: 'Bad Request' })
   @ApiResponse({ status: 404, description: 'Feature not found' })
   @ApiResponse({ status: 409, description: 'Feature with slug already exists' })
-  @HeaderKey(HeaderKeys.PROJECT_ID)
-  @Permissions(`${name}:${PermissionAction.UPDATE}`)
-  @UseGuards(JwtAuthGuard, HeadersAuthGuard)
+  @HeaderKey(HeaderKeys.PROJECT_ID, HeaderKeys.ORG_ID)
+  @CheckAbac(PermissionAction.UPDATE, 'Feature')
+  @UseGuards(JwtAuthGuard, HeadersAuthGuard, TenantContextGuard, AbacGuard)
   async update(
     @Param('id') id: string,
     @Body() updateFeatureDto: UpdateFeatureDto,
-    @Query('organization_id') organization_id: string,
   ): Promise<FeatureResponseDto> {
-    const command = new UpdateFeatureArgs({
+    const orgId = this.cls.get(StorageKeys.ORG_ID);
+    const command: UpdateFeatureArgs = {
       id,
       ...updateFeatureDto,
-      organization_id,
-    });
+      organization_id: orgId,
+    };
     const feature = await this.commandHandler.handleUpdateFeature(command);
     return FeatureMapper.toResponseDto(feature);
   }
@@ -205,14 +206,17 @@ export class FeatureController {
   @ApiResponse({ status: 204, description: 'Feature deleted successfully' })
   @ApiResponse({ status: 404, description: 'Feature not found' })
   @HttpCode(HttpStatus.NO_CONTENT)
-  @HeaderKey(HeaderKeys.PROJECT_ID)
-  @Permissions(`${name}:${PermissionAction.DELETE}`)
-  @UseGuards(JwtAuthGuard, HeadersAuthGuard)
+  @HeaderKey(HeaderKeys.PROJECT_ID, HeaderKeys.ORG_ID)
+  @CheckAbac(PermissionAction.DELETE, 'Feature')
+  @UseGuards(JwtAuthGuard, HeadersAuthGuard, TenantContextGuard, AbacGuard)
   async delete(
     @Param('id') id: string,
-    @Query('organization_id') organization_id: string,
   ): Promise<void> {
-    const command = new DeleteFeatureArgs({ id, organization_id });
+    const orgId = this.cls.get(StorageKeys.ORG_ID);
+    const command: DeleteFeatureArgs = {
+      id,
+      organization_id: orgId,
+    };
     await this.commandHandler.handleDeleteFeature(command);
   }
 }

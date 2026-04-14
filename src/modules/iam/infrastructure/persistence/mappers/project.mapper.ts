@@ -1,7 +1,8 @@
 import { ProjectEntity } from '@/modules/iam/domain/entities/project.entity';
 import { IEntityID } from '@/shared/domain/entities/base.entity';
 import { ProjectResponseDto } from '@/modules/iam/presentation/dtos/res/project-response.dto';
-import { Project } from '@internal/rbac/client';
+import { Project, Prisma } from '@internal/rbac/client';
+import { Attributes } from '@/modules/iam/domain/vo/attributes.vo';
 
 export class ProjectMapper {
   static toDomain(prj: Project): ProjectEntity {
@@ -21,6 +22,7 @@ export class ProjectMapper {
       updated_at: prj.updated_at,
       created_by: prj.created_by || undefined,
       updated_by: prj.updated_by || undefined,
+      attributes: Attributes.create(prj.attributes),
     });
   }
 
@@ -35,6 +37,46 @@ export class ProjectMapper {
       updated_at: prj.updatedAt,
       created_by: prj.createdBy,
       updated_by: prj.updatedBy,
+      attributes: prj.attributes.value as Prisma.JsonObject,
+      department_id: prj.departmentID,
+    };
+  }
+
+  static toPrismaCreate(prj: ProjectEntity): Prisma.ProjectCreateInput {
+    return {
+      name: prj.name,
+      slug: prj.slug,
+      description: prj.description,
+      organization: {
+        connect: {
+          id: prj.organizationID,
+        },
+      },
+      created_at: prj.createdAt,
+      updated_at: prj.updatedAt,
+      created_by_user: {
+        connect: {
+          id: prj.createdBy || '',
+        },
+      },
+      updated_by: prj.updatedBy || undefined,
+      attributes: prj.attributes.value as Prisma.JsonObject,
+    };
+  }
+
+  static toPrismaUpdate(prj: ProjectEntity): Prisma.ProjectUpdateInput {
+    return {
+      name: prj.name,
+      slug: prj.slug,
+      description: prj.description,
+      organization: {
+        connect: {
+          id: prj.organizationID,
+        },
+      },
+      updated_at: prj.updatedAt,
+      updated_by: prj.updatedBy,
+      attributes: prj.attributes.value as Prisma.JsonObject,
     };
   }
 

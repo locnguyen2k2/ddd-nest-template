@@ -1,6 +1,6 @@
 import { UserEntity } from "@/modules/iam/domain/entities/user.entity";
-import { AuthResponseDto, TokenResponseDto, UserResponseDto } from "@/modules/iam/presentation/dtos/res/user-response.dto";
-import { Role, Organization } from "@internal/rbac/client"
+import { AuthResponseDto, TokenResponseDto } from "@/modules/iam/presentation/dtos/res/user-response.dto";
+import { Organization } from "@internal/rbac/client"
 import { UserMapper } from "./user.mapper";
 
 export interface ITokenResponse {
@@ -11,8 +11,8 @@ export interface ITokenResponse {
 }
 
 export class AuthMapper {
-    static toResponseDto(tokenResponse: ITokenResponse, user: UserEntity, orgs: Organization[], roles: Role[]) {
-        const userResponse = UserMapper.toResponseDto(user, orgs, roles);
+    static toResponseDto(tokenResponse: ITokenResponse, user: UserEntity, orgs: Organization[]) {
+        const userResponse = UserMapper.toResponseDto(user, orgs);
         return new AuthResponseDto(
             userResponse,
             new TokenResponseDto(

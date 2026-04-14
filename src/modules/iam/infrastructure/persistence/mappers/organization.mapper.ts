@@ -2,7 +2,10 @@ import { ErrorEnum } from '@/common/exception.enum';
 import { BusinessException } from '@/common/http/business-exception';
 import { Organization } from '@/modules/iam/domain/entities/organization.entity';
 import { Slug } from '@/modules/iam/domain/vo/slug.vo';
+import { Attributes } from '@/modules/iam/domain/vo/attributes.vo';
 import { IEntityID } from '@/shared/domain/entities/base.entity';
+import { AccessControlStatus, Prisma } from '@internal/rbac/client';
+import { connect } from 'http2';
 
 export class OrganizationMapper {
   static toDomain(prismaOrganization: any): Organization {
@@ -22,21 +25,64 @@ export class OrganizationMapper {
         description: prismaOrganization.description || undefined,
         created_at: prismaOrganization.created_at,
         updated_at: prismaOrganization.updated_at,
+        attributes: Attributes.create(prismaOrganization.attributes),
       });
     } catch (e: any) {
       throw new BusinessException(ErrorEnum.FAILED_TO_CONVERT_TO_PERSISTENCE);
     }
   }
 
-  static toPrisma(organization: Organization): any {
+  static toPrisma(organization: Organization): Prisma.OrganizationGetPayload<{}> {
     try {
       return {
         id: organization.id.value,
         name: organization.name(),
         slug: organization.slug().value,
-        description: organization.description(),
-        created_at: new Date(),
-        updated_at: new Date(),
+        description: organization.description() || null,
+        created_at: organization.created_at(),
+        updated_at: organization.updated_at(),
+        attributes: organization.attributes().value as Prisma.JsonObject,
+        updated_by: organization.updated_by() || null,
+        created_by: organization.created_by() || null,
+      };
+    } catch (e: any) {
+      throw new BusinessException(ErrorEnum.FAILED_TO_CONVERT_TO_PERSISTENCE);
+    }
+  }
+
+  static toPrismaUserOrgs(organization: Organization): Prisma.OrganizationUpdateInput {
+    try {
+      return {
+        id: organization.id.value,
+        name: organization.name(),
+        slug: organization.slug().value,
+        description: organization.description() || null,
+        created_at: organization.created_at(),
+        updated_at: organization.updated_at(),
+        attributes: organization.attributes().value as Prisma.JsonObject,
+        updated_by: organization.updated_by() || null,
+      };
+    } catch (e: any) {
+      throw new BusinessException(ErrorEnum.FAILED_TO_CONVERT_TO_PERSISTENCE);
+    }
+  }
+
+  static toPrismaCreate(organization: Organization): Prisma.OrganizationCreateInput {
+    try {
+      return {
+        id: organization.id.value,
+        name: organization.name(),
+        slug: organization.slug().value,
+        description: organization.description() || null,
+        created_at: organization.created_at(),
+        updated_at: organization.updated_at(),
+        attributes: organization.attributes().value as Prisma.JsonObject,
+        updated_by: organization.updated_by() || null,
+        created_by_user: {
+          connect: {
+            id: organization.created_by() || undefined,
+          },
+        },
       };
     } catch (e: any) {
       throw new BusinessException(ErrorEnum.FAILED_TO_CONVERT_TO_PERSISTENCE);
@@ -49,6 +95,7 @@ export class OrganizationMapper {
         name: organization.name(),
         slug: organization.slug().value,
         description: organization.description(),
+        attributes: organization.attributes().value as Prisma.JsonObject,
         updated_at: new Date(),
       };
     } catch (e: any) {
@@ -63,8 +110,8 @@ export class OrganizationMapper {
         name: organization.name(),
         slug: organization.slug().value,
         description: organization.description(),
-        created_at: organization.createdAt(),
-        updated_at: organization.updatedAt(),
+        created_at: organization.created_at(),
+        updated_at: organization.updated_at(),
       };
     } catch (e: any) {
       throw new BusinessException(ErrorEnum.FAILED_TO_CONVERT_TO_PERSISTENCE);

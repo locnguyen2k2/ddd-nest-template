@@ -1,5 +1,4 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { RoleBaseResDto } from './role-response.dto';
 import { CursorPaginationDto } from '@/common/pagination';
 import { Type } from 'class-transformer';
 import { PaginationDto } from '@/common/pagination';
@@ -14,19 +13,14 @@ export class OrgBaseResDto {
   @ApiProperty()
   slug!: string;
 
-  @ApiProperty({ required: false })
-  description?: string | null;
+  @ApiProperty()
+  description?: string;
 
   @ApiProperty()
   created_at!: Date;
 
   @ApiProperty()
   updated_at!: Date;
-}
-
-export class OrgRolesResDto extends OrgBaseResDto {
-  @ApiProperty()
-  roles!: RoleBaseResDto[];
 }
 
 export class ListOrganizationsResponseDto {

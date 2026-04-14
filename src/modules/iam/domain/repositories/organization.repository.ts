@@ -16,19 +16,18 @@ export interface IOrganizationRepository extends IPaginate<Organization>, ICurso
   assignUser(
     organizationId: string,
     userId: string,
-    roleId?: string,
     createdBy?: string,
   ): Promise<void>;
   unassignUser(organizationId: string, userId: string): Promise<void>;
+  updateUserAttributes(
+    organizationId: string,
+    userId: string,
+    attributes: any,
+  ): Promise<void>;
 
   // Validation operations
   organizationHasUser(organizationId: string, userId: string): Promise<boolean>;
   userJoinedAnyOrganization(userId: string): Promise<boolean>;
-  organizationHasRole(organizationId: string, roleId: string): Promise<boolean>;
   handleListOrganizationsByJoiner(joinerId: string): Promise<Organization[]>
-  assignRoleToUser(organizationId: string, userId: string, roleId: string): Promise<void>
-  unassignRoleFromUser(organizationId: string, userId: string, roleId: string): Promise<void>
-  findUserOrgRoles(organizationId: string, userId: string): Promise<string[]>
-  findOrgRoles(userId: string): Promise<Map<string, string[]>>
-  findUserOrganizations(userId: string): Promise<Organization[]>
+  findStaffs(userId: string): Promise<Organization[]>
 }

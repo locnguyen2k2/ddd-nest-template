@@ -1,12 +1,18 @@
 import { UserEntity } from '@/modules/iam/domain/entities/user.entity';
 import { Password } from '@/modules/iam/domain/vo/password.vo';
-import { OrgRolesResDto } from '@/modules/iam/presentation/dtos/res/organization-response.dto';
+import { Attributes } from '@/modules/iam/domain/vo/attributes.vo';
 import { UserResponseDto } from '@/modules/iam/presentation/dtos/res/user-response.dto';
 import { IEntityID } from '@/shared/domain/entities/base.entity';
-import { AccessControlStatus, Organization, Prisma, Role, User } from '@internal/rbac/client';
+import { Organization, Prisma, Staff, User } from '@internal/rbac/client';
+import { AccessControlStatus } from '@/common/enum';
+
+export type UserWithOrganizations = User & {
+  organizations?: Staff[];
+};
 
 export class UserMapper {
-  static toDomainWithOrgRoles(props: User, orgs: Organization[], userOrgRoles: Map<string, string[]>): UserEntity {
+
+  static toDomain(props: UserWithOrganizations): UserEntity {
     const id: IEntityID<string> = {
       value: props.id,
       _id: props.id,
@@ -22,27 +28,12 @@ export class UserMapper {
       last_name: props.last_name,
       created_at: props.created_at,
       updated_at: props.updated_at,
-      organization_roles: orgs ? orgs.map((org) => ({ organization_id: org.id, role_ids: userOrgRoles.get(org.id) || [] })) : [],
-    });
-  }
-
-  static toDomain(props: User): UserEntity {
-    const id: IEntityID<string> = {
-      value: props.id,
-      _id: props.id,
-      get: () => props.id,
-    };
-
-    return UserEntity.create({
-      id: id,
-      email: props.email,
-      username: props.username,
-      password: Password.create(props.password),
-      first_name: props.first_name,
-      last_name: props.last_name,
-      created_at: props.created_at,
-      updated_at: props.updated_at,
-      organization_roles: [],
+      attributes: Attributes.create(props.attributes),
+      organizations: props.organizations ? props.organizations.map((org) => ({
+        organization_id: org.organization_id,
+        status: org.status as AccessControlStatus,
+        context_attributes: Attributes.create(org.context_attributes),
+      })) : [],
     });
   }
 
@@ -57,6 +48,22 @@ export class UserMapper {
       status: props.status,
       created_at: props.created_at,
       updated_at: props.updated_at,
+      attributes: props.attributes.value as Prisma.JsonObject,
+    };
+  }
+
+  static toPrismaCreate(user: UserEntity): Prisma.UserCreateInput {
+    return {
+      id: user.id.value,
+      email: user.email,
+      username: user.username,
+      password: user.password.value,
+      first_name: user.first_name,
+      last_name: user.last_name,
+      status: user.status,
+      created_at: new Date(),
+      updated_at: new Date(),
+      attributes: user.attributes.value as Prisma.JsonObject,
     };
   }
 
@@ -65,16 +72,17 @@ export class UserMapper {
       first_name: user.first_name,
       last_name: user.last_name,
       password: user.password.value,
+      attributes: user.attributes.value as Prisma.JsonObject,
       updated_at: new Date(),
     };
   }
 
-  static toResponseDto(user: UserEntity, orgs: Organization[], roles: Role[]): UserResponseDto {
+  static toResponseDto(user: UserEntity, orgs: Organization[]): UserResponseDto {
     const orgMapper: Map<string, Organization> = new Map(orgs.map((org) => [org.id, org]));
-    const roleMapper: Map<string, Role> = new Map(roles.map((role) => [role.id, role]));
-    const userOrgRoles: OrgRolesResDto[] = user.org_roles.map((orgRole) => ({
-      roles: orgRole.role_ids.map((roleId) => roleMapper.get(roleId)!),
-      ...orgMapper.get(orgRole.organization_id)!,
+    const staffs = user.organizations.map((userOrg) => ({
+      ...orgMapper.get(userOrg.organization_id)!,
+      status: userOrg.status,
+      context_attributes: userOrg.context_attributes?.value,
     }));
     return {
       id: user.id.value,
@@ -85,7 +93,7 @@ export class UserMapper {
       status: user.status || AccessControlStatus.ACTIVE,
       created_at: user.created_at as Date,
       updated_at: user.updated_at as Date,
-      organization_roles: userOrgRoles,
+      organizations: staffs as any,
     };
   }
 }

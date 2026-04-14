@@ -34,19 +34,23 @@ export class OrganizationRepository
 
   @LogExecutionTime()
   async paginate(pageOptions: PaginateOrganizationsQuery) {
+    const filterOptions: any[] = [];
+
+    if (pageOptions.userId) {
+      filterOptions.push({
+        users: {
+          some: {
+            user_id: pageOptions.userId,
+          },
+        },
+      })
+    }
+
     const { data = [], paginated } =
       await paginateHelper<Prisma.OrganizationGetPayload<{}>>({
         query: this.rbacDBService.organization,
         pageOptions,
-        filterOptions: [
-          {
-            users: {
-              some: {
-                user_id: pageOptions.userId,
-              },
-            },
-          },
-        ],
+        filterOptions,
       });
 
     return {
@@ -72,90 +76,10 @@ export class OrganizationRepository
   }
 
   @LogExecutionTime()
-  async findUserOrgRoles(organizationId: string, userId: string): Promise<string[]> {
-    try {
-      const userOrgRoels = await this.getWithCache(
-        `org:${organizationId}:user:${userId}:roles`,
-        async () => {
-          const userRoles = await this.rbacDBService.userOrganizationRole.findMany({
-            where: { organization_id: organizationId, user_id: userId },
-            select: { role_id: true },
-          });
-          return userRoles.map((ur) => ur.role_id);
-        },
-      );
-      return userOrgRoels || [];
-    } catch (e: any) {
-      throw new BusinessException(ErrorEnum.REQUEST_FAILED_TO_QUERY);
-    }
-  }
-
-  @LogExecutionTime()
-  async findOrgRoles(userId: string): Promise<Map<string, string[]>> {
-    try {
-      const userOrgRoels = await this.getWithCache(
-        `user:${userId}:roles`,
-        async () => {
-          return await this.rbacDBService.userOrganizationRole.findMany({
-            where: { user_id: userId },
-            select: { role_id: true, organization_id: true },
-          });
-        },
-      );
-      const mappedUserRoles: Map<string, string[]> = new Map();
-      if (Array.isArray(userOrgRoels)) {
-        userOrgRoels.forEach((ur) => {
-          if (!mappedUserRoles.has(ur.organization_id)) {
-            mappedUserRoles.set(ur.organization_id, []);
-          }
-          mappedUserRoles.get(ur.organization_id)!.push(ur.role_id);
-        });
-      }
-      return mappedUserRoles;
-    } catch (e: any) {
-      throw new BusinessException(ErrorEnum.REQUEST_FAILED_TO_QUERY);
-    }
-  }
-
-  @LogExecutionTime()
-  async assignRoleToUser(organizationId: string, userId: string, roleId: string): Promise<void> {
-    try {
-      await this.rbacDBService.userOrganizationRole.create({
-        data: {
-          organization_id: organizationId,
-          user_id: userId,
-          role_id: roleId,
-        },
-      });
-      await this.invalidateCache(`org:${organizationId}:user:${userId}:roles`);
-    } catch (e: any) {
-      throw new BusinessException(ErrorEnum.REQUEST_FAILED_TO_QUERY);
-    }
-  }
-
-  @LogExecutionTime()
-  async unassignRoleFromUser(organizationId: string, userId: string, roleId: string): Promise<void> {
-    try {
-      await this.rbacDBService.userOrganizationRole.delete({
-        where: {
-          user_id_organization_id_role_id: {
-            organization_id: organizationId,
-            user_id: userId,
-            role_id: roleId,
-          },
-        },
-      });
-      await this.invalidateCache(`org:${organizationId}:user:${userId}:roles`);
-    } catch (e: any) {
-      throw new BusinessException(ErrorEnum.REQUEST_FAILED_TO_QUERY);
-    }
-  }
-
-  @LogExecutionTime()
   async handleListOrganizationsByJoiner(joinerId: string): Promise<Organization[]> {
     try {
       const organizations = await this.rbacDBService.organization.findMany({
-        where: { users: { some: { user_id: joinerId } } },
+        where: { staffs: { some: { user_id: joinerId } } },
       });
       return organizations.map(OrganizationMapper.toDomain);
     } catch (e: any) {
@@ -164,33 +88,20 @@ export class OrganizationRepository
   }
 
   @LogExecutionTime()
-  async findUserOrganizations(userId: string): Promise<Organization[]> {
+  async findStaffs(userId: string): Promise<Organization[]> {
     try {
-      const organizations = await this.rbacDBService.organization.findMany({
-        where: { users: { some: { user_id: userId } } },
-      });
-      return organizations.map((org) => OrganizationMapper.toDomain(org));
-    } catch (e: any) {
-      throw new BusinessException(ErrorEnum.REQUEST_FAILED_TO_QUERY);
-    }
-  }
-
-  @LogExecutionTime()
-  async organizationHasRole(
-    organizationId: string,
-    roleId: string,
-  ): Promise<boolean> {
-    try {
-      const count =
-        (await this.getWithCache<number>(
-          `organization:${organizationId}:role:${roleId}`,
-          async () => {
-            return await this.rbacDBService.organization.count({
-              where: { id: organizationId, roles: { some: { id: roleId } } },
-            });
-          },
-        )) || 0;
-      return count > 0;
+      const items = await this.getWithCache<Prisma.OrganizationGetPayload<{}>[]>(
+        `user:${userId}:organizations`,
+        async () => {
+          return await this.rbacDBService.organization.findMany({
+            where: { staffs: { some: { user_id: userId } } },
+          });
+        },
+      );
+      if (!items) {
+        return [];
+      }
+      return items.map((org) => OrganizationMapper.toDomain(org));
     } catch (e: any) {
       throw new BusinessException(ErrorEnum.REQUEST_FAILED_TO_QUERY);
     }
@@ -209,13 +120,14 @@ export class OrganizationRepository
             return await this.rbacDBService.organization.count({
               where: {
                 id: organizationId,
-                users: { some: { user_id: userId } },
+                staffs: { some: { user_id: userId } },
               },
             });
           },
         )) || 0;
       return count > 0;
     } catch (e: any) {
+      console.log(e);
       throw new BusinessException(ErrorEnum.REQUEST_FAILED_TO_QUERY);
     }
   }
@@ -227,7 +139,7 @@ export class OrganizationRepository
         (await this.getWithCache<number>(
           `user:${userId}:joined`,
           async () => {
-            return await this.rbacDBService.userOrganization.count({
+            return await this.rbacDBService.staff.count({
               where: { user_id: userId },
             });
           },
@@ -241,7 +153,7 @@ export class OrganizationRepository
   @LogExecutionTime()
   async assignUser(organization_id: string, user_id: string): Promise<void> {
     try {
-      await this.rbacDBService.userOrganization.create({
+      await this.rbacDBService.staff.create({
         data: {
           organization_id,
           user_id,
@@ -258,7 +170,7 @@ export class OrganizationRepository
   @LogExecutionTime()
   async unassignUser(organization_id: string, user_id: string): Promise<void> {
     try {
-      await this.rbacDBService.userOrganization.delete({
+      await this.rbacDBService.staff.delete({
         where: {
           user_id_organization_id: {
             user_id,
@@ -269,6 +181,26 @@ export class OrganizationRepository
       await this.invalidateCache(
         `organization:${organization_id}:user:${user_id}`,
       );
+    } catch (e: any) {
+      throw new BusinessException(ErrorEnum.REQUEST_FAILED_TO_EXECUTE);
+    }
+  }
+
+  @LogExecutionTime()
+  async updateUserAttributes(organization_id: string, user_id: string, attributes: any): Promise<void> {
+    try {
+      await this.rbacDBService.staff.update({
+        where: {
+          user_id_organization_id: {
+            user_id,
+            organization_id,
+          },
+        },
+        data: {
+          context_attributes: attributes,
+        },
+      });
+      await this.invalidateCache(`user:${user_id}:organizations`);
     } catch (e: any) {
       throw new BusinessException(ErrorEnum.REQUEST_FAILED_TO_EXECUTE);
     }
@@ -298,7 +230,7 @@ export class OrganizationRepository
 
   @LogExecutionTime()
   async findByIds(ids: string[]): Promise<Organization[]> {
-    const items = await this.getManyWithCache(
+    const items = await this.getWithManyKeysCache(
       ids,
       async (ids) => {
         return await this.rbacDBService.organization.findMany({
@@ -315,7 +247,7 @@ export class OrganizationRepository
 
   @LogExecutionTime()
   async create(organization: Organization): Promise<Organization> {
-    const prismaData = OrganizationMapper.toPrisma(organization);
+    const prismaData = OrganizationMapper.toPrismaCreate(organization);
     try {
       const createdOrganization = await this.rbacDBService.organization.create({
         data: prismaData,

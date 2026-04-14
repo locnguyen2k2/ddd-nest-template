@@ -1,22 +1,16 @@
-import { Inject, Injectable } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
-import { JwtPort, JWT_PORT } from '@/shared/application/ports/jwt.port';
-import { ConfigKeyPaths, IJwtConfig, jwtConfigKey } from '@/config';
-import {
-    ISessionRepository,
-    ITokenBlacklistRepository,
-    SESSION_REPO,
-    TOKEN_BLACKLIST_REPO,
-} from '../repositories/auth.repository';
-import { IUserRepository, USER_REPO } from '../repositories/user.repository';
+import { IJwtConfig } from '@/config';
 import { BusinessException } from '@/common/http/business-exception';
 import { ErrorEnum } from '@/common/exception.enum';
 import {
-    AuthResponseDto,
     TokenResponseDto,
     UserResponseDto,
 } from '../../presentation/dtos/res/user-response.dto';
 import { UserEntity } from '../entities/user.entity';
+import { JwtAdapter } from '@/shared/infrastructure/adapters/jwt.adapter';
+import { UserRepository } from '../../infrastructure/persistence/repositories/user.repository';
+import { SessionCacheRepository, TokenBlacklistCacheRepository } from '../../infrastructure/persistence/repositories/auth-cache.repository';
+import { BcryptAdapter } from '@/shared/infrastructure/adapters/bcrypt.adapter';
+import { REGEX } from '@/common/constant';
 
 export interface IPayload {
     sub: string;
@@ -24,41 +18,16 @@ export interface IPayload {
     username: string;
 }
 
-@Injectable()
 export class AuthDomainService {
-    private readonly jwtConfigs: IJwtConfig;
 
     constructor(
-        private readonly configService: ConfigService<ConfigKeyPaths>,
-        @Inject(JWT_PORT) private readonly jwtPort: JwtPort,
-        @Inject(USER_REPO) private readonly userRepo: IUserRepository,
-        @Inject(SESSION_REPO) private readonly sessionRepo: ISessionRepository,
-        @Inject(TOKEN_BLACKLIST_REPO)
-        private readonly blacklistRepo: ITokenBlacklistRepository,
+        private readonly jwtConfigs: IJwtConfig,
+        private readonly jwtPort: JwtAdapter,
+        private readonly userRepo: UserRepository,
+        private readonly sessionRepo: SessionCacheRepository,
+        private readonly blacklistRepo: TokenBlacklistCacheRepository,
+        private readonly bcryptAdapter: BcryptAdapter,
     ) {
-        this.jwtConfigs = this.configService.get<IJwtConfig>(jwtConfigKey)!;
-    }
-
-    async validateUser(username: string, password: string): Promise<UserEntity> {
-        const [user] = await Promise.all([
-            this.userRepo.findByUsername(username),
-        ]);
-
-        switch (true) {
-            case !user:
-                throw new BusinessException(ErrorEnum.RECORD_NOT_FOUND);
-            case user && !user.validateCredentials(password):
-                throw new BusinessException(ErrorEnum.PASSWORD_INVALID);
-            default:
-                break;
-        }
-
-        const userWithOrgRoles = await this.userRepo.findOrgRoles(user.id.value);
-        if (!userWithOrgRoles) {
-            throw new BusinessException(ErrorEnum.RECORD_NOT_FOUND);
-        }
-
-        return userWithOrgRoles;
     }
 
     async prepareTokens(user: UserEntity): Promise<{
@@ -161,7 +130,7 @@ export class AuthDomainService {
 
             const [isBlacklisted, user] = await Promise.all([
                 this.blacklistRepo.isTokenBlacklisted(accessToken),
-                this.userRepo.findById(payload.sub)
+                this.userRepo.findByIdWithOrganizations(payload.sub)
             ]);
 
             switch (true) {
@@ -182,8 +151,10 @@ export class AuthDomainService {
                 user.status,
                 user.created_at,
                 user.updated_at,
+                user.organizations,
             );
         } catch (error) {
+            console.log(error);
             throw new BusinessException(ErrorEnum.TOKEN_IS_INVALID);
         }
     }
@@ -220,6 +191,52 @@ export class AuthDomainService {
             default:
                 return value;
         }
+    }
+
+    async validateUser(username: string, password: string): Promise<UserEntity> {
+        const user = await this.userRepo.findByUsername(username);
+
+        switch (true) {
+            case !user:
+                throw new BusinessException(ErrorEnum.RECORD_NOT_FOUND);
+            case user && !this.validateCredentials(user, password):
+                throw new BusinessException(ErrorEnum.PASSWORD_INVALID);
+            default:
+                break;
+        }
+
+        const userWithOrgs = await this.userRepo.findByIdWithOrganizations(user!.id.value);
+        if (!userWithOrgs) {
+            throw new BusinessException(ErrorEnum.RECORD_NOT_FOUND);
+        }
+
+        return userWithOrgs;
+    }
+    hash(password: string): string {
+        this.validatePassword(password);
+        return this.bcryptAdapter.hashPassword(password);
+    }
+
+    match(plainPassword: string, hashedPassword: string): boolean {
+        return this.bcryptAdapter.comparePassword(plainPassword, hashedPassword);
+    }
+
+    private validatePassword(password: string): boolean {
+        const validate = (value: string) => {
+            return typeof value === 'string' && REGEX.regValidPassword.test(value);
+        };
+        const isValid = validate(password);
+        if (!isValid) {
+            throw new BusinessException('400|Invalid password');
+        }
+        return true;
+    }
+
+    validateCredentials(user: UserEntity, password: string) {
+        if (!this.match(password, user.password.value)) {
+            return false;
+        }
+        return user.canAuthenticate();
     }
 
 }

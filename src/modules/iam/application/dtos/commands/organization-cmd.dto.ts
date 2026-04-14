@@ -1,79 +1,22 @@
-import { IsString, IsOptional, IsNotEmpty } from 'class-validator';
-
-export class AssignRoleToUserArgs {
-  @IsString()
-  @IsNotEmpty()
-  userId: string;
-  @IsString()
-  @IsNotEmpty()
-  roleId: string;
-  @IsString()
-  @IsNotEmpty()
-  orgId: string;
-
-  constructor(data: AssignRoleToUserArgs) {
-    this.userId = data.userId;
-    this.roleId = data.roleId;
-    this.orgId = data.orgId;
-  }
-}
-
-export class UnassignRoleFromUserArgs extends AssignRoleToUserArgs {
-}
-
-export class CreateOrganizationArgs {
-  @IsString()
-  @IsNotEmpty()
+export interface CreateOrganizationArgs {
   name: string;
-  @IsString()
-  @IsNotEmpty()
   slug: string;
-  @IsOptional()
-  @IsString()
   description?: string;
-  @IsOptional()
-  roles?: string[];
-
-  constructor(data: CreateOrganizationArgs) {
-    this.name = data.name;
-    this.slug = data.slug;
-    this.description = data.description;
-    this.roles = data.roles;
-  }
 }
 
-export class UpdateOrganizationArgs {
-  @IsString()
-  @IsNotEmpty()
+export interface UpdateOrganizationArgs {
   id: string;
-
-  @IsString()
-  @IsOptional()
   name?: string;
-  @IsString()
-  @IsOptional()
   slug?: string;
-  @IsOptional()
-  @IsString()
   description?: string;
-  @IsOptional()
-  roles?: string[];
-
-  constructor(data: UpdateOrganizationArgs) {
-    this.id = data.id;
-    this.name = data.name;
-    this.slug = data.slug;
-    this.description = data.description;
-    this.roles = data.roles;
-  }
 }
 
-export class DeleteOrganizationArgs {
-  @IsString()
-  @IsNotEmpty()
+export interface DeleteOrganizationArgs {
   id: string;
+}
 
-  constructor(data: DeleteOrganizationArgs) {
-    this.id = data.id;
-  }
+export interface UpdateStaffAttributesArgs {
+  organizationId: string;
+  userId: string;
+  attributes?: Record<string, any>;
 }

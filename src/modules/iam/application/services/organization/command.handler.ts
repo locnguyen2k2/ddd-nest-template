@@ -4,15 +4,13 @@ import {
   CreateOrganizationArgs,
   UpdateOrganizationArgs,
   DeleteOrganizationArgs,
-  AssignRoleToUserArgs,
-  UnassignRoleFromUserArgs,
+  UpdateStaffAttributesArgs,
 } from '../../dtos/commands/organization-cmd.dto';
 import { Organization } from '@/modules/iam/domain/entities/organization.entity';
 import { Slug } from '@/modules/iam/domain/vo/slug.vo';
 import { IOrganizationRepository } from '@/modules/iam/domain/repositories/organization.repository';
 import { uuidv7 } from 'uuidv7';
 import { BusinessException } from '@/common/http/business-exception';
-import { OrgSerevice } from '@/modules/iam/domain/services/organization.service';
 import { ErrorEnum } from '@/common/exception.enum';
 
 @Injectable()
@@ -20,29 +18,7 @@ export class OrganizationCommandHandler {
   constructor(
     @Inject(ORGANIZATION_REPO)
     private readonly organizationRepo: IOrganizationRepository,
-    private readonly orgService: OrgSerevice,
   ) { }
-
-  async handleAssignRoleToUser(
-    command: AssignRoleToUserArgs,
-  ): Promise<void> {
-    const isValid = await this.orgService.validateAssignRoleToUser(command.userId, command.roleId, command.orgId);
-    if (!isValid) {
-      throw new BusinessException(ErrorEnum.REQUEST_VALIDATION_ERROR, 'Invalid role, organization or user');
-    }
-
-    return await this.organizationRepo.assignRoleToUser(command.orgId, command.userId, command.roleId);
-  }
-
-  async handleUnassignRoleFromUser(
-    command: UnassignRoleFromUserArgs,
-  ): Promise<void> {
-    const isValid = await this.orgService.validateUnassignRoleFromUser(command.userId, command.roleId, command.orgId);
-    if (!isValid) {
-      throw new BusinessException(ErrorEnum.REQUEST_VALIDATION_ERROR, 'Invalid role, organization or user');
-    }
-    return await this.organizationRepo.unassignRoleFromUser(command.orgId, command.userId, command.roleId);
-  }
 
   async handleCreateOrganization(
     command: CreateOrganizationArgs,
@@ -129,6 +105,23 @@ export class OrganizationCommandHandler {
     return await this.organizationRepo.assignUser(
       command.organizationId,
       command.userId,
+    );
+  }
+
+  async handleUpdateUserAttributes(
+    command: UpdateStaffAttributesArgs,
+  ): Promise<void> {
+    const hasAccess = await this.organizationRepo.organizationHasUser(
+      command.organizationId,
+      command.userId,
+    );
+    if (!hasAccess) {
+      throw new BusinessException(ErrorEnum.RECORD_NOT_FOUND, `User with id '${command.userId}' is not a member of organization '${command.organizationId}'`);
+    }
+    return await this.organizationRepo.updateUserAttributes(
+      command.organizationId,
+      command.userId,
+      command.attributes,
     );
   }
 }

@@ -67,7 +67,7 @@ export abstract class CacheRepository {
     return entity;
   }
 
-  protected async getManyWithCache<T>(
+  protected async getWithManyKeysCache<T>(
     ids: string[],
     fetchFromDb: (missingIds: string[]) => Promise<T[]>,
     idGetter: (item: T) => string,

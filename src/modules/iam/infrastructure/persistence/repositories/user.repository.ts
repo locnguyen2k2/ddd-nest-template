@@ -3,14 +3,12 @@ import { IUserRepository } from '@/modules/iam/domain/repositories/user.reposito
 import { UserMapper } from '../mappers/user.mapper';
 import { PrismaAdapter } from '@/shared/infrastructure/adapters/prisma.adapter';
 import { Inject, Injectable } from '@nestjs/common';
-import { BusinessException } from '@/common/http/business-exception';
-import { IOrganizationRepository, ORGANIZATION_REPO } from '@/modules/iam/domain/repositories/organization.repository';
-import { ErrorEnum } from '@/common/exception.enum';
 import { CacheRepository } from '@/shared/infrastructure/presistence/cache.repository';
 import { ConfigKeyPaths } from '@/config';
 import { CACHE_PORT, CachePort } from '@/shared/application/ports/cache.port';
 import { ConfigService } from '@nestjs/config';
-import { OrganizationMapper } from '../mappers/organization.mapper';
+import { StaffMapper } from '../mappers/staff.mapper';
+import { IStaffRepository, STAFF_REPO } from '@/modules/iam/domain/repositories/staff.repository';
 
 @Injectable()
 export class UserRepository extends CacheRepository implements IUserRepository {
@@ -21,20 +19,20 @@ export class UserRepository extends CacheRepository implements IUserRepository {
   };
   constructor(
     private readonly rbacDBService: PrismaAdapter,
-    @Inject(ORGANIZATION_REPO) private readonly orgRepo: IOrganizationRepository,
+    @Inject(STAFF_REPO) private readonly staffRepo: IStaffRepository,
     redisConfig: ConfigService<ConfigKeyPaths>,
     @Inject(CACHE_PORT) cachePort: CachePort,) {
     super(redisConfig, cachePort);
   }
 
   async create(props: UserEntity): Promise<UserEntity> {
-    const toPrisma = UserMapper.toPrisma(props);
+    const toPrisma = UserMapper.toPrismaCreate(props);
     const result = await this.rbacDBService.user.create({ data: toPrisma });
     return UserMapper.toDomain(result);
   }
 
   async update(props: UserEntity): Promise<UserEntity> {
-    const toPrisma = UserMapper.toPrisma(props);
+    const toPrisma = UserMapper.toPrismaUpdate(props);
     const result = await this.rbacDBService.user.update({
       where: { id: props.id.value },
       data: toPrisma,
@@ -48,41 +46,48 @@ export class UserRepository extends CacheRepository implements IUserRepository {
     await this.invalidateCache(id);
   }
 
-  async findOrgRoles(userId: string): Promise<UserEntity | null> {
-    const [user, org, userOrgRoles] = await Promise.all([
-      this.findById(userId),
-      this.orgRepo.findUserOrganizations(userId),
-      this.orgRepo.findOrgRoles(userId),
-    ]);
+  async findByIdWithOrganizations(userId: string): Promise<UserEntity | null> {
+    try {
+      const [user, staffs] = await Promise.all([
+        this.findById(userId),
+        this.staffRepo.findByUserId(userId)
+      ]);
 
-    switch (true) {
-      case !user:
-        throw new BusinessException(ErrorEnum.RECORD_NOT_FOUND, 'User not found');
-      case !org || org.length === 0:
-        throw new BusinessException(ErrorEnum.RECORD_NOT_FOUND, 'Organization not found');
+      if (!user) return null;
+      const prismaUser = UserMapper.toPrisma(user);
+      const prismaOrgs = staffs.map((staff) => StaffMapper.toPrisma(staff));
+
+      const item = UserMapper.toDomain({
+        ...prismaUser,
+        organizations: prismaOrgs
+      });
+      return item;
+    } catch (error) {
+      console.log(error);
+      return null;
     }
-
-    return UserMapper.toDomainWithOrgRoles(UserMapper.toPrisma(user), org.map(item => OrganizationMapper.toPrisma(item)), userOrgRoles);
   }
 
-  async findByIDWithOrgRoles(userId: string, organization_id: string): Promise<UserEntity | null> {
-    const [user, org, userOrgRoles, hasUser] = await Promise.all([
-      this.findById(userId),
-      this.orgRepo.findById(organization_id),
-      this.orgRepo.findUserOrgRoles(organization_id, userId),
-      this.orgRepo.organizationHasUser(organization_id, userId),
-    ]);
+  async findByIdWithOrganization(userId: string, orgId: string): Promise<UserEntity | null> {
+    try {
+      const [user, staffs] = await Promise.all([
+        this.findById(userId),
+        this.staffRepo.findByUserIdAndOrgId(userId, orgId)
+      ]);
 
-    switch (true) {
-      case !user:
-        throw new BusinessException(ErrorEnum.RECORD_NOT_FOUND, 'User not found');
-      case !org:
-        throw new BusinessException(ErrorEnum.RECORD_NOT_FOUND, 'Organization not found');
-      case !hasUser:
-        throw new BusinessException(ErrorEnum.RECORD_NOT_FOUND, 'User not found in organization');
+      if (!user || !staffs) return null;
+      const prismaUser = UserMapper.toPrisma(user);
+      const prismaOrgs = StaffMapper.toPrisma(staffs);
+
+      const item = UserMapper.toDomain({
+        ...prismaUser,
+        organizations: [prismaOrgs]
+      });
+      return item;
+    } catch (error) {
+      console.log(error);
+      return null;
     }
-
-    return UserMapper.toDomainWithOrgRoles(UserMapper.toPrisma(user), [OrganizationMapper.toPrisma(org)], new Map<string, string[]>([[organization_id, userOrgRoles]]));
   }
 
   async findById(id: string): Promise<UserEntity | null> {

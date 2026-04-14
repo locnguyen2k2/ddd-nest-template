@@ -1,16 +1,12 @@
 import { AggregateRoot, IEntityID } from '@/shared/domain/entities/base.entity';
 import { Slug } from '../vo/slug.vo';
+import { Attributes } from '../vo/attributes.vo';
 import {
   FeatureCreatedEvent,
   FeatureUpdatedEvent,
   FeatureDeletedEvent,
 } from '../events/feature.events';
 import { AccessControlStatus } from '@/common/enum';
-import { IFeaturePermission } from './role.entity';
-
-export interface IRolePermission extends Omit<IFeaturePermission, 'feature_id'> {
-  role_id: string
-}
 
 export interface FeatureBaseProps {
   name: string;
@@ -20,9 +16,9 @@ export interface FeatureBaseProps {
   created_at?: Date;
   updated_at?: Date;
   project_id: string;
-  role_permissions?: IRolePermission[];
   created_by: string | undefined;
   updated_by: string | undefined;
+  attributes?: Attributes;
 }
 
 export interface CreateFeatureProps extends FeatureBaseProps {
@@ -34,10 +30,8 @@ export interface UpdateFeatureProps {
   slug?: Slug;
   description?: string;
   status?: AccessControlStatus;
-  role_permissions?: IRolePermission[];
 }
 
-// Feature Aggregate Root
 export class Feature extends AggregateRoot<Feature, string> {
   private _name: string;
   private _slug: Slug;
@@ -46,9 +40,9 @@ export class Feature extends AggregateRoot<Feature, string> {
   private _created_at: Date;
   private _updated_at: Date;
   private _project_id: string;
-  private _role_permissions: IRolePermission[];
   private _created_by: string | undefined;
   private _updated_by: string | undefined;
+  private _attributes: Attributes;
 
   private constructor(
     props: CreateFeatureProps,
@@ -61,9 +55,9 @@ export class Feature extends AggregateRoot<Feature, string> {
     this._created_at = props.created_at ?? new Date();
     this._updated_at = props.updated_at ?? new Date();
     this._project_id = props.project_id;
-    this._role_permissions = props.role_permissions ?? [];
     this._created_by = props.created_by;
     this._updated_by = props.updated_by;
+    this._attributes = props.attributes ?? Attributes.create({});
   }
 
   static create(props: CreateFeatureProps) {
@@ -149,27 +143,27 @@ export class Feature extends AggregateRoot<Feature, string> {
     return this._status;
   }
 
-  get createdAt(): Date {
+  get created_at(): Date {
     return this._created_at;
   }
 
-  get updatedAt(): Date {
+  get updated_at(): Date {
     return this._updated_at;
   }
 
-  get projectId(): string {
+  get project_id(): string {
     return this._project_id;
   }
 
-  get RFPs(): IRolePermission[] {
-    return this._role_permissions;
-  }
-
-  get createdBy(): string | undefined {
+  get created_by(): string | undefined {
     return this._created_by;
   }
 
-  get updatedBy(): string | undefined {
+  get updated_by(): string | undefined {
     return this._updated_by;
+  }
+
+  get attributes(): Attributes {
+    return this._attributes;
   }
 }

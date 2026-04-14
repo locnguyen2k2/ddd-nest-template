@@ -1,66 +1,18 @@
-import { IsString, IsNotEmpty, IsOptional } from 'class-validator';
-import { ApiProperty } from '@nestjs/swagger';
 import { PermissionAction } from '@/common/enum';
 
-export class CreatePermissionArgs {
-  @ApiProperty()
-  @IsString()
-  @IsNotEmpty()
+export interface CreatePermissionArgs {
   name: string;
-
-  @ApiProperty({ type: String, enum: PermissionAction })
-  @IsString()
-  @IsNotEmpty()
   action: PermissionAction;
-
-  @ApiProperty()
-  @IsString()
-  @IsOptional()
   description?: string;
-
-  constructor(data: CreatePermissionArgs) {
-    this.name = data.name;
-    this.action = data.action;
-    this.description = data?.description;
-  }
 }
 
-export class UpdatePermissionArgs {
-  @ApiProperty()
-  @IsString()
-  @IsNotEmpty()
+export interface UpdatePermissionArgs {
   id: string;
-
-  @ApiProperty()
-  @IsString()
-  @IsNotEmpty()
   name: string;
-
-  @ApiProperty({ type: String, enum: PermissionAction })
-  @IsString()
-  @IsNotEmpty()
   action: PermissionAction;
-
-  @ApiProperty()
-  @IsString()
-  @IsOptional()
   description?: string;
-
-  constructor(data: UpdatePermissionArgs) {
-    this.id = data.id;
-    this.name = data.name;
-    this.action = data.action;
-    this.description = data?.description;
-  }
 }
 
-export class DeletePermissionArgs {
-  @ApiProperty()
-  @IsString()
-  @IsNotEmpty()
+export interface DeletePermissionArgs {
   id: string;
-
-  constructor(data: DeletePermissionArgs) {
-    this.id = data.id;
-  }
 }
