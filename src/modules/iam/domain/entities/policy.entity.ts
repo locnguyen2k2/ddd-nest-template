@@ -1,4 +1,5 @@
 import { AggregateRoot, IEntityID } from '@/shared/domain/entities/base.entity';
+import { UserEntity } from './user.entity';
 
 export enum Effect {
   ALLOW = 'ALLOW',
@@ -19,6 +20,37 @@ export interface IPolicyProps {
 
 export interface ICreatePolicyProps extends IPolicyProps {
   id: IEntityID<string>;
+}
+
+export interface IRuleEvaluator {
+  evaluate(condition: any, context: any): boolean;
+}
+
+export interface IEvaluationContext {
+  subject: {
+    id: string;
+    email: string;
+    username: string;
+    attributes: any;
+    context_attributes: any;
+    department_id?: string;
+  };
+  resource: {
+    type: string;
+    attributes: any;
+    [key: string]: any;
+  };
+  organization?: {
+    id: string;
+    attributes: any;
+    [key: string]: any;
+  };
+  env: {
+    time: string;
+    ip?: string;
+    [key: string]: any;
+  };
+  action: string;
 }
 
 export class PolicyEntity extends AggregateRoot<PolicyEntity, string> {
@@ -47,6 +79,72 @@ export class PolicyEntity extends AggregateRoot<PolicyEntity, string> {
 
   static create(props: ICreatePolicyProps): PolicyEntity {
     return new PolicyEntity(props.id, props);
+  }
+
+  evaluate(context: IEvaluationContext, evaluator: IRuleEvaluator): boolean {
+    return evaluator.evaluate(this._condition, context);
+  }
+
+  static buildContext(
+    subject: UserEntity,
+    resource: any,
+    action: string,
+    organization_id?: string,
+    environment?: Record<string, any>,
+    organization?: any,
+  ): IEvaluationContext {
+    let context_attributes: any = {};
+    let department_id: string | undefined = undefined;
+
+    if (organization_id) {
+      const currentOrg = subject.organizations.find(
+        (org) => org.organization_id === organization_id,
+      );
+      if (currentOrg) {
+        context_attributes = currentOrg.context_attributes?.value || {};
+        department_id = currentOrg.department_id;
+      }
+    }
+
+    const resourceAttributes = resource?.attributes?.value !== undefined 
+      ? resource.attributes.value 
+      : (resource?.attributes || {});
+
+    const resourceType = this.getResourceType(resource);
+
+    return {
+      subject: {
+        id: subject.id.value,
+        email: subject.email,
+        username: subject.username,
+        attributes: subject.attributes.value,
+        context_attributes,
+        department_id,
+      },
+      resource: {
+        type: resourceType,
+        attributes: resourceAttributes,
+        ...(typeof resource === 'object' ? resource : {}),
+      },
+      organization: organization ? {
+        id: organization.id?.value || organization.id,
+        attributes: organization.attributes?.value || organization.attributes || {},
+        ...(typeof organization === 'object' ? organization : {}),
+      } : undefined,
+      env: {
+        time: new Date().toISOString(),
+        ...(environment || {}),
+      },
+      action,
+    };
+  }
+
+  public static getResourceType(resource: any): string {
+    if (typeof resource === 'string') return resource;
+    if (resource.constructor && resource.constructor.name !== 'Object') {
+      return resource.constructor.name;
+    }
+    return resource.type || 'Unknown';
   }
 
   get name(): string {

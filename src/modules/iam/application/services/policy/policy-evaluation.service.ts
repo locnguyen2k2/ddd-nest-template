@@ -1,6 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { JsonLogicEngineAdapter as JsonLogicEngine } from '@/shared/infrastructure/adapters/json-logic.adapter';
-import { Effect } from '@/modules/iam/domain/entities/policy.entity';
+import { Effect, PolicyEntity } from '@/modules/iam/domain/entities/policy.entity';
 import { POLICY_REPO, IPolicyRepository } from '@/modules/iam/domain/repositories/policy.repository';
 import { PolicyEvaluateDto } from '@/modules/iam/presentation/dtos/req/policy.dto';
 import { EvaluationResponseDto, EvaluatedPolicyDto, PolicyResponseDto } from '@/modules/iam/presentation/dtos/res/policy-response.dto';
@@ -12,7 +12,6 @@ import { PolicyQueryService } from './policy-query.service';
 import { FeatureMapper } from '@/modules/iam/infrastructure/persistence/mappers/feature.mapper';
 import { OrganizationMapper } from '@/modules/iam/infrastructure/persistence/mappers/organization.mapper';
 import { ProjectMapper } from '@/modules/iam/infrastructure/persistence/mappers/project.mapper';
-import { UserMapper } from '@/modules/iam/infrastructure/persistence/mappers/user.mapper';
 
 export enum EvaluateStatus {
   APPLIED = 'APPLIED',
@@ -48,23 +47,38 @@ export class PolicyEvaluationService {
       });
 
       const resourceData = await this.fetchResource(resource.type, resource.id);
+      const organizationData = organization_id 
+        ? await this.organizationRepo.findById(organization_id)
+        : null;
 
-
-      evaluationContext = {
-        subject: UserMapper.toPrisma(user),
-        resource: resourceData,
-        env: {
-          ...(context || {}),
-          time: new Date().toISOString(),
-        },
+      evaluationContext = PolicyEntity.buildContext(
+        user,
+        resourceData,
         action,
-      };
+        organization_id,
+        context,
+        organizationData ? OrganizationMapper.toPrisma(organizationData) : null,
+      );
+
+      if (subject) {
+        evaluationContext.subject.attributes = {
+          ...evaluationContext.subject.attributes,
+          ...(subject || {}),
+        };
+      }
+
+      if (resource) {
+        evaluationContext.resource.attributes = {
+          ...evaluationContext.resource.attributes,
+          ...(resource || {}),
+        };
+      }
 
       let appliedPolicyId: string | null = null;
 
-      const denyPolicies = policies.filter(p => p.effect === Effect.DENY);
+      const denyPolicies = policies.filter((p) => p.effect === Effect.DENY);
       for (const policy of denyPolicies) {
-        const isMatched = this.ruleEvaluator.evaluate(policy.condition, evaluationContext);
+        const isMatched = policy.evaluate(evaluationContext, this.ruleEvaluator);
 
         evaluatedPolicies.push({
           ...PolicyResponseDto.fromDomain(policy),
@@ -79,12 +93,14 @@ export class PolicyEvaluationService {
       }
 
       if (decision !== Effect.DENY) {
-        const allowPolicies = policies.filter(p => p.effect === Effect.ALLOW);
+        const allowPolicies = policies.filter((p) => p.effect === Effect.ALLOW);
         for (const policy of allowPolicies) {
-          const isMatched = this.ruleEvaluator.evaluate(policy.condition, evaluationContext);
+          const isMatched = policy.evaluate(evaluationContext, this.ruleEvaluator);
 
           const status = isMatched
-            ? (appliedPolicyId ? EvaluateStatus.MATCHED : EvaluateStatus.APPLIED)
+            ? appliedPolicyId
+              ? EvaluateStatus.MATCHED
+              : EvaluateStatus.APPLIED
             : EvaluateStatus.NOT_MATCHED;
 
           if (isMatched && !appliedPolicyId) {
@@ -99,9 +115,9 @@ export class PolicyEvaluationService {
           });
         }
       } else {
-        const allowPolicies = policies.filter(p => p.effect === Effect.ALLOW);
+        const allowPolicies = policies.filter((p) => p.effect === Effect.ALLOW);
         for (const policy of allowPolicies) {
-          const isMatched = this.ruleEvaluator.evaluate(policy.condition, evaluationContext);
+          const isMatched = policy.evaluate(evaluationContext, this.ruleEvaluator);
           evaluatedPolicies.push({
             ...PolicyResponseDto.fromDomain(policy),
             status: isMatched ? EvaluateStatus.MATCHED : EvaluateStatus.NOT_MATCHED,

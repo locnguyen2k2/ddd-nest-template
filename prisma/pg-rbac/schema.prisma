@@ -24,7 +24,7 @@ model User {
     created_staffs Staff[] @relation("StaffsCreatedBy")
     created_organizations Organization[] @relation("OrganizationCreatedBy")
     created_projects Project[] @relation("ProjectCreatedBy")
-    
+
     @@index([email])
     @@index([username])
 }
@@ -44,6 +44,7 @@ model Organization {
     projects Project[] @relation("OrganizationToProject")
     departments Department[] @relation("OrganizationToDepartment")
     policies Policy[] @relation("OrganizationToPolicy")
+    roles Role[] @relation("OrganizationToRole")
     
     created_by_user User? @relation("OrganizationCreatedBy", fields: [created_by], references: [id], onDelete: SetNull)
 
@@ -213,6 +214,24 @@ model Policy {
     
     organization   Organization? @relation("OrganizationToPolicy", fields: [organization_id], references: [id])
     @@index([action, resource])
+}
+
+model Role {
+    id          String   @id @default(uuid(7)) @db.Uuid
+    name        String
+    slug        String
+    organization_id String @db.Uuid
+    description String?
+    status      AccessControlStatus @default(ACTIVE)
+    created_at   DateTime @default(now())
+    updated_at   DateTime @updatedAt
+    created_by   String?  @db.Uuid
+    updated_by   String?  @db.Uuid
+    attributes   Json     @default("{}")
+
+    organization Organization @relation("OrganizationToRole", fields: [organization_id], references: [id], onDelete: Cascade)
+    
+    @@unique([organization_id, slug])
 }
 
 enum Effect {

@@ -51,6 +51,7 @@ export class ProjectRepository extends CacheRepository implements IProjectReposi
     const prj = await this.getWithCache(id, async () =>
       await this.rbacDBService.project.findFirst({
         where: { id },
+        include: { department: true }
       })
     );
     if (!prj) {
@@ -65,6 +66,7 @@ export class ProjectRepository extends CacheRepository implements IProjectReposi
   ): Promise<ProjectEntity | null> {
     const prj = await this.rbacDBService.project.findUnique({
       where: { slug, organization_id },
+      include: { department: true }
     });
 
     if (!prj) return null;

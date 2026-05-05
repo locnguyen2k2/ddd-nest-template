@@ -9,6 +9,7 @@ export interface IAccessRequest {
   action: string;
   resource: any;
   organization_id?: string;
+  organization?: any;
   environment?: Record<string, any>;
 }
 

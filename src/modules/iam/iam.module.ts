@@ -76,6 +76,11 @@ import { EnvironmentQueryHandler } from './application/services/environment/quer
 import { ENVIRONMENT_REPO } from './domain/repositories/evironment.repository';
 import { EnvironmentRepository } from './infrastructure/persistence/repositories/environment.repository';
 import { EnvironmentController } from './presentation/controllers/environment.controller';
+import { RoleCommandHandler } from './application/services/role/command.handler';
+import { RoleQueryHandler } from './application/services/role/query.handler';
+import { ROLE_REPO } from './domain/repositories/role.repository';
+import { RoleRepository } from './infrastructure/persistence/repositories/role.repository';
+import { RoleController } from './presentation/controllers/role.controller';
 
 const abacProviders = [
   PrismaPolicyRepository,
@@ -186,12 +191,12 @@ const environmentProviders = [
   EnvironmentRepository,
   { provide: ENVIRONMENT_REPO, useClass: EnvironmentRepository },
 ];
-// const roleProviders = [
-//   RoleCommandHandler,
-//   RoleQueryHandler,
-//   RoleRepository,
-//   { provide: ROLE_REPO, useClass: RoleRepository },
-// ];
+const roleProviders = [
+  RoleCommandHandler,
+  RoleQueryHandler,
+  RoleRepository,
+  { provide: ROLE_REPO, useClass: RoleRepository },
+];
 
 const featureExports = [FeatureRepository];
 const organizationExports = [OrganizationRepository, OrgSerevice, TenantContextGuard];
@@ -206,11 +211,24 @@ const attributeExports = [AttributeRepository, AttributeCommandHandler, Attribut
 const clearanceExports = [ClearanceRepository, ClearanceCommandHandler, ClearanceQueryHandler];
 const subscriptionExports = [SubscriptionRepository, SubscriptionCommandHandler, SubscriptionQueryHandler];
 const environmentExports = [EnvironmentRepository, EnvironmentCommandHandler, EnvironmentQueryHandler];
-// const roleExports = [RoleRepository, RoleCommandHandler, RoleQueryHandler];
+const roleExports = [RoleRepository, RoleCommandHandler, RoleQueryHandler];
 
 @Module({
   imports: [],
-  controllers: [AttributeController, ClearanceController, SubscriptionController, EnvironmentController, FeatureController, OrganizationController, ProjectController, UserController, PolicyController, DepartmentController, MemberController],
+  controllers: [
+    AttributeController,
+    ClearanceController,
+    SubscriptionController,
+    EnvironmentController,
+    FeatureController,
+    OrganizationController,
+    ProjectController,
+    UserController,
+    PolicyController,
+    DepartmentController,
+    MemberController,
+    RoleController,
+  ],
   providers: [
     ...abacProviders,
     ...featureProviders,
@@ -225,6 +243,7 @@ const environmentExports = [EnvironmentRepository, EnvironmentCommandHandler, En
     ...clearanceProviders,
     ...subscriptionProviders,
     ...environmentProviders,
+    ...roleProviders,
   ],
   exports: [
     ...featureExports,
@@ -240,6 +259,7 @@ const environmentExports = [EnvironmentRepository, EnvironmentCommandHandler, En
     ...clearanceExports,
     ...subscriptionExports,
     ...environmentExports,
+    ...roleExports,
   ],
 })
 export class IamModule { }

@@ -3,9 +3,10 @@ import { IEntityID } from '@/shared/domain/entities/base.entity';
 import { ProjectResponseDto } from '@/modules/iam/presentation/dtos/res/project-response.dto';
 import { Project, Prisma } from '@internal/rbac/client';
 import { Attributes } from '@/modules/iam/domain/vo/attributes.vo';
+import { DepartmentMapper } from './department.mapper';
 
 export class ProjectMapper {
-  static toDomain(prj: Project): ProjectEntity {
+  static toDomain(prj: any): ProjectEntity {
     const id: IEntityID<string> = {
       value: prj.id,
       _id: prj.id,
@@ -23,10 +24,12 @@ export class ProjectMapper {
       created_by: prj.created_by || undefined,
       updated_by: prj.updated_by || undefined,
       attributes: Attributes.create(prj.attributes),
+      department_id: prj.department_id || undefined,
+      department: prj.department ? DepartmentMapper.toDomain(prj.department) : undefined,
     });
   }
 
-  static toPrisma(prj: ProjectEntity): Project {
+  static toPrisma(prj: ProjectEntity): any {
     return {
       id: prj.id.value,
       name: prj.name,
@@ -39,6 +42,7 @@ export class ProjectMapper {
       updated_by: prj.updatedBy,
       attributes: prj.attributes.value as Prisma.JsonObject,
       department_id: prj.departmentID,
+      department: prj.department ? DepartmentMapper.toPrisma(prj.department) : undefined,
     };
   }
 
