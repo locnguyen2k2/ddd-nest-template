@@ -4,18 +4,21 @@ import {
   CreateOrganizationArgs,
   UpdateOrganizationArgs,
   DeleteOrganizationArgs,
+  UpdateStaffAttributesArgs,
 } from '../../dtos/commands/organization-cmd.dto';
 import { Organization } from '@/modules/iam/domain/entities/organization.entity';
 import { Slug } from '@/modules/iam/domain/vo/slug.vo';
 import { IOrganizationRepository } from '@/modules/iam/domain/repositories/organization.repository';
 import { uuidv7 } from 'uuidv7';
+import { BusinessException } from '@/common/http/business-exception';
+import { ErrorEnum } from '@/common/exception.enum';
 
 @Injectable()
 export class OrganizationCommandHandler {
   constructor(
     @Inject(ORGANIZATION_REPO)
     private readonly organizationRepo: IOrganizationRepository,
-  ) {}
+  ) { }
 
   async handleCreateOrganization(
     command: CreateOrganizationArgs,
@@ -24,9 +27,7 @@ export class OrganizationCommandHandler {
       command.slug,
     );
     if (existingOrganization) {
-      throw new Error(
-        `Organization with slug '${command.slug}' already exists`,
-      );
+      throw new BusinessException(ErrorEnum.REQUEST_VALIDATION_ERROR, `Organization with slug '${command.slug}' already exists`);
     }
 
     const id = uuidv7();
@@ -54,15 +55,13 @@ export class OrganizationCommandHandler {
       command.id,
     );
     if (!existingOrganization) {
-      throw new Error(`Organization with id '${command.id}' not found`);
+      throw new BusinessException(ErrorEnum.REQUEST_VALIDATION_ERROR, `Organization with id '${command.id}' not found`);
     }
 
     if (command.slug && command.slug !== existingOrganization.slug().value) {
       const slugConflict = await this.organizationRepo.findBySlug(command.slug);
       if (slugConflict) {
-        throw new Error(
-          `Organization with slug '${command.slug}' already exists`,
-        );
+        throw new BusinessException(ErrorEnum.REQUEST_VALIDATION_ERROR, `Organization with slug '${command.slug}' already exists`);
       }
     }
 
@@ -85,11 +84,44 @@ export class OrganizationCommandHandler {
       command.id,
     );
     if (!existingOrganization) {
-      throw new Error(`Organization with id '${command.id}' not found`);
+      throw new BusinessException(ErrorEnum.REQUEST_VALIDATION_ERROR, `Organization with id '${command.id}' not found`);
     }
 
     existingOrganization.delete();
 
     await this.organizationRepo.delete(command.id);
+  }
+
+  async handleJoinOrganization(
+    command: { userId: string; organizationId: string },
+  ): Promise<void> {
+    const alreadyJoined = await this.organizationRepo.organizationHasUser(
+      command.organizationId,
+      command.userId,
+    );
+    if (alreadyJoined) {
+      throw new BusinessException(ErrorEnum.REQUEST_VALIDATION_ERROR, `User with id '${command.userId}' already joined organization '${command.organizationId}'`);
+    }
+    return await this.organizationRepo.assignUser(
+      command.organizationId,
+      command.userId,
+    );
+  }
+
+  async handleUpdateUserAttributes(
+    command: UpdateStaffAttributesArgs,
+  ): Promise<void> {
+    const hasAccess = await this.organizationRepo.organizationHasUser(
+      command.organizationId,
+      command.userId,
+    );
+    if (!hasAccess) {
+      throw new BusinessException(ErrorEnum.RECORD_NOT_FOUND, `User with id '${command.userId}' is not a member of organization '${command.organizationId}'`);
+    }
+    return await this.organizationRepo.updateUserAttributes(
+      command.organizationId,
+      command.userId,
+      command.attributes,
+    );
   }
 }

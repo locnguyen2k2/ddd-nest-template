@@ -33,7 +33,7 @@ export class ProjectResponseDto {
 
 export class PaginateProjectsResponseDto {
   @ApiProperty({ type: [ProjectResponseDto] })
-  projects!: ProjectResponseDto[];
+  data!: ProjectResponseDto[];
 
   @ApiProperty({ type: PaginationDto })
   @Type(() => PaginationDto)
@@ -42,7 +42,7 @@ export class PaginateProjectsResponseDto {
 
 export class CursorProjectsResponseDto {
   @ApiProperty({ type: [ProjectResponseDto] })
-  projects!: ProjectResponseDto[];
+  data!: ProjectResponseDto[];
 
   @ApiProperty({ type: CursorPaginationDto })
   @Type(() => CursorPaginationDto)

@@ -1,6 +1,9 @@
 import { ApiProperty } from '@nestjs/swagger';
+import { CursorPaginationDto } from '@/common/pagination';
+import { Type } from 'class-transformer';
+import { PaginationDto } from '@/common/pagination';
 
-export class OrganizationResponseDto {
+export class OrgBaseResDto {
   @ApiProperty()
   id!: string;
 
@@ -10,7 +13,7 @@ export class OrganizationResponseDto {
   @ApiProperty()
   slug!: string;
 
-  @ApiProperty({ required: false })
+  @ApiProperty()
   description?: string;
 
   @ApiProperty()
@@ -21,8 +24,8 @@ export class OrganizationResponseDto {
 }
 
 export class ListOrganizationsResponseDto {
-  @ApiProperty({ type: [OrganizationResponseDto] })
-  organizations!: OrganizationResponseDto[];
+  @ApiProperty({ type: [OrgBaseResDto] })
+  organizations!: OrgBaseResDto[];
 
   @ApiProperty()
   pagination!: {
@@ -31,4 +34,22 @@ export class ListOrganizationsResponseDto {
     limit: number;
     totalPages: number;
   };
+}
+
+export class PaginateOrganizationsResponseDto {
+  @ApiProperty({ type: [OrgBaseResDto] })
+  data!: OrgBaseResDto[];
+
+  @ApiProperty({ type: PaginationDto })
+  @Type(() => PaginationDto)
+  paginated!: PaginationDto;
+}
+
+export class CursorOrganizationsResponseDto {
+  @ApiProperty({ type: [OrgBaseResDto] })
+  data!: OrgBaseResDto[];
+
+  @ApiProperty({ type: CursorPaginationDto })
+  @Type(() => CursorPaginationDto)
+  paginated!: CursorPaginationDto;
 }

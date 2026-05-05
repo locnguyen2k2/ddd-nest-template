@@ -1,5 +1,5 @@
 import { AggregateRoot, IEntityID } from '@/shared/domain/entities/base.entity';
-import { uuidv7 } from 'uuidv7';
+import { Attributes } from '../vo/attributes.vo';
 
 export interface IProjectProps {
   name: string;
@@ -11,9 +11,11 @@ export interface IProjectProps {
   updated_at: Date | string | null;
   updated_by?: string;
   id: IEntityID<string>;
+  attributes?: Attributes;
+  department_id?: string;
 }
 
-export interface ICreateProject extends IProjectProps {}
+export interface ICreateProject extends IProjectProps { }
 
 export interface IUpdateProject extends Pick<IProjectProps, 'updated_by'> {
   name?: string;
@@ -30,6 +32,8 @@ export class ProjectEntity extends AggregateRoot<ProjectEntity, string> {
   private _updated_at: Date | string | null;
   private _created_by?: string;
   private _updated_by?: string;
+  private _attributes: Attributes;
+  private _department_id?: string;
 
   private constructor(id: IEntityID<string>, props: IProjectProps) {
     super(id);
@@ -42,6 +46,8 @@ export class ProjectEntity extends AggregateRoot<ProjectEntity, string> {
     this._updated_at = props.updated_at;
     this._created_by = props.created_by;
     this._updated_by = props.updated_by;
+    this._attributes = props.attributes ?? Attributes.create({});
+    this._department_id = props.department_id;
   }
 
   static create(props: ICreateProject): ProjectEntity {
@@ -56,6 +62,7 @@ export class ProjectEntity extends AggregateRoot<ProjectEntity, string> {
       created_at: now,
       updated_at: now,
       updated_by: props.created_by,
+      attributes: props.attributes ?? Attributes.create({}),
     });
     return project;
   }
@@ -74,31 +81,39 @@ export class ProjectEntity extends AggregateRoot<ProjectEntity, string> {
     return;
   }
 
-  name() {
+  get name() {
     return this._name;
   }
 
-  slug() {
+  get slug() {
     return this._slug;
   }
 
-  organizationID() {
+  get organizationID(): string {
     return this._organization_id;
   }
 
-  description(): string | null {
+  get description(): string | null {
     return this._description || null;
   }
-  createdAt(): Date {
+  get createdAt(): Date {
     return this?._created_at ? new Date(this._created_at) : new Date();
   }
-  updatedAt(): Date {
+  get updatedAt(): Date {
     return this?._updated_at ? new Date(this._updated_at) : new Date();
   }
-  createdBy(): string | null {
+  get createdBy(): string | null {
     return this._created_by || null;
   }
-  updatedBy(): string | null {
+  get updatedBy(): string | null {
     return this._updated_by || null;
+  }
+
+  get attributes(): Attributes {
+    return this._attributes;
+  }
+  
+  get departmentID(): string | null {
+    return this._department_id || null;
   }
 }

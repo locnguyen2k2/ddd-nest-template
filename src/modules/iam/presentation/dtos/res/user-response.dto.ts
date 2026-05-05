@@ -58,6 +58,8 @@ export class UserResponseDto {
   @ApiProperty()
   @IsString()
   updated_at: Date;
+  @ApiProperty()
+  organizations?: any[];
 
   constructor(
     id: string,
@@ -68,6 +70,7 @@ export class UserResponseDto {
     status: AccessControlStatus,
     created_at: Date,
     updated_at: Date,
+    organizations?: any[],
   ) {
     this.id = id;
     this.email = email;
@@ -77,6 +80,7 @@ export class UserResponseDto {
     this.status = status;
     this.created_at = created_at;
     this.updated_at = updated_at;
+    this.organizations = organizations;
   }
 }
 

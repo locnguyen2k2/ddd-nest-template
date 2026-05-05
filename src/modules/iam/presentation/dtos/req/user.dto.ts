@@ -1,9 +1,31 @@
+import { BaseCursorPageOptionDto, BasePageOptionDto } from '@/common/pagination';
 import {
   PasswordValidator,
   UsernameValidator,
 } from '@/common/validators/user.validator';
 import { ApiProperty } from '@nestjs/swagger';
-import { IsNotEmpty, IsString, IsEmail, IsOptional, Validate } from 'class-validator';
+import { Type } from 'class-transformer';
+import { IsNotEmpty, IsString, IsEmail, IsOptional, Validate, IsArray, ArrayMinSize, ValidateNested } from 'class-validator';
+
+class PermissionDto {
+  @ApiProperty()
+  @IsNotEmpty()
+  @IsString()
+  feature!: string;
+
+  @ApiProperty()
+  @IsNotEmpty()
+  @IsString()
+  action!: string;
+}
+
+export class CheckPermissionDto {
+  @ApiProperty({ type: [PermissionDto] })
+  @ArrayMinSize(1)
+  @Type(() => PermissionDto)
+  @ValidateNested({ each: true })
+  permission!: PermissionDto[];
+}
 
 export class RegisterUserDto {
   @ApiProperty()
@@ -38,7 +60,7 @@ export class LoginUserDto {
   @ApiProperty()
   @IsNotEmpty()
   @IsString()
-  @Validate(UsernameValidator)
+  // @Validate(UsernameValidator)
   username!: string;
 
   @ApiProperty()
@@ -98,4 +120,10 @@ export class LogoutDto {
   @IsNotEmpty()
   @IsString()
   refresh_token!: string;
+}
+
+export class PaginateUsersQuery extends BasePageOptionDto {
+}
+
+export class CursorUsersQuery extends BaseCursorPageOptionDto {
 }

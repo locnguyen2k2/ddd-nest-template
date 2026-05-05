@@ -4,22 +4,29 @@ import {
   Body,
   HttpStatus,
   HttpCode,
+  UseGuards,
+  Get,
 } from '@nestjs/common';
 import {
   ApiTags,
   ApiOperation,
   ApiResponse,
+  ApiBearerAuth,
 } from '@nestjs/swagger';
 import { RegisterUserDto, LoginUserDto, VerifyAccessTokenDto, RefreshTokenDto, LogoutDto } from '@/modules/iam/presentation/dtos/req/user.dto';
 import { AuthResponseDto, UserResponseDto, TokenResponseDto } from '@/modules/iam/presentation/dtos/res/user-response.dto';
-import { UserCmdHandler } from '@/modules/iam/application/services/user/user.command.handler';
-import { AuthCmdHandler } from '@/modules/iam/application/services/auth/auth.command.handler';
+import { UserCmdHandler } from '@/modules/iam/application/services/user/command.handler';
+import { AuthCmdHandler } from '@/modules/iam/application/services/auth/command.handler';
 import { RegisterUserArgs } from '@/modules/iam/application/dtos/commands/user-cmd.dto';
 import { VerifyAccessTokenArgs, RefreshTokenArgs, LogoutArgs } from '@/modules/iam/application/dtos/commands/auth-cmd.dto';
 import { LoginArgs } from '@/modules/iam/application/dtos/commands/auth-cmd.dto';
 import { API_VERS } from '@/common/constant';
 import { BusinessException } from '@/common/http/business-exception';
 import { ErrorEnum } from '@/common/exception.enum';
+import { User } from '@/common/decorators';
+import { UserQueryHandler } from '../../application/services/user/query.handler';
+import { JwtAuthGuard } from '../guards/jwt-auth.guard';
+import { IPayload } from '../../domain/services/auth.service';
 
 @ApiTags('users')
 @Controller(API_VERS.V1 + '/users')
@@ -27,7 +34,23 @@ export class UserController {
   constructor(
     private readonly userCmdHandler: UserCmdHandler,
     private readonly authCmdHandler: AuthCmdHandler,
+    private readonly userQueryHandler: UserQueryHandler,
   ) { }
+
+  @Get('me')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get current user' })
+  @ApiResponse({
+    status: 200,
+    description: 'Current user retrieved successfully',
+    type: UserResponseDto,
+  })
+  @UseGuards(JwtAuthGuard)
+  async me(
+    @User() user: IPayload,
+  ): Promise<UserResponseDto> {
+    return await this.userQueryHandler.profile(user.sub);
+  }
 
   @Post('register')
   @ApiOperation({ summary: 'Register a new user' })
@@ -41,13 +64,13 @@ export class UserController {
   async register(
     @Body() registerUserDto: RegisterUserDto,
   ): Promise<AuthResponseDto> {
-    const command = new RegisterUserArgs(
-      registerUserDto.username,
-      registerUserDto.password,
-      registerUserDto.first_name,
-      registerUserDto.last_name,
-      registerUserDto.email,
-    );
+    const command: RegisterUserArgs = {
+      username: registerUserDto.username,
+      password: registerUserDto.password,
+      first_name: registerUserDto.first_name,
+      last_name: registerUserDto.last_name,
+      email: registerUserDto.email,
+    };
 
     return await this.userCmdHandler.register(command);
   }
@@ -65,14 +88,15 @@ export class UserController {
     @Body() loginUserDto: LoginUserDto,
   ): Promise<AuthResponseDto> {
     try {
-      const command = new LoginArgs(
-        loginUserDto.username,
-        loginUserDto.password,
-      );
+      const command: LoginArgs = {
+        username: loginUserDto.username,
+        password: loginUserDto.password,
+      };
 
       return await this.authCmdHandler.login(command);
-    } catch (error) {
-      throw new BusinessException(ErrorEnum.UNAUTHORIZED);
+    } catch (error: any) {
+      console.log(error)
+      throw new BusinessException(ErrorEnum.UNAUTHORIZED, error?.message);
     }
   }
 
@@ -89,7 +113,9 @@ export class UserController {
     @Body() verifyAccessTokenDto: VerifyAccessTokenDto,
   ): Promise<UserResponseDto> {
     try {
-      const command = new VerifyAccessTokenArgs(verifyAccessTokenDto.access_token);
+      const command: VerifyAccessTokenArgs = {
+        accessToken: verifyAccessTokenDto.access_token,
+      };
       return await this.authCmdHandler.verifyAccessToken(command);
     } catch (error) {
       throw new BusinessException(ErrorEnum.UNAUTHORIZED);
@@ -109,7 +135,9 @@ export class UserController {
     @Body() refreshTokenDto: RefreshTokenDto,
   ): Promise<TokenResponseDto> {
     try {
-      const command = new RefreshTokenArgs(refreshTokenDto.refresh_token);
+      const command: RefreshTokenArgs = {
+        refreshToken: refreshTokenDto.refresh_token,
+      };
       return await this.authCmdHandler.refreshToken(command);
     } catch (error) {
       throw new BusinessException(ErrorEnum.UNAUTHORIZED);
@@ -128,11 +156,14 @@ export class UserController {
     @Body() logoutDto: LogoutDto,
   ): Promise<void> {
     try {
-      const userResponse = await this.authCmdHandler.verifyAccessToken(
-        new VerifyAccessTokenArgs(logoutDto.access_token)
-      );
+      const userResponse = await this.authCmdHandler.verifyAccessToken({
+        accessToken: logoutDto.access_token,
+      });
 
-      const command = new LogoutArgs(logoutDto.access_token, logoutDto.refresh_token);
+      const command = {
+        accessToken: logoutDto.access_token,
+        refreshToken: logoutDto.refresh_token,
+      };
       await this.authCmdHandler.logout(userResponse.id, command);
     } catch (error) {
       throw new BusinessException(ErrorEnum.UNAUTHORIZED);

@@ -10,12 +10,14 @@ import { CacheRepository } from '@/shared/infrastructure/presistence/cache.repos
 import { ConfigKeyPaths } from '@/config';
 import { CACHE_PORT, CachePort } from '@/shared/application/ports/cache.port';
 import { ConfigService } from '@nestjs/config';
+import { cursorHelper, paginateHelper, SortableFieldEnum, SortedEnum } from '@/common/pagination';
+import { CursorOrganizationsQuery, PaginateOrganizationsQuery } from '@/modules/iam/presentation/dtos/req/organization.dto';
+import { Prisma } from "@internal/rbac/client"
 
 @Injectable()
 export class OrganizationRepository
   extends CacheRepository
-  implements IOrganizationRepository
-{
+  implements IOrganizationRepository {
   protected readonly boundedContext: string = 'iam';
   protected readonly aggregateType: string = 'organization';
   protected readonly ttlConfig: { [key: string]: number } = {
@@ -31,21 +33,129 @@ export class OrganizationRepository
   }
 
   @LogExecutionTime()
-  async organizationHasRole(
-    organizationId: string,
-    roleId: string,
-  ): Promise<boolean> {
-    try {
-      const count =
-        (await this.getWithCache<number>(
-          `organization:${organizationId}:role:${roleId}`,
-          async () => {
-            return await this.rbacDBService.organization.count({
-              where: { id: organizationId, roles: { some: { id: roleId } } },
-            });
+  async paginate(pageOptions: PaginateOrganizationsQuery) {
+    const filterOptions: any[] = [];
+
+    if (pageOptions.userId) {
+      filterOptions.push({
+        users: {
+          some: {
+            user_id: pageOptions.userId,
           },
-        )) || 0;
-      return count > 0;
+        },
+      })
+    }
+
+    const { data = [], paginated } =
+      await paginateHelper<Prisma.OrganizationGetPayload<{}>>({
+        query: this.rbacDBService.organization,
+        pageOptions,
+        filterOptions,
+      });
+
+    return {
+      data: data.map((item) => OrganizationMapper.toDomain(item)),
+      paginated,
+    };
+  }
+
+  @LogExecutionTime()
+  async cursorPagination(pageOptions: CursorOrganizationsQuery) {
+    const { data = [], paginated } =
+      await cursorHelper<Prisma.OrganizationGetPayload<{}>>({
+        query: this.rbacDBService.organization,
+        pageOptions,
+        cursorField: SortableFieldEnum.CREATED_AT,
+        orderDirection: SortedEnum.DESC,
+      });
+
+    return {
+      data: data.map((item) => OrganizationMapper.toDomain(item)),
+      paginated,
+    };
+  }
+
+  @LogExecutionTime()
+  async cursorPaginationByJoiner(query: CursorOrganizationsQuery, joinerId: string) {
+    try {
+      const { data = [], paginated } =
+        await cursorHelper<Prisma.OrganizationGetPayload<{}>>({
+          query: this.rbacDBService.organization,
+          pageOptions: query,
+          cursorField: SortableFieldEnum.CREATED_AT,
+          orderDirection: SortedEnum.DESC,
+          filterOptions: [
+            {
+              users: {
+                some: {
+                  user_id: joinerId,
+                },
+              },
+            },
+          ],
+        });
+
+      return {
+        data: data.map((item) => OrganizationMapper.toDomain(item)),
+        paginated,
+      };
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  @LogExecutionTime()
+  async handleListOrganizationsByJoiner(query: PaginateOrganizationsQuery, joinerId: string) {
+    try {
+      const filterOptions: any[] = [];
+
+      if (query.userId) {
+        filterOptions.push({
+          users: {
+            some: {
+              user_id: query.userId,
+            },
+          },
+        })
+      }
+
+      const { data = [], paginated } =
+        await paginateHelper<Prisma.OrganizationGetPayload<{}>>({
+          query: this.rbacDBService.organization,
+          pageOptions: query,
+          filterOptions: [
+            ...filterOptions,
+            {
+              staffs: { some: { user_id: joinerId } }
+            }
+          ],
+        });
+
+      return {
+        data: data.map((item) => OrganizationMapper.toDomain(item)),
+        paginated,
+      };
+    } catch (e: any) {
+      console.log(e);
+      throw new BusinessException(ErrorEnum.REQUEST_FAILED_TO_QUERY);
+    }
+  }
+
+  @LogExecutionTime()
+  async findStaffs(userId: string): Promise<Organization[]> {
+    try {
+      const items = await this.getWithCache<Prisma.OrganizationGetPayload<{}>[]>(
+        `user:${userId}:organizations`,
+        async () => {
+          return await this.rbacDBService.organization.findMany({
+            where: { staffs: { some: { user_id: userId } } },
+          });
+        },
+      );
+      if (!items) {
+        return [];
+      }
+      return items.map((org) => OrganizationMapper.toDomain(org));
     } catch (e: any) {
       throw new BusinessException(ErrorEnum.REQUEST_FAILED_TO_QUERY);
     }
@@ -64,8 +174,27 @@ export class OrganizationRepository
             return await this.rbacDBService.organization.count({
               where: {
                 id: organizationId,
-                users: { some: { user_id: userId } },
+                staffs: { some: { user_id: userId } },
               },
+            });
+          },
+        )) || 0;
+      return count > 0;
+    } catch (e: any) {
+      console.log(e);
+      throw new BusinessException(ErrorEnum.REQUEST_FAILED_TO_QUERY);
+    }
+  }
+
+  @LogExecutionTime()
+  async userJoinedAnyOrganization(userId: string): Promise<boolean> {
+    try {
+      const count =
+        (await this.getWithCache<number>(
+          `user:${userId}:joined`,
+          async () => {
+            return await this.rbacDBService.staff.count({
+              where: { user_id: userId },
             });
           },
         )) || 0;
@@ -78,7 +207,7 @@ export class OrganizationRepository
   @LogExecutionTime()
   async assignUser(organization_id: string, user_id: string): Promise<void> {
     try {
-      await this.rbacDBService.userOrganization.create({
+      await this.rbacDBService.staff.create({
         data: {
           organization_id,
           user_id,
@@ -95,7 +224,7 @@ export class OrganizationRepository
   @LogExecutionTime()
   async unassignUser(organization_id: string, user_id: string): Promise<void> {
     try {
-      await this.rbacDBService.userOrganization.delete({
+      await this.rbacDBService.staff.delete({
         where: {
           user_id_organization_id: {
             user_id,
@@ -106,6 +235,26 @@ export class OrganizationRepository
       await this.invalidateCache(
         `organization:${organization_id}:user:${user_id}`,
       );
+    } catch (e: any) {
+      throw new BusinessException(ErrorEnum.REQUEST_FAILED_TO_EXECUTE);
+    }
+  }
+
+  @LogExecutionTime()
+  async updateUserAttributes(organization_id: string, user_id: string, attributes: any): Promise<void> {
+    try {
+      await this.rbacDBService.staff.update({
+        where: {
+          user_id_organization_id: {
+            user_id,
+            organization_id,
+          },
+        },
+        data: {
+          context_attributes: attributes,
+        },
+      });
+      await this.invalidateCache(`user:${user_id}:organizations`);
     } catch (e: any) {
       throw new BusinessException(ErrorEnum.REQUEST_FAILED_TO_EXECUTE);
     }
@@ -134,14 +283,25 @@ export class OrganizationRepository
   }
 
   @LogExecutionTime()
-  async findAll(): Promise<Organization[]> {
-    const organizations = await this.rbacDBService.organization.findMany();
-    return organizations.map((org) => OrganizationMapper.toDomain(org));
+  async findByIds(ids: string[]): Promise<Organization[]> {
+    const items = await this.getWithManyKeysCache(
+      ids,
+      async (ids) => {
+        return await this.rbacDBService.organization.findMany({
+          where: {
+            id: {
+              in: ids,
+            },
+          },
+        });
+      },
+      (org) => org.id);
+    return items.map((org) => OrganizationMapper.toDomain(org));
   }
 
   @LogExecutionTime()
   async create(organization: Organization): Promise<Organization> {
-    const prismaData = OrganizationMapper.toPrisma(organization);
+    const prismaData = OrganizationMapper.toPrismaCreate(organization);
     try {
       const createdOrganization = await this.rbacDBService.organization.create({
         data: prismaData,

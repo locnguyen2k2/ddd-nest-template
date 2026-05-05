@@ -1,51 +1,45 @@
-import { Inject, Injectable } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
-import { JwtPort, JWT_PORT } from '@/shared/application/ports/jwt.port';
-import { ConfigKeyPaths, IJwtConfig, jwtConfigKey } from '@/config';
-import {
-    ISessionRepository,
-    ITokenBlacklistRepository,
-    SESSION_REPO,
-    TOKEN_BLACKLIST_REPO,
-} from '../repositories/auth.repository';
-import { IUserRepository, USER_REPO } from '../repositories/user.repository';
-import { UserService } from './user.service';
+import { IJwtConfig } from '@/config';
 import { BusinessException } from '@/common/http/business-exception';
 import { ErrorEnum } from '@/common/exception.enum';
 import {
-    AuthResponseDto,
     TokenResponseDto,
     UserResponseDto,
 } from '../../presentation/dtos/res/user-response.dto';
+import { UserEntity } from '../entities/user.entity';
+import { JwtAdapter } from '@/shared/infrastructure/adapters/jwt.adapter';
+import { UserRepository } from '../../infrastructure/persistence/repositories/user.repository';
+import { SessionCacheRepository, TokenBlacklistCacheRepository } from '../../infrastructure/persistence/repositories/auth-cache.repository';
+import { BcryptAdapter } from '@/shared/infrastructure/adapters/bcrypt.adapter';
+import { REGEX } from '@/common/constant';
 
-@Injectable()
+export interface IPayload {
+    sub: string;
+    email: string;
+    username: string;
+}
+
 export class AuthDomainService {
-    private readonly jwtConfigs: IJwtConfig;
 
     constructor(
-        private readonly configService: ConfigService<ConfigKeyPaths>,
-        @Inject(JWT_PORT) private readonly jwtPort: JwtPort,
-        @Inject(USER_REPO) private readonly userRepo: IUserRepository,
-        @Inject(SESSION_REPO) private readonly sessionRepo: ISessionRepository,
-        @Inject(TOKEN_BLACKLIST_REPO)
-        private readonly blacklistRepo: ITokenBlacklistRepository,
-        private readonly userService: UserService,
+        private readonly jwtConfigs: IJwtConfig,
+        private readonly jwtPort: JwtAdapter,
+        private readonly userRepo: UserRepository,
+        private readonly sessionRepo: SessionCacheRepository,
+        private readonly blacklistRepo: TokenBlacklistCacheRepository,
+        private readonly bcryptAdapter: BcryptAdapter,
     ) {
-        this.jwtConfigs = this.configService.get<IJwtConfig>(jwtConfigKey)!;
     }
 
-    async login(username: string, password: string): Promise<AuthResponseDto> {
-        const user = await this.userRepo.findByUsernameOrEmail(username);
-        if (!user) {
-            throw new BusinessException(ErrorEnum.RECORD_NOT_FOUND);
-        }
-
-        await this.userService.compareAndHash(password, user.password());
-
+    async prepareTokens(user: UserEntity): Promise<{
+        access_token: string;
+        refresh_token: string;
+        expires_in: number;
+        token_type: string;
+    }> {
         const tokens = await this.generateTokens({
             sub: user.id.value,
-            email: user.email(),
-            username: user.username(),
+            email: user.email,
+            username: user.username,
         });
 
         const ttl = this.convertExpiresInToSeconds(
@@ -53,24 +47,12 @@ export class AuthDomainService {
         );
         await this.sessionRepo.createSession(user.id.value, ttl);
 
-        return new AuthResponseDto(
-            new UserResponseDto(
-                user.id.value,
-                user.email(),
-                user.username(),
-                user.firstName(),
-                user.lastName(),
-                user.status(),
-                user.createdAt(),
-                user.updatedAt(),
-            ),
-            new TokenResponseDto(
-                tokens.accessToken,
-                tokens.refreshToken,
-                this.convertExpiresInToSeconds(this.jwtConfigs.expiresIn),
-                'Bearer',
-            ),
-        );
+        return {
+            access_token: tokens.accessToken,
+            refresh_token: tokens.refreshToken,
+            expires_in: this.convertExpiresInToSeconds(this.jwtConfigs.expiresIn),
+            token_type: 'Bearer',
+        }
     }
 
     async logout(
@@ -131,6 +113,7 @@ export class AuthDomainService {
                 'Bearer',
             );
         } catch (error) {
+            console.log(error);
             throw new BusinessException(ErrorEnum.UNAUTHORIZED);
         }
     }
@@ -145,33 +128,38 @@ export class AuthDomainService {
                 secret: this.jwtConfigs.secret,
             });
 
-            const isBlacklisted =
-                await this.blacklistRepo.isTokenBlacklisted(accessToken);
-            if (isBlacklisted) {
-                throw new BusinessException(ErrorEnum.UNAUTHORIZED);
+            const [isBlacklisted, user] = await Promise.all([
+                this.blacklistRepo.isTokenBlacklisted(accessToken),
+                this.userRepo.findByIdWithOrganizations(payload.sub)
+            ]);
+
+            switch (true) {
+                case isBlacklisted:
+                    throw new BusinessException(ErrorEnum.UNAUTHORIZED);
+                case !user:
+                    throw new BusinessException(ErrorEnum.RECORD_NOT_FOUND);
+                default: break;
             }
 
-            const user = await this.userRepo.findByID(payload.sub);
-            if (!user) {
-                throw new BusinessException(ErrorEnum.RECORD_NOT_FOUND);
-            }
 
             return new UserResponseDto(
                 user.id.value,
-                user.email(),
-                user.username(),
-                user.firstName(),
-                user.lastName(),
-                user.status(),
-                user.createdAt(),
-                user.updatedAt(),
+                user.email,
+                user.username,
+                user.first_name,
+                user.last_name,
+                user.status,
+                user.created_at,
+                user.updated_at,
+                user.organizations,
             );
         } catch (error) {
-            throw new BusinessException(ErrorEnum.UNAUTHORIZED);
+            console.log(error);
+            throw new BusinessException(ErrorEnum.TOKEN_IS_INVALID);
         }
     }
 
-    private async generateTokens(payload: any) {
+    private async generateTokens(payload: IPayload) {
         const accessToken = this.jwtPort.sign(payload, {
             secret: this.jwtConfigs.secret,
             expiresIn: this.jwtConfigs.expiresIn,
@@ -203,6 +191,52 @@ export class AuthDomainService {
             default:
                 return value;
         }
+    }
+
+    async validateUser(username: string, password: string): Promise<UserEntity> {
+        const user = await this.userRepo.findByUsername(username);
+
+        switch (true) {
+            case !user:
+                throw new BusinessException(ErrorEnum.RECORD_NOT_FOUND);
+            case user && !this.validateCredentials(user, password):
+                throw new BusinessException(ErrorEnum.PASSWORD_INVALID);
+            default:
+                break;
+        }
+
+        const userWithOrgs = await this.userRepo.findByIdWithOrganizations(user!.id.value);
+        if (!userWithOrgs) {
+            throw new BusinessException(ErrorEnum.RECORD_NOT_FOUND);
+        }
+
+        return userWithOrgs;
+    }
+    hash(password: string): string {
+        this.validatePassword(password);
+        return this.bcryptAdapter.hashPassword(password);
+    }
+
+    match(plainPassword: string, hashedPassword: string): boolean {
+        return this.bcryptAdapter.comparePassword(plainPassword, hashedPassword);
+    }
+
+    private validatePassword(password: string): boolean {
+        const validate = (value: string) => {
+            return typeof value === 'string' && REGEX.regValidPassword.test(value);
+        };
+        const isValid = validate(password);
+        if (!isValid) {
+            throw new BusinessException('400|Invalid password');
+        }
+        return true;
+    }
+
+    validateCredentials(user: UserEntity, password: string) {
+        if (!this.match(password, user.password.value)) {
+            return false;
+        }
+        return user.canAuthenticate();
     }
 
 }

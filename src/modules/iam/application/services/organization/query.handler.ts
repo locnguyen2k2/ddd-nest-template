@@ -7,13 +7,37 @@ import {
   ListOrganizationsQuery,
 } from '../../dtos/queries/organization-query.dto';
 import { IOrganizationRepository } from '@/modules/iam/domain/repositories/organization.repository';
+import { async } from 'rxjs';
+import { LogExecutionTime } from '@/common/decorators/log-execution.decorator';
+import { CursorOrganizationsQuery, PaginateOrganizationsQuery } from '@/modules/iam/presentation/dtos/req/organization.dto';
+import { PaginateOrganizationsResponseDto } from '@/modules/iam/presentation/dtos/res/organization-response.dto';
 
 @Injectable()
 export class OrganizationQueryHandler {
   constructor(
     @Inject(ORGANIZATION_REPO)
     private readonly organizationRepository: IOrganizationRepository,
-  ) {}
+  ) { }
+
+  @LogExecutionTime()
+  async handlePaginate(query: PaginateOrganizationsQuery) {
+    return await this.organizationRepository.paginate(query);
+  }
+
+  @LogExecutionTime()
+  async handleCursorPaginate(query: CursorOrganizationsQuery) {
+    return await this.organizationRepository.cursorPagination(query);
+  }
+
+  @LogExecutionTime()
+  async handleCursorOrganizationsByJoiner(query: CursorOrganizationsQuery, joinerId: string) {
+    try {
+      return await this.organizationRepository.cursorPaginationByJoiner(query, joinerId);
+    } catch (error) {
+      console.error('Error listing organizations by joiner:', error);
+    }
+    return null;
+  }
 
   async handleGetOrganizationById(
     query: GetOrganizationByIdQuery,
@@ -27,43 +51,12 @@ export class OrganizationQueryHandler {
     return await this.organizationRepository.findBySlug(query.slug);
   }
 
-  async handleListOrganizations(query: ListOrganizationsQuery): Promise<{
-    organizations: Organization[];
-    total: number;
-    page: number;
-    limit: number;
-    totalPages: number;
-  }> {
-    const { page = 1, limit = 10, search } = query;
-    const skip = (page - 1) * limit;
-
-    const organizations = await this.organizationRepository.findAll();
-
-    let filteredOrganizations = organizations;
-
-    if (search) {
-      const searchLower = search.toLowerCase();
-      filteredOrganizations = organizations.filter(
-        (org) =>
-          org.name().toLowerCase().includes(searchLower) ||
-          org.slug().value.toLowerCase().includes(searchLower) ||
-          (org.description()?.toLowerCase().includes(searchLower) ?? false),
-      );
+  async handleListOrganizationsByJoiner(query: PaginateOrganizationsQuery, joinerId: string) {
+    try {
+      return await this.organizationRepository.handleListOrganizationsByJoiner(query, joinerId);
+    } catch (error) {
+      console.error('Error listing organizations by joiner:', error);
     }
-
-    const paginatedOrganizations = filteredOrganizations.slice(
-      skip,
-      skip + limit,
-    );
-    const total = filteredOrganizations.length;
-    const totalPages = Math.ceil(total / limit);
-
-    return {
-      organizations: paginatedOrganizations,
-      total,
-      page,
-      limit,
-      totalPages,
-    };
+    return null;
   }
 }

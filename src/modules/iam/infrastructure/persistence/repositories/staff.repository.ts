@@ -1,0 +1,113 @@
+import { LogExecutionTime } from "@/common/decorators/log-execution.decorator";
+import { ConfigKeyPaths } from "@/config";
+import { Staffs } from "@/modules/iam/domain/entities/staffs.entity";
+import { IStaffRepository } from "@/modules/iam/domain/repositories/staff.repository";
+import { CursorStaffsQuery, PaginateStaffsQuery } from "@/modules/iam/presentation/dtos/req/staff.dto";
+import { CACHE_PORT, CachePort } from "@/shared/application/ports/cache.port";
+import { PrismaAdapter } from "@/shared/infrastructure/adapters/prisma.adapter";
+import { CacheRepository } from "@/shared/infrastructure/presistence/cache.repository";
+import { Inject, Injectable } from "@nestjs/common";
+import { ConfigService } from "@nestjs/config";
+import { StaffMapper } from "../mappers/staff.mapper";
+import { cursorHelper, paginateHelper, SortableFieldEnum, SortedEnum } from "@/common/pagination";
+import { Prisma } from "@internal/rbac/client";
+
+@Injectable()
+export class StaffRepository extends CacheRepository implements IStaffRepository {
+    protected readonly boundedContext: string = 'iam';
+    protected readonly aggregateType: string = 'staffs';
+    protected readonly ttlConfig: { [key: string]: number } = {
+        default: 3600,
+    };
+    constructor(
+        private readonly rbacDBService: PrismaAdapter,
+        redisConfig: ConfigService<ConfigKeyPaths>,
+        @Inject(CACHE_PORT) cachePort: CachePort,
+    ) {
+        super(redisConfig, cachePort)
+    }
+
+    @LogExecutionTime()
+    async paginate(pageOptions: PaginateStaffsQuery) {
+        const { data = [], paginated } =
+            await paginateHelper<Prisma.StaffGetPayload<{}>>({
+                query: this.rbacDBService.staff,
+                pageOptions,
+            });
+
+        return {
+            data: data.map((item) => StaffMapper.toDomain(item)),
+            paginated,
+        };
+    }
+
+    @LogExecutionTime()
+    async cursorPagination(pageOptions: CursorStaffsQuery) {
+        const { data = [], paginated } =
+            await cursorHelper<Prisma.StaffGetPayload<{}>>({
+                query: this.rbacDBService.staff,
+                pageOptions,
+                cursorField: SortableFieldEnum.CREATED_AT,
+                orderDirection: SortedEnum.DESC,
+            });
+
+        return {
+            data: data.map((item) => StaffMapper.toDomain(item)),
+            paginated,
+        };
+    }
+
+    async findOneById(id: string): Promise<Staffs | null> {
+        const item = await this.getWithCache(`staffs:${id}`, async () => {
+            return this.rbacDBService.staff.findUnique({ where: { id } });
+        });
+        if (!item) return null;
+        return StaffMapper.toDomain(item);
+    }
+    async findOneUser(userId: string, orgId: string): Promise<Staffs | null> {
+        const item = await this.getWithCache(`staffs:user:${userId}:org:${orgId}`, async () => {
+            return this.rbacDBService.staff.findUnique({ where: { user_id_organization_id: { user_id: userId, organization_id: orgId } } });
+        });
+        if (!item) return null;
+        return StaffMapper.toDomain(item);
+    };
+    async findByUserId(userId: string): Promise<Staffs[]> {
+        const items = await this.getWithCache(`staffs:user:${userId}`, async () => {
+            return this.rbacDBService.staff.findMany({ where: { user_id: userId } });
+        });
+        if (!items) return [];
+        return items.map((item) => StaffMapper.toDomain(item));
+    };
+    async findByUserIdAndOrgId(userId: string, orgId: string): Promise<Staffs | null> {
+        const items = await this.getWithCache(`staffs:user:${userId}:org:${orgId}`, async () => {
+            return this.rbacDBService.staff.findUnique({ where: { user_id_organization_id: { user_id: userId, organization_id: orgId } } });
+        });
+        if (!items) return null;
+        return StaffMapper.toDomain(items);
+    };
+    async findByOrgId(orgId: string): Promise<Staffs[]> {
+        const items = await this.getWithCache(`staffs:org:${orgId}`, async () => {
+            return this.rbacDBService.staff.findMany({ where: { organization_id: orgId } });
+        });
+        if (!items) return [];
+        return items.map((item) => StaffMapper.toDomain(item));
+    };
+    async create(data: any): Promise<Staffs> {
+        const item = await this.rbacDBService.staff.create({ data });
+        await this.invalidateCache(`staffs:${item.id}`);
+        return StaffMapper.toDomain(item);
+    };
+    async update(data: any): Promise<Staffs> {
+        const item = await this.rbacDBService.staff.update({ where: { id: data.id }, data });
+        await this.invalidateCache(`staffs:${item.id}`);
+        return StaffMapper.toDomain(item);
+    };
+    async delete(id: string) {
+        await this.rbacDBService.staff.delete({ where: { id } });
+        await this.invalidateCache(`staffs:${id}`);
+    };
+    async deleteByUserId(userId: string) {
+        await this.rbacDBService.staff.deleteMany({ where: { user_id: userId } });
+        await this.invalidateCache(`staffs:user:${userId}`);
+    };
+}

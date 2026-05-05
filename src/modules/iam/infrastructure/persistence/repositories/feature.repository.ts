@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { IFeatureRepository } from '@/modules/iam/domain/repositories/feature.repository';
 import { FeatureMapper } from '../mappers/feature.mapper';
 import { PrismaAdapter } from '@/shared/infrastructure/adapters/prisma.adapter';
@@ -20,6 +20,8 @@ import { Inject } from '@nestjs/common';
 import { ConfigKeyPaths } from '@/config';
 import { CACHE_PORT, CachePort } from '@/shared/application/ports/cache.port';
 import { Feature } from '@/modules/iam/domain/entities/feature.entity';
+import { BusinessException } from '@/common/http/business-exception';
+import { ErrorEnum } from '@/common/exception.enum';
 
 @Injectable()
 export class FeatureRepository
@@ -42,7 +44,7 @@ export class FeatureRepository
     @LogExecutionTime()
     async paginate(pageOptions: PaginateFeaturesQuery) {
         const { data = [], paginated } =
-            await paginateHelper<Prisma.FeatureCreateInput>({
+            await paginateHelper<Prisma.FeatureGetPayload<{}>>({
                 query: this.rbacDBService.feature,
                 pageOptions,
             });
@@ -56,7 +58,7 @@ export class FeatureRepository
     @LogExecutionTime()
     async cursorPagination(pageOptions: CursorFeaturesQuery) {
         const { data = [], paginated } =
-            await cursorHelper<Prisma.FeatureCreateInput>({
+            await cursorHelper<Prisma.FeatureGetPayload<{}>>({
                 query: this.rbacDBService.feature,
                 pageOptions,
                 cursorField: SortableFieldEnum.CREATED_AT,
@@ -70,13 +72,28 @@ export class FeatureRepository
     }
 
     @LogExecutionTime()
+    async findByProjectId(prjId: string): Promise<Feature[]> {
+        const items = await this.rbacDBService.feature.findMany({
+            where: {
+                project_id: prjId,
+            },
+        });
+        return items.map((item) => FeatureMapper.toDomain(item));
+    }
+
+    @LogExecutionTime()
     async findOneById(
         id: string,
         organization_id?: string,
     ): Promise<Feature | null> {
         const item = await this.getWithCache(id, async () => {
             return await this.rbacDBService.feature.findUnique({
-                where: { id },
+                where: organization_id ? {
+                    id,
+                    project: {
+                        organization_id,
+                    },
+                } : { id },
             });
         });
 
@@ -88,28 +105,33 @@ export class FeatureRepository
         slug: string,
         project_id: string,
     ): Promise<Feature | null> {
-        const item = await this.getWithCache(`${slug}:${project_id}`, async () => {
-            return await this.rbacDBService.feature.findUnique({
-                where: {
-                    project_id_slug: {
-                        slug,
-                        project_id,
+        const referenceCachedKey = `slug:${slug}:${project_id}`;
+        const item = await this.getWithReference(referenceCachedKey,
+            (feature) => feature.id,
+            async () => {
+                return await this.rbacDBService.feature.findUnique({
+                    where: {
+                        project_id_slug: {
+                            slug,
+                            project_id,
+                        },
                     },
-                },
+                });
             });
-        });
         return item ? FeatureMapper.toDomain(item) : null;
     }
 
     @LogExecutionTime()
     async create(feature: Feature): Promise<Feature> {
-        const prismaData = FeatureMapper.toPrisma(feature);
+        const prismaData = FeatureMapper.toPrismaCreate(feature);
 
-        const item = await this.getWithCache('', async () => {
-            return await this.rbacDBService.feature.create({
-                data: prismaData,
-            });
+        const item = await this.rbacDBService.feature.create({
+            data: prismaData,
         });
+
+        if (!item) {
+            throw new BusinessException(ErrorEnum.RECORD_NOT_FOUND, 'Feature');
+        }
 
         return FeatureMapper.toDomain(item);
     }

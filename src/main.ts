@@ -29,6 +29,16 @@ async function bootstrap() {
     fastifyAdapter,
   );
 
+  // app.enableCors({
+  //   origin: '*',
+  //   allowedHeaders: [
+  //     'Content-Type',
+  //     'Authorization',
+  //     'organization-id',
+  //     'project-id',
+  //   ],
+  // });
+
   const configService = app.get(ConfigService<ConfigKeyPaths>);
   const { port, basicAuthPassword, basicAuthUsername } =
     configService.get<IAppConfig>(appConfigKey, { infer: true });
@@ -60,11 +70,6 @@ async function bootstrap() {
     },
   });
 
-  app.enableCors({
-    origin: '*',
-    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
-    credentials: true,
-  });
   app.useGlobalInterceptors(new LoggingInterceptor());
   app.useGlobalInterceptors(new TransformInterceptor());
   app.useGlobalFilters(new HttpExceptionFilter());

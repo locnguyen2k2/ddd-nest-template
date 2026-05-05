@@ -11,7 +11,7 @@ export enum ErrorEnum {
 
   REQUIRED_FIELD_MISSING = '400|Required field missing',
   TOKEN_IS_REQUIRED = '401|Token is required',
-  TOKEN_IS_INVALID = '401|Token is invalid',
+  TOKEN_IS_INVALID = '420|Token is invalid or expired',
 
   REQUEST_FAILED_TO_EXECUTE = '400|Request failed to execute',
   REQUEST_FAILED_TO_QUERY = '400|Request failed to query',
@@ -22,8 +22,8 @@ export enum ErrorEnum {
   USERNAME_OR_PASSWORD_INCORRECT = '400|Username or password is incorrect',
   USERNAME_ALREADY_EXISTS = '409|Username already exists',
   EMAIL_ALREADY_EXISTS = '409|Email already exists',
-  USERNAME_INVALID = '400|Username is invalid',
-  PASSWORD_INVALID = '400|Password is invalid',
+  USERNAME_INVALID = '400|Username is invalid (〜￣▽￣)〜',
+  PASSWORD_INVALID = '400|Password is invalid ( ͡~ ͜ʖ ͡°)',
 
-  UNAUTHORIZED = '401|Unauthorized',
+  UNAUTHORIZED = '401|Unauthorized ╰(*°▽°*)╯',
 }

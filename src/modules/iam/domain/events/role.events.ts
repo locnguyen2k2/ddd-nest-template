@@ -1,161 +1,109 @@
 import { BaseDomainEvent } from '@/shared/domain/events/base.domain-event';
+import { AccessControlStatus } from '@/common/enum';
 
-export interface IRoleCreatedEvent {
+interface RoleBaseData {
   id: string;
   name: string;
   slug: string;
   description?: string;
+  status?: AccessControlStatus;
+  organization_id: string;
+}
+
+export interface RoleCreatedEventData extends RoleBaseData {
   createdAt: Date;
   updatedAt: Date;
-  organizationId: string;
 }
 
-export interface IRoleUpdatedEvent {
-  id: string;
-  name: string;
-  slug: string;
-  description?: string;
-  oldName: string;
-  oldSlug: string;
-  oldDescription?: string;
-  updatedAt: Date;
-  organizationId: string;
-}
-
-export interface IRoleDeletedEvent {
-  id: string;
-  name: string;
-  slug: string;
-  description?: string;
-  isDeleted: boolean;
-  updatedAt: Date;
-  organizationId: string;
-}
-
-export enum RoleEventType {
-  CREATED = 'role.created',
-  UPDATED = 'role.updated',
-  DELETED = 'role.deleted',
-  PERMISSION_ASSIGNED = 'role.permission_assigned',
-  PERMISSION_ASSIGN_FAILED = 'role.permission_assign_failed',
+export enum RoleEventName {
+  ROLE_CREATED = 'role.created',
+  ROLE_DELETED = 'role.deleted',
+  ROLE_UPDATED = 'role.updated',
 }
 
 export class RoleCreatedEvent extends BaseDomainEvent<string> {
-  constructor(public readonly event: IRoleCreatedEvent) {
-    super(event.id);
+  constructor(public readonly data: RoleCreatedEventData) {
+    super(data.id);
   }
 
   get eventName(): string {
-    return RoleEventType.CREATED;
+    return RoleEventName.ROLE_CREATED;
   }
 
   get eventData(): Record<string, unknown> {
     return {
-      id: this.event.id,
-      name: this.event.name,
-      slug: this.event.slug,
-      description: this.event.description,
-      createdAt: this.event.createdAt,
-      updatedAt: this.event.updatedAt,
-      organizationId: this.event.organizationId,
+      id: this.data.id,
+      name: this.data.name,
+      slug: this.data.slug,
+      description: this.data.description,
+      status: this.data.status,
+      organization_id: this.data.organization_id,
+      createdAt: this.data.createdAt,
+      updatedAt: this.data.updatedAt,
     };
   }
+}
+
+export interface RoleUpdatedEventData extends Omit<
+  RoleCreatedEventData,
+  'createdAt'
+> {
+  oldName: string;
+  oldSlug: string;
+  oldDescription?: string;
+  oldStatus?: AccessControlStatus;
+  updatedAt: Date;
 }
 
 export class RoleUpdatedEvent extends BaseDomainEvent<string> {
-  constructor(public readonly event: IRoleUpdatedEvent) {
-    super(event.id);
+  constructor(public readonly data: RoleUpdatedEventData) {
+    super(data.id);
   }
 
   get eventName(): string {
-    return RoleEventType.UPDATED;
+    return RoleEventName.ROLE_UPDATED;
   }
 
   get eventData(): Record<string, unknown> {
     return {
-      id: this.event.id,
-      name: this.event.name,
-      slug: this.event.slug,
-      description: this.event.description,
-      oldName: this.event.oldName,
-      oldSlug: this.event.oldSlug,
-      oldDescription: this.event.oldDescription,
-      updatedAt: this.event.updatedAt,
-      organizationId: this.event.organizationId,
+      id: this.data.id,
+      name: this.data.name,
+      slug: this.data.slug,
+      description: this.data.description,
+      status: this.data.status,
+      organization_id: this.data.organization_id,
+      oldName: this.data.oldName,
+      oldSlug: this.data.oldSlug,
+      oldDescription: this.data.oldDescription,
+      oldStatus: this.data.oldStatus,
+      updatedAt: this.data.updatedAt,
     };
   }
+}
+
+export interface RoleDeletedEventData extends RoleBaseData {
+  updatedAt: Date;
+  status: AccessControlStatus;
 }
 
 export class RoleDeletedEvent extends BaseDomainEvent<string> {
-  constructor(public readonly event: IRoleDeletedEvent) {
-    super(event.id);
+  constructor(public readonly data: RoleDeletedEventData) {
+    super(data.id);
   }
 
   get eventName(): string {
-    return RoleEventType.DELETED;
+    return RoleEventName.ROLE_DELETED;
   }
 
   get eventData(): Record<string, unknown> {
     return {
-      id: this.event.id,
-      name: this.event.name,
-      slug: this.event.slug,
-      description: this.event.description,
-      isDeleted: this.event.isDeleted,
-      updatedAt: this.event.updatedAt,
-      organizationId: this.event.organizationId,
-    };
-  }
-}
-
-export class PermissionAssignedEvent extends BaseDomainEvent<string> {
-  constructor(
-    public readonly data: {
-      roleId: string;
-      permissionId: string;
-      assignedAt: Date;
-    },
-  ) {
-    super(data.roleId);
-  }
-
-  get eventName(): string {
-    return RoleEventType.PERMISSION_ASSIGNED;
-  }
-
-  get eventData(): Record<string, unknown> {
-    return {
-      roleId: this.data.roleId,
-      permissionId: this.data.permissionId,
-      assignedAt: this.data.assignedAt,
-    };
-  }
-}
-
-export class PermissionAssignFailedEvent extends BaseDomainEvent<string> {
-  constructor(
-    public readonly data: {
-      roleId: string;
-      permissionId: string;
-      featureId: string;
-      reason: string;
-      failedAt: Date;
-    },
-  ) {
-    super(data.roleId);
-  }
-
-  get eventName(): string {
-    return RoleEventType.PERMISSION_ASSIGNED;
-  }
-
-  get eventData(): Record<string, unknown> {
-    return {
-      roleId: this.data.roleId,
-      permissionId: this.data.permissionId,
-      featureId: this.data.featureId,
-      reason: this.data.reason,
-      failedAt: this.data.failedAt,
+      id: this.data.id,
+      name: this.data.name,
+      slug: this.data.slug,
+      description: this.data.description,
+      status: this.data.status,
+      organization_id: this.data.organization_id,
+      updatedAt: this.data.updatedAt,
     };
   }
 }

@@ -1,5 +1,6 @@
 import { AggregateRoot, IEntityID } from '@/shared/domain/entities/base.entity';
 import { Slug } from '../vo/slug.vo';
+import { Attributes } from '../vo/attributes.vo';
 import {
   OrganizationCreatedEvent,
   OrganizationUpdatedEvent,
@@ -12,6 +13,9 @@ export interface IOrganizationProps {
   description?: string;
   created_at?: Date;
   updated_at?: Date;
+  attributes?: Attributes;
+  created_by?: string;
+  updated_by?: string;
 }
 
 export interface ICreateOrganizationProps extends IOrganizationProps {
@@ -30,6 +34,9 @@ export class Organization extends AggregateRoot<Organization, string> {
   private _description?: string;
   private _created_at: Date;
   private _updated_at: Date;
+  private _attributes: Attributes;
+  private _created_by?: string;
+  private _updated_by?: string;
 
   private constructor(id: IEntityID<string>, props: IOrganizationProps) {
     super(id);
@@ -38,16 +45,21 @@ export class Organization extends AggregateRoot<Organization, string> {
     this._description = props.description;
     this._created_at = props.created_at ?? new Date();
     this._updated_at = props.updated_at ?? new Date();
+    this._attributes = props.attributes ?? Attributes.create({});
+    this._created_by = props.created_by;
+    this._updated_by = props.updated_by;
   }
 
   static create(props: ICreateOrganizationProps): Organization {
-    const now = new Date();
     const organization = new Organization(props.id, {
       name: props.name,
       slug: props.slug,
       description: props.description,
-      created_at: now,
-      updated_at: now,
+      created_at: props.created_at,
+      updated_at: props.updated_at,
+      attributes: props.attributes ?? Attributes.create({}),
+      created_by: props.created_by,
+      updated_by: props.created_by,
     });
     organization.addDomainEvent(
       new OrganizationCreatedEvent({
@@ -55,8 +67,8 @@ export class Organization extends AggregateRoot<Organization, string> {
         name: props.name,
         slug: props.slug.value,
         description: props.description,
-        createdAt: now,
-        updatedAt: now,
+        createdAt: props.created_at ?? new Date(),
+        updatedAt: props.updated_at ?? new Date(),
       }),
     );
 
@@ -120,11 +132,23 @@ export class Organization extends AggregateRoot<Organization, string> {
     return this._description;
   }
 
-  createdAt(): Date {
+  created_at(): Date {
     return this._created_at;
   }
 
-  updatedAt(): Date {
+  updated_at(): Date {
     return this._updated_at;
+  }
+
+  attributes(): Attributes {
+    return this._attributes;
+  }
+
+  created_by(): string | undefined {
+    return this._created_by;
+  }
+
+  updated_by(): string | undefined {
+    return this._updated_by;
   }
 }

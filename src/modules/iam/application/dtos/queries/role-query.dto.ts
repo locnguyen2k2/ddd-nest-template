@@ -1,32 +1,26 @@
 import { BaseCursorPageOptionDto } from '@/common/pagination';
 import { BasePageOptionDto } from '@/common/pagination/dtos/page-options.dto';
-import { IsNotEmpty, IsString, IsOptional, IsNumber } from 'class-validator';
 
-export class GetRoleByIdQuery {
-  @IsString()
-  @IsNotEmpty()
+export interface GetRoleByIdQuery {
   id: string;
-
-  constructor(data: any) {
-    this.id = data.id;
-  }
+  organization_id?: string;
 }
 
-export class GetRoleBySlugQuery {
-  @IsString()
-  @IsNotEmpty()
+export interface GetRoleBySlugQuery {
   slug: string;
-
-  @IsString()
-  @IsNotEmpty()
   organization_id: string;
-
-  constructor(data: any) {
-    this.slug = data.slug;
-    this.organization_id = data.organization_id;
-  }
 }
 
-export class PaginateRolesQuery extends BasePageOptionDto {}
+export interface ListRolesQuery {
+  page?: number;
+  limit?: number;
+  search?: string;
+}
 
-export class CursorRolesQuery extends BaseCursorPageOptionDto {}
+export interface PaginateRolesQuery extends BasePageOptionDto {
+  organization_id?: string;
+}
+
+export interface CursorRolesQuery extends BaseCursorPageOptionDto {
+  organization_id?: string;
+}

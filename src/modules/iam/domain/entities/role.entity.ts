@@ -1,22 +1,24 @@
 import { AggregateRoot, IEntityID } from '@/shared/domain/entities/base.entity';
 import { Slug } from '../vo/slug.vo';
-import {
-  RoleCreatedEvent,
-  RoleUpdatedEvent,
-  RoleDeletedEvent,
-  PermissionAssignedEvent,
-} from '../events/role.events';
+import { Attributes } from '../vo/attributes.vo';
 
-export interface IRoleProps {
+import { AccessControlStatus } from '@/common/enum';
+import { RoleCreatedEvent, RoleUpdatedEvent, RoleDeletedEvent } from '../events/role.events';
+
+export interface RoleBaseProps {
   name: string;
   slug: Slug;
   description?: string;
+  status?: AccessControlStatus;
   created_at?: Date;
   updated_at?: Date;
   organization_id: string;
+  created_by: string | undefined;
+  updated_by: string | undefined;
+  attributes?: Attributes;
 }
 
-export interface CreateRoleProps extends IRoleProps {
+export interface CreateRoleProps extends RoleBaseProps {
   id: IEntityID<string>;
 }
 
@@ -24,48 +26,49 @@ export interface UpdateRoleProps {
   name?: string;
   slug?: Slug;
   description?: string;
+  status?: AccessControlStatus;
 }
 
-export class RoleEntity extends AggregateRoot<RoleEntity, string> {
+export class Role extends AggregateRoot<Role, string> {
   private _name: string;
   private _slug: Slug;
   private _description?: string;
+  private _status: AccessControlStatus;
   private _created_at: Date;
   private _updated_at: Date;
   private _organization_id: string;
+  private _created_by: string | undefined;
+  private _updated_by: string | undefined;
+  private _attributes: Attributes;
 
   private constructor(
-    readonly id: IEntityID<string>,
-    props: IRoleProps,
+    props: CreateRoleProps,
   ) {
-    super(id);
+    super(props.id);
     this._name = props.name;
     this._slug = props.slug;
     this._description = props.description;
+    this._status = props.status ?? AccessControlStatus.ACTIVE;
     this._created_at = props.created_at ?? new Date();
     this._updated_at = props.updated_at ?? new Date();
     this._organization_id = props.organization_id;
+    this._created_by = props.created_by;
+    this._updated_by = props.updated_by;
+    this._attributes = props.attributes ?? Attributes.create({});
   }
 
-  static create(props: CreateRoleProps): RoleEntity {
-    const now = new Date();
-    const role = new RoleEntity(props.id, {
-      name: props.name,
-      slug: props.slug,
-      description: props.description,
-      created_at: now,
-      updated_at: now,
-      organization_id: props.organization_id,
-    });
+  static create(props: CreateRoleProps) {
+    const role = new Role(props);
     role.addDomainEvent(
       new RoleCreatedEvent({
         id: props.id.value,
         name: props.name,
         slug: props.slug.value,
         description: props.description,
-        createdAt: props.created_at || now,
-        updatedAt: props.updated_at || now,
-        organizationId: props.organization_id,
+        status: props.status ?? AccessControlStatus.ACTIVE,
+        createdAt: props.created_at ?? new Date(),
+        updatedAt: props.updated_at ?? new Date(),
+        organization_id: props.organization_id,
       }),
     );
     return role;
@@ -75,6 +78,7 @@ export class RoleEntity extends AggregateRoot<RoleEntity, string> {
     const oldName = this._name;
     const oldSlug = this._slug;
     const oldDescription = this._description;
+    const oldStatus = this._status;
 
     if (props.name !== undefined) {
       this._name = props.name;
@@ -85,6 +89,9 @@ export class RoleEntity extends AggregateRoot<RoleEntity, string> {
     if (props.description !== undefined) {
       this._description = props.description;
     }
+    if (props.status !== undefined) {
+      this._status = props.status;
+    }
 
     this._updated_at = new Date();
 
@@ -94,65 +101,69 @@ export class RoleEntity extends AggregateRoot<RoleEntity, string> {
         name: this._name,
         slug: this._slug.value,
         description: this._description,
+        status: this._status,
+        organization_id: this._organization_id,
         oldName,
         oldSlug: oldSlug.value,
         oldDescription,
+        oldStatus,
         updatedAt: this._updated_at,
-        organizationId: this._organization_id,
       }),
     );
   }
 
   delete() {
-    const now = new Date();
     this.addDomainEvent(
       new RoleDeletedEvent({
         id: this.id.value,
         name: this._name,
         slug: this._slug.value,
         description: this._description,
-        isDeleted: true,
-        updatedAt: now,
-        organizationId: this._organization_id,
+        status: AccessControlStatus.INACTIVE,
+        organization_id: this._organization_id,
+        updatedAt: new Date(),
       }),
     );
   }
 
-  assignPermission(permission_id: string) {
-    if (!permission_id) {
-      throw new Error('Permission ID is required');
-    }
-
-    this.addDomainEvent(
-      new PermissionAssignedEvent({
-        roleId: this.id.value,
-        permissionId: permission_id,
-        assignedAt: new Date(),
-      }),
-    );
-  }
-
-  name(): string {
+  // Getters
+  get name(): string {
     return this._name;
   }
 
-  slug(): Slug {
+  get slug(): Slug {
     return this._slug;
   }
 
-  description(): string | undefined {
+  get description(): string | undefined {
     return this._description;
   }
 
-  createdAt(): Date {
+  get status(): AccessControlStatus {
+    return this._status;
+  }
+
+  get created_at(): Date {
     return this._created_at;
   }
 
-  updatedAt(): Date {
+  get updated_at(): Date {
     return this._updated_at;
   }
 
-  organizationId(): string {
+  get organization_id(): string {
     return this._organization_id;
+  }
+
+  get created_by(): string | undefined {
+    return this._created_by;
+  }
+
+  get updated_by(): string | undefined {
+    return this._updated_by;
+  }
+
+  get attributes(): Attributes {
+    return this._attributes;
   }
 }

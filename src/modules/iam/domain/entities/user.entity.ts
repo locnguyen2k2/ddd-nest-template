@@ -1,15 +1,27 @@
 import { AccessControlStatus } from '@/common/enum';
 import { AggregateRoot, IEntityID } from '@/shared/domain/entities/base.entity';
+import { Password } from '../vo/password.vo';
+import { Attributes } from '../vo/attributes.vo';
+
+export interface IStaff {
+  organization_id: string;
+  status: AccessControlStatus;
+  context_attributes?: Attributes;
+  role_id?: string;
+  department_id?: string;
+}
 
 export interface IUserBaseInfo {
   first_name: string;
   last_name: string;
   username: string;
-  password: string;
+  password: Password;
   email: string;
   id: IEntityID<string>;
   created_at?: Date;
   updated_at?: Date;
+  organizations?: IStaff[];
+  attributes?: Attributes;
 }
 
 export interface IUpdateUserArgs {
@@ -22,11 +34,13 @@ export class UserEntity extends AggregateRoot<UserEntity, string> {
   private readonly _first_name: string;
   private readonly _last_name: string;
   private readonly _username: string;
-  private readonly _password: string;
+  private readonly _password: Password;
   private readonly _email: string;
   private readonly _created_at: Date;
   private readonly _updated_at: Date;
   private readonly _status: AccessControlStatus;
+  private readonly _organizations: IStaff[];
+  private readonly _attributes: Attributes;
 
   private constructor(props: IUserBaseInfo) {
     super(props.id);
@@ -39,36 +53,48 @@ export class UserEntity extends AggregateRoot<UserEntity, string> {
     this._created_at = props.created_at ?? new Date();
     this._updated_at = props.updated_at ?? new Date();
     this._status = AccessControlStatus.ACTIVE;
+    this._organizations = props.organizations ?? [];
+    this._attributes = props.attributes ?? Attributes.create({});
+  }
+
+  canAuthenticate() {
+    return this._status === AccessControlStatus.ACTIVE;
   }
 
   static create(props: IUserBaseInfo) {
     return new UserEntity(props);
   }
 
-  static update(props: IUpdateUserArgs) {}
+  static update(props: IUpdateUserArgs) { }
 
-  firstName() {
+  get first_name() {
     return this._first_name;
   }
-  lastName() {
+  get last_name() {
     return this._last_name;
   }
-  username() {
+  get username() {
     return this._username;
   }
-  password() {
+  get password() {
     return this._password;
   }
-  email() {
+  get email() {
     return this._email;
   }
-  createdAt() {
+  get created_at() {
     return this._created_at;
   }
-  updatedAt() {
+  get updated_at() {
     return this._updated_at;
   }
-  status() {
+  get status() {
     return this._status;
+  }
+  get organizations() {
+    return this._organizations;
+  }
+  get attributes() {
+    return this._attributes;
   }
 }

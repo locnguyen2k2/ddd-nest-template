@@ -1,5 +1,6 @@
 import { AggregateRoot, IEntityID } from '@/shared/domain/entities/base.entity';
 import { Slug } from '../vo/slug.vo';
+import { Attributes } from '../vo/attributes.vo';
 import {
   FeatureCreatedEvent,
   FeatureUpdatedEvent,
@@ -14,6 +15,10 @@ export interface FeatureBaseProps {
   status?: AccessControlStatus;
   created_at?: Date;
   updated_at?: Date;
+  project_id: string;
+  created_by: string | undefined;
+  updated_by: string | undefined;
+  attributes?: Attributes;
 }
 
 export interface CreateFeatureProps extends FeatureBaseProps {
@@ -27,30 +32,36 @@ export interface UpdateFeatureProps {
   status?: AccessControlStatus;
 }
 
-// Feature Aggregate Root
 export class Feature extends AggregateRoot<Feature, string> {
+  private _name: string;
+  private _slug: Slug;
+  private _description?: string;
+  private _status: AccessControlStatus;
+  private _created_at: Date;
+  private _updated_at: Date;
+  private _project_id: string;
+  private _created_by: string | undefined;
+  private _updated_by: string | undefined;
+  private _attributes: Attributes;
+
   private constructor(
-    public readonly id: IEntityID<string>,
-    private _name: string,
-    private _slug: Slug,
-    private _description?: string,
-    private _status: AccessControlStatus = AccessControlStatus.ACTIVE,
-    private _created_at: Date = new Date(),
-    private _updated_at: Date = new Date(),
+    props: CreateFeatureProps,
   ) {
-    super(id);
+    super(props.id);
+    this._name = props.name;
+    this._slug = props.slug;
+    this._description = props.description;
+    this._status = props.status ?? AccessControlStatus.ACTIVE;
+    this._created_at = props.created_at ?? new Date();
+    this._updated_at = props.updated_at ?? new Date();
+    this._project_id = props.project_id;
+    this._created_by = props.created_by;
+    this._updated_by = props.updated_by;
+    this._attributes = props.attributes ?? Attributes.create({});
   }
 
   static create(props: CreateFeatureProps) {
-    const feature = new Feature(
-      props.id,
-      props.name,
-      props.slug,
-      props.description,
-      props.status ?? AccessControlStatus.ACTIVE,
-      props.created_at ?? new Date(),
-      props.updated_at ?? new Date(),
-    );
+    const feature = new Feature(props);
     feature.addDomainEvent(
       new FeatureCreatedEvent({
         id: props.id.value,
@@ -116,27 +127,43 @@ export class Feature extends AggregateRoot<Feature, string> {
   }
 
   // Getters
-  name(): string {
+  get name(): string {
     return this._name;
   }
 
-  slug(): Slug {
+  get slug(): Slug {
     return this._slug;
   }
 
-  description(): string | undefined {
+  get description(): string | undefined {
     return this._description;
   }
 
-  status(): AccessControlStatus {
+  get status(): AccessControlStatus {
     return this._status;
   }
 
-  createdAt(): Date {
+  get created_at(): Date {
     return this._created_at;
   }
 
-  updatedAt(): Date {
+  get updated_at(): Date {
     return this._updated_at;
+  }
+
+  get project_id(): string {
+    return this._project_id;
+  }
+
+  get created_by(): string | undefined {
+    return this._created_by;
+  }
+
+  get updated_by(): string | undefined {
+    return this._updated_by;
+  }
+
+  get attributes(): Attributes {
+    return this._attributes;
   }
 }

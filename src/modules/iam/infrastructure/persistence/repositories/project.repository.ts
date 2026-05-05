@@ -2,7 +2,7 @@ import { ProjectEntity } from '@/modules/iam/domain/entities/project.entity';
 import { IProjectRepository } from '@/modules/iam/domain/repositories/project.repository';
 import { PrismaAdapter } from '@/shared/infrastructure/adapters/prisma.adapter';
 import { ProjectMapper } from '../mappers/project.mapper';
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { Logger } from '@nestjs/common';
 import { LogExecutionTime } from '@/common/decorators/log-execution.decorator';
 import {
@@ -18,14 +18,29 @@ import {
 import { BusinessException } from '@/common/http/business-exception';
 import { ErrorEnum } from '@/common/exception.enum';
 import { ProjectResponseDto } from '@/modules/iam/presentation/dtos/res/project-response.dto';
+import { CacheRepository } from '@/shared/infrastructure/presistence/cache.repository';
+import { ConfigService } from '@nestjs/config';
+import { ConfigKeyPaths } from '@/config';
+import { CACHE_PORT, CachePort } from '@/shared/application/ports/cache.port';
 
 @Injectable()
-export class ProjectRepository implements IProjectRepository {
+export class ProjectRepository extends CacheRepository implements IProjectRepository {
   private readonly logger = new Logger(ProjectRepository.name);
-  constructor(private readonly rbacDBService: PrismaAdapter) { }
+  protected readonly boundedContext: string = 'iam';
+  protected readonly aggregateType: string = 'project';
+  protected readonly ttlConfig: { [key: string]: number } = {
+    default: 3600,
+  };
+  constructor(
+    private readonly rbacDBService: PrismaAdapter,
+    redisConfig: ConfigService<ConfigKeyPaths>,
+    @Inject(CACHE_PORT) cachePort: CachePort,
+  ) {
+    super(redisConfig, cachePort);
+  }
 
   async create(project: ProjectEntity): Promise<ProjectEntity> {
-    const toPrisma = ProjectMapper.toPrisma(project);
+    const toPrisma = ProjectMapper.toPrismaCreate(project);
     const prj = await this.rbacDBService.project.create({
       data: toPrisma,
     });
@@ -33,9 +48,11 @@ export class ProjectRepository implements IProjectRepository {
   }
 
   async findById(id: string): Promise<ProjectEntity | null> {
-    const prj = await this.rbacDBService.project.findFirst({
-      where: { id },
-    });
+    const prj = await this.getWithCache(id, async () =>
+      await this.rbacDBService.project.findFirst({
+        where: { id },
+      })
+    );
     if (!prj) {
       return null;
     }
@@ -55,16 +72,18 @@ export class ProjectRepository implements IProjectRepository {
   }
 
   async update(id: string, project: ProjectEntity): Promise<ProjectEntity> {
-    const toPrisma = ProjectMapper.toPrisma(project);
+    const toPrisma = ProjectMapper.toPrismaUpdate(project);
     const prj = await this.rbacDBService.project.update({
       where: { id },
       data: toPrisma,
     });
+    await this.invalidateCache(id);
     return ProjectMapper.toDomain(prj);
   }
 
   async delete(id: string): Promise<void> {
     await this.rbacDBService.project.delete({ where: { id } });
+    await this.invalidateCache(id);
   }
 
   @LogExecutionTime()
@@ -74,6 +93,11 @@ export class ProjectRepository implements IProjectRepository {
         await paginateHelper<ProjectResponseDto>({
           query: this.rbacDBService.project,
           pageOptions,
+          filterOptions: [
+            {
+              organization_id: pageOptions.organization_id,
+            }
+          ],
         });
 
       return {
@@ -95,6 +119,11 @@ export class ProjectRepository implements IProjectRepository {
           pageOptions,
           cursorField: SortableFieldEnum.CREATED_AT,
           orderDirection: SortedEnum.DESC,
+          filterOptions: [
+            {
+              organization_id: pageOptions.organization_id,
+            }
+          ],
         });
 
       return {

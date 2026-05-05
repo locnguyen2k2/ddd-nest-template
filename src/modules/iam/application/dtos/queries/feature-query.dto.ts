@@ -1,68 +1,29 @@
-import {
-  IsString,
-  IsOptional,
-  IsNotEmpty,
-  IsNumber,
-  Min,
-  Max,
-} from 'class-validator';
-import { Type } from 'class-transformer';
 import { BaseCursorPageOptionDto } from '@/common/pagination';
 import { BasePageOptionDto } from '@/common/pagination/dtos/page-options.dto';
 
-// Get Feature By ID Query
-export class GetFeatureByIdQuery {
-  @IsString()
-  @IsNotEmpty()
+export interface GetFeatureByIdQuery {
   id: string;
 
-  constructor(data: GetFeatureByIdQuery) {
-    this.id = data.id;
-  }
+  organization_id?: string;
 }
 
-// Get Feature By Slug Query
-export class GetFeatureBySlugQuery {
-  @IsString()
-  @IsNotEmpty()
+export interface GetFeatureBySlugQuery {
   slug: string;
 
-  @IsString()
-  @IsNotEmpty()
   organization_id: string;
 
-  constructor(data: GetFeatureBySlugQuery) {
-    this.slug = data.slug;
-    this.organization_id = data.organization_id;
-  }
 }
 
-// List Features Query
-export class ListFeaturesQuery {
-  @IsOptional()
-  @Type(() => Number)
-  @IsNumber()
-  @Min(1)
-  page?: number = 1;
+export interface ListFeaturesQuery {
+  page?: number;
 
-  @IsOptional()
-  @Type(() => Number)
-  @IsNumber()
-  @Min(1)
-  @Max(100)
-  limit?: number = 10;
+  limit?: number;
 
-  @IsOptional()
-  @IsString()
   search?: string;
-
-  constructor(data: ListFeaturesQuery) {
-    this.page = data.page || 1;
-    this.limit = data.limit || 10;
-    this.search = data.search;
-  }
 }
 
-export class PaginateFeaturesQuery extends BasePageOptionDto {}
+export interface PaginateFeaturesQuery extends BasePageOptionDto {
+}
 
-export class CursorFeaturesQuery extends BaseCursorPageOptionDto {}
+export interface CursorFeaturesQuery extends BaseCursorPageOptionDto {
+}

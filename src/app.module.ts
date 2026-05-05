@@ -4,6 +4,7 @@ import configs from '@/config';
 import { SharedModules } from '@/shared/shared.modules';
 import { ScheduleModule } from '@nestjs/schedule';
 import { IamModule } from '@/modules/iam/iam.module';
+import { ClsModule } from 'nestjs-cls';
 
 const modules = [IamModule];
 
@@ -17,12 +18,16 @@ const modules = [IamModule];
     }),
 
     ScheduleModule.forRoot(),
+    ClsModule.forRoot({
+      global: true,
+      middleware: { mount: true },
+    }),
     SharedModules,
     ...modules,
   ],
 
   providers: [
-    // // JWT Guard
+    // JWT Guard
     // { provide: APP_GUARD, useClass: JwtAuthGuard },
     // // Graphql Guard
     // { provide: APP_GUARD, useClass: GqlThrottlerGuard },
@@ -30,4 +35,4 @@ const modules = [IamModule];
     // { provide: APP_GUARD, useClass: RbacAuthGuard },
   ],
 })
-export class AppModule {}
+export class AppModule { }

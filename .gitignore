@@ -2,6 +2,8 @@
 /dist
 /node_modules
 /build
+docs
+prisma/seed.ts
 
 # Logs
 logs

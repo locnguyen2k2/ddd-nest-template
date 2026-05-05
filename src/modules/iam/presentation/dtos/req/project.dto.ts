@@ -1,5 +1,18 @@
 import { IsString, IsOptional, IsNotEmpty, MaxLength } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
+import { BaseCursorPageOptionDto, BasePageOptionDto } from '@/common/pagination';
+
+export class PaginateProjectsQuery extends BasePageOptionDto {
+  @ApiProperty({ required: false })
+  @IsString()
+  @IsOptional()
+  userId?: string;
+
+  @ApiProperty({ required: false })
+  @IsString()
+  @IsOptional()
+  organization_id?: string;
+}
 
 export class CreateProjectDto {
   @ApiProperty()
@@ -24,11 +37,6 @@ export class CreateProjectDto {
   @IsString()
   @IsNotEmpty()
   organization_id!: string;
-
-  @ApiProperty()
-  @IsString()
-  @IsOptional()
-  created_by?: string;
 }
 
 export class UpdateProjectDto {
@@ -59,4 +67,11 @@ export class UpdateProjectDto {
   @IsString()
   @IsOptional()
   updated_by?: string;
+}
+
+export class CursorProjectsQuery extends BaseCursorPageOptionDto {
+  @ApiProperty({ required: false })
+  @IsString()
+  @IsOptional()
+  organization_id?: string;
 }

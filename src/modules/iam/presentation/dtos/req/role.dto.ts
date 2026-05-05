@@ -1,5 +1,6 @@
 import { IsString, IsOptional, IsNotEmpty, MaxLength } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
+import { BasePageOptionDto, BaseCursorPageOptionDto } from '@/common/pagination';
 
 export class CreateRoleDto {
   @ApiProperty()
@@ -19,11 +20,6 @@ export class CreateRoleDto {
   @IsOptional()
   @MaxLength(500)
   description?: string;
-
-  @ApiProperty()
-  @IsString()
-  @IsNotEmpty()
-  organization_id!: string;
 }
 
 export class UpdateRoleDto {
@@ -47,6 +43,12 @@ export class UpdateRoleDto {
 
   @ApiProperty({ required: false })
   @IsString()
-  @IsNotEmpty()
-  organization_id!: string;
+  @IsOptional()
+  organization_id?: string;
+}
+
+export class PaginateRolesQuery extends BasePageOptionDto {
+}
+
+export class CursorRolesQuery extends BaseCursorPageOptionDto {
 }

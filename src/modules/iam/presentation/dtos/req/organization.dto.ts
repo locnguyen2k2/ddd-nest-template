@@ -1,5 +1,6 @@
 import { IsString, IsOptional, IsNotEmpty, MaxLength } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
+import { BaseCursorPageOptionDto, BasePageOptionDto } from '@/common/pagination';
 
 export class CreateOrganizationDto {
   @ApiProperty()
@@ -39,4 +40,13 @@ export class UpdateOrganizationDto {
   @IsOptional()
   @MaxLength(500)
   description?: string;
+}
+
+
+export class PaginateOrganizationsQuery extends BasePageOptionDto {
+  userId?: string;
+}
+
+export class CursorOrganizationsQuery extends BaseCursorPageOptionDto {
+  userId?: string;
 }
