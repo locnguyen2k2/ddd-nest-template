@@ -18,7 +18,9 @@ export interface ListRolesQuery {
 }
 
 export interface PaginateRolesQuery extends BasePageOptionDto {
+  organization_id?: string;
 }
 
 export interface CursorRolesQuery extends BaseCursorPageOptionDto {
+  organization_id?: string;
 }

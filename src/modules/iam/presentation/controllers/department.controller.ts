@@ -9,6 +9,7 @@ import {
   HttpStatus,
   HttpCode,
   UseGuards,
+  Query,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -17,8 +18,8 @@ import {
   ApiParam,
   ApiBearerAuth,
 } from '@nestjs/swagger';
-import { CreateDepartmentDto, UpdateDepartmentDto } from '../dtos/req/department.dto';
-import { DepartmentResponseDto } from '../dtos/res/department-response.dto';
+import { CreateDepartmentDto, CursorDepartmentsQuery, PaginateDepartmentsQuery, UpdateDepartmentDto } from '../dtos/req/department.dto';
+import { CursorDepartmentsResponseDto, DepartmentResponseDto, PaginateDepartmentsResponseDto } from '../dtos/res/department-response.dto';
 import { DepartmentCommandHandler } from '@/modules/iam/application/services/department/command.handler';
 import { DepartmentQueryHandler } from '@/modules/iam/application/services/department/query.handler';
 import { DepartmentMapper } from '@/modules/iam/infrastructure/persistence/mappers/department.mapper';
@@ -32,6 +33,40 @@ export class DepartmentController {
     private readonly commandHandler: DepartmentCommandHandler,
     private readonly queryHandler: DepartmentQueryHandler,
   ) {}
+  
+    @Get()
+    @ApiBearerAuth()
+    @UseGuards(JwtAuthGuard)
+    @ApiOperation({ summary: 'List departments with pagination' })
+    @ApiResponse({
+      status: 200,
+      description: 'Departments retrieved successfully',
+      type: PaginateDepartmentsResponseDto,
+    })
+    async pagination(
+      @Query() listQuery: PaginateDepartmentsQuery,
+    ): Promise<PaginateDepartmentsResponseDto> {
+      return await this.queryHandler.handlePaginate(listQuery);
+    }
+
+    @Get('cursor')
+    @ApiBearerAuth()
+    @UseGuards(JwtAuthGuard)
+    @ApiOperation({ summary: 'List departments with cursor pagination' })
+    @ApiResponse({
+      status: 200,
+      description: 'Departments retrieved successfully',
+      type: CursorDepartmentsResponseDto,
+    })
+    async cursorPagination(
+      @Query() listQuery: CursorDepartmentsQuery,
+    ): Promise<CursorDepartmentsResponseDto> {
+      const result = await this.queryHandler.handleCursorPaginate(listQuery);
+      return {
+        data: result.data.map((item) => DepartmentMapper.toResponseDto(item)),
+        paginated: result.paginated,
+      };
+    }
 
   @Post()
   @ApiBearerAuth()

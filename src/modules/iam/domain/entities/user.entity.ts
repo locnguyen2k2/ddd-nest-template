@@ -7,6 +7,8 @@ export interface IStaff {
   organization_id: string;
   status: AccessControlStatus;
   context_attributes?: Attributes;
+  role_id?: string;
+  department_id?: string;
 }
 
 export interface IUserBaseInfo {

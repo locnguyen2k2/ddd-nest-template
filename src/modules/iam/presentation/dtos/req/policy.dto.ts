@@ -1,8 +1,129 @@
 import { ApiProperty, ApiPropertyOptional, PartialType } from '@nestjs/swagger';
-import { IsEnum, IsNotEmpty, IsOptional, IsString } from 'class-validator';
+import { IsEnum, IsNotEmpty, IsOptional, IsString, ValidateNested } from 'class-validator';
 import { Effect } from '../../../domain/entities/policy.entity';
+import { PermissionAction } from '@/common/enum';
 import { IsJsonLogic } from '@/common/validators/json-logic.validator';
 import { BasePageOptionDto, BaseCursorPageOptionDto } from '@/common/pagination';
+import { Expose, Type } from 'class-transformer';
+
+export enum Clearance {
+  ONE = 1,
+  TWO = 2,
+  THREE = 3,
+  FOUR = 4,
+  FIVE = 5,
+}
+
+export enum PlanTier {
+  BASIC = 'basic',
+  ENTERPRISE = 'enterprise',
+}
+
+export enum Sensitivity {
+}
+
+export class SubjectAttributes {
+  @ApiPropertyOptional({ example: 'developer' })
+  @IsString()
+  @IsOptional()
+  role?: string;
+
+  @ApiPropertyOptional({ example: 'engineering' })
+  @IsString()
+  @IsOptional()
+  department?: string;
+
+  @ApiPropertyOptional({ example: 'L2' })
+  @IsString()
+  @IsOptional()
+  clearance?: string;
+
+  @ApiPropertyOptional({ example: true })
+  @IsOptional()
+  mfa_verified?: boolean;
+
+  @ApiPropertyOptional({ example: 'premium' })
+  @IsString()
+  @IsOptional()
+  subscription?: string;
+
+  @ApiPropertyOptional({ example: 'US' })
+  @IsString()
+  @IsOptional()
+  location?: string;
+}
+
+export class ResourceAttributes {
+  @ApiProperty({ example: 'project' })
+  @IsString()
+  @IsNotEmpty()
+  @Expose()
+  type: string;
+
+  @ApiProperty({ example: 'project-001' })
+  @IsString()
+  @IsNotEmpty()
+  @Expose()
+  id: string;
+
+  @ApiPropertyOptional({ example: 'internal' })
+  @IsString()
+  @IsOptional()
+  @Expose()
+  sensitivity?: string;
+
+  @ApiPropertyOptional({ example: 'production' })
+  @IsString()
+  @IsOptional()
+  @Expose()
+  environment?: string;
+
+  @ApiPropertyOptional({ example: 'org-001' })
+  @IsString()
+  @IsOptional()
+  @Expose()
+  user_id!: string;
+}
+
+export class EvaluationContextAttributes {
+  @ApiPropertyOptional({ example: 'VPN' })
+  @IsString()
+  @IsOptional()
+  network?: string;
+
+  @ApiPropertyOptional({ example: 10 })
+  @IsOptional()
+  risk_score?: number;
+}
+
+export class PolicyEvaluateDto {
+  @ApiProperty()
+  @IsNotEmpty()
+  @Expose()
+  @Type(() => SubjectAttributes)
+  subject: SubjectAttributes;
+
+  @ApiProperty()
+  @IsNotEmpty()
+  @Expose()
+  @ValidateNested({ always: true })
+  @Type(() => ResourceAttributes)
+  resource: ResourceAttributes;
+
+  @ApiProperty({ enum: PermissionAction, example: PermissionAction.READ })
+  @IsEnum(PermissionAction)
+  @IsNotEmpty()
+  action!: PermissionAction;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  context?: EvaluationContextAttributes;
+
+  @ApiPropertyOptional({ example: 'org-123' })
+  @IsString()
+  @IsOptional()
+  organization_id?: string;
+}
 
 export class CreatePolicyDto {
   @ApiProperty({ example: 'Create Project Policy' })
@@ -20,10 +141,10 @@ export class CreatePolicyDto {
   @IsNotEmpty()
   effect!: Effect;
 
-  @ApiProperty({ example: 'project:create' })
-  @IsString()
+  @ApiProperty({ enum: PermissionAction, example: PermissionAction.CREATE })
+  @IsEnum(PermissionAction)
   @IsNotEmpty()
-  action!: string;
+  action!: PermissionAction;
 
   @ApiProperty({ example: 'Project' })
   @IsString()
@@ -39,7 +160,35 @@ export class CreatePolicyDto {
 export class UpdatePolicyDto extends PartialType(CreatePolicyDto) { }
 
 export class PaginatePoliciesQuery extends BasePageOptionDto {
+  @ApiPropertyOptional({ example: 'CREATE' })
+  @IsEnum(PermissionAction)
+  @IsOptional()
+  action?: PermissionAction;
+
+  @ApiPropertyOptional({ example: 'Project' })
+  @IsString()
+  @IsOptional()
+  resource?: string;
+
+  @ApiPropertyOptional({ example: 'org-123' })
+  @IsString()
+  @IsOptional()
+  organization_id?: string;
 }
 
 export class CursorPoliciesQuery extends BaseCursorPageOptionDto {
+  @ApiPropertyOptional({ example: 'CREATE' })
+  @IsEnum(PermissionAction)
+  @IsOptional()
+  action?: PermissionAction;
+
+  @ApiPropertyOptional({ example: 'Project' })
+  @IsString()
+  @IsOptional()
+  resource?: string;
+
+  @ApiPropertyOptional({ example: 'org-123' })
+  @IsString()
+  @IsOptional()
+  organization_id?: string;
 }

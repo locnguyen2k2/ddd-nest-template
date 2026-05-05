@@ -1,6 +1,6 @@
 import { AttributeEntity } from '@/modules/iam/domain/entities/attribute.entity';
 import { IEntityID } from '@/shared/domain/entities/base.entity';
-import { Attributes as PrismaAttributes, Prisma } from '@internal/rbac/client';
+import { Attributes as PrismaAttributes, Prisma, AttributeCategory } from '@internal/rbac/client';
 import { AttributeResponseDto } from '@/modules/iam/presentation/dtos/res/attribute-response.dto';
 
 export class AttributeMapper {
@@ -17,6 +17,8 @@ export class AttributeMapper {
       key: props.key,
       data_type: props.data_type,
       description: props.description,
+      label: props.label,
+      category: props.category,
     });
   }
 
@@ -27,6 +29,10 @@ export class AttributeMapper {
       key: props.key,
       data_type: props.data_type,
       description: props.description,
+      label: props.label,
+      category: props.category as AttributeCategory,
+      created_at: props.created_at!,
+      updated_at: props.updated_at || new Date(),
     };
   }
 
@@ -37,6 +43,10 @@ export class AttributeMapper {
       key: attribute.key,
       data_type: attribute.data_type,
       description: attribute.description,
+      label: attribute.label,
+      category: attribute.category as AttributeCategory,
+      created_at: attribute.created_at!,
+      updated_at: attribute.updated_at!,
     };
   }
 
@@ -46,6 +56,10 @@ export class AttributeMapper {
       key: attribute.key,
       data_type: attribute.data_type,
       description: attribute.description,
+      label: attribute.label,
+      category: attribute.category as AttributeCategory,
+      created_at: attribute.created_at!,
+      updated_at: attribute.updated_at!,
     };
   }
 
@@ -56,6 +70,8 @@ export class AttributeMapper {
       attribute.key,
       attribute.data_type,
       attribute.description,
+      attribute.label,
+      attribute.category,
     );
   }
 }

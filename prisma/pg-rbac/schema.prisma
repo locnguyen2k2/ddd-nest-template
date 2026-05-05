@@ -24,8 +24,7 @@ model User {
     created_staffs Staff[] @relation("StaffsCreatedBy")
     created_organizations Organization[] @relation("OrganizationCreatedBy")
     created_projects Project[] @relation("ProjectCreatedBy")
-    created_roles Role[] @relation("RoleCreatedBy")
-
+    
     @@index([email])
     @@index([username])
 }
@@ -44,7 +43,6 @@ model Organization {
     staffs Staff[] @relation("OrganizationToStaff")
     projects Project[] @relation("OrganizationToProject")
     departments Department[] @relation("OrganizationToDepartment")
-    roles Role[] @relation("OrganizationToRole")
     policies Policy[] @relation("OrganizationToPolicy")
     
     created_by_user User? @relation("OrganizationCreatedBy", fields: [created_by], references: [id], onDelete: SetNull)
@@ -57,7 +55,6 @@ model Staff {
     organization_id String @db.Uuid
     user_id String @db.Uuid
     department_id String? @db.Uuid
-    role_id String? @db.Uuid
     status AccessControlStatus @default(ACTIVE)
     created_at DateTime @default(now())
     updated_at DateTime @updatedAt
@@ -70,7 +67,6 @@ model Staff {
     user User @relation("UserToStaff", fields: [user_id], references: [id], onDelete: Cascade)
     organization Organization @relation("OrganizationToStaff", fields: [organization_id], references: [id], onDelete: Cascade)
     department Department? @relation("DepartmentToStaff", fields: [department_id], references: [id], onDelete: SetNull)
-    role Role? @relation("RoleToStaff", fields: [role_id], references: [id], onDelete: SetNull)
 
     created_by_user User? @relation("StaffsCreatedBy", fields: [created_by], references: [id], onDelete: SetNull)
 
@@ -134,32 +130,16 @@ model Department {
   @@unique([organization_id, slug])
 }
 
-model Role {
-  id              String   @id @default(uuid(7)) @db.Uuid
-  name            String
-  slug            String
-  organization_id String   @db.Uuid
-  attributes Json @default("{}")
-  created_at DateTime @default(now())
-  updated_at DateTime @updatedAt
-  created_by   String?  @db.Uuid
-  updated_by   String?  @db.Uuid
-  status AccessControlStatus @default(ACTIVE)
-  
-  staff           Staff[] @relation("RoleToStaff")
-  
-  organization    Organization @relation("OrganizationToRole", fields: [organization_id], references: [id])
-  created_by_user User? @relation("RoleCreatedBy", fields: [created_by], references: [id], onDelete: SetNull)
-
-  @@unique([organization_id, slug])
-}
-
 model Attributes {
   id          String   @id @default(uuid(7)) @db.Uuid
   entity_type String   // e.g., "USER", "PROJECT", "ORGANIZATION"
   key         String   // e.g., "clearance", "department"
   data_type   String   // e.g., "NUMBER", "STRING", "BOOLEAN"
   description String?
+  label String?
+  category AttributeCategory?
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
 
   @@unique([entity_type, key])
 }
@@ -186,6 +166,39 @@ model Feature {
     @@unique([project_id, slug])
 }
 
+model Subscription {
+    id          String   @id @default(uuid(7)) @db.Uuid
+    name        String   
+    slug        String   
+    description String?
+    created_at   DateTime @default(now())
+    updated_at   DateTime @updatedAt
+    
+    @@unique([slug])
+}
+
+model Clearance {
+    id          String   @id @default(uuid(7)) @db.Uuid
+    name        String
+    level       Int      
+    description String?
+    created_at   DateTime @default(now())
+    updated_at   DateTime @updatedAt
+    
+    @@unique([level])
+}
+
+model Environment {
+    id          String   @id @default(uuid(7)) @db.Uuid
+    name        String
+    slug        String
+    description String?
+    created_at   DateTime @default(now())
+    updated_at   DateTime @updatedAt
+    
+    @@unique([slug])
+}
+
 model Policy {
     id             String   @id @default(uuid(7)) @db.Uuid
     name           String
@@ -207,13 +220,14 @@ enum Effect {
     DENY
 }
 
-enum TIER {
-    ENTERPRISE
-    BASIC
-}
-
 enum AccessControlStatus {
     ACTIVE
     INACTIVE
     DELETED
+}
+
+enum AttributeCategory {
+    RESOURCE
+    SUBJECT
+    ENVIRONMENT
 }

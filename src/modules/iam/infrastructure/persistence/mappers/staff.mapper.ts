@@ -21,6 +21,7 @@ export class StaffMapper {
             context_attributes: props.context_attributes ? Attributes.create(props.context_attributes) : undefined,
             user_id: props.user_id,
             organization_id: props.organization_id,
+            department_id: props.department_id ?? undefined,
         });
     }
 
@@ -36,7 +37,6 @@ export class StaffMapper {
             user_id: props.userId,
             organization_id: props.orgId,
             department_id: props.departmentId ?? null,
-            role_id: props.roleId ?? null,
         };
     }
 
@@ -67,11 +67,6 @@ export class StaffMapper {
                     id: props.departmentId
                 }
             } : undefined,
-            role: props.roleId ? {
-                connect: {
-                    id: props.roleId
-                }
-            } : undefined
         };
     }
 
@@ -86,11 +81,6 @@ export class StaffMapper {
                     id: props.departmentId
                 }
             } : undefined,
-            role: props.roleId ? {
-                connect: {
-                    id: props.roleId
-                }
-            } : undefined
         };
     }
 }

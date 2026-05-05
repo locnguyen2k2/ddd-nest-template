@@ -1,5 +1,6 @@
 import { PolicyEntity } from '../entities/policy.entity';
 import { UserEntity } from '../entities/user.entity';
+import { IPaginate, ICursor } from '@/shared/domain/repositories/base.repository';
 
 export const POLICY_REPO = 'POLICY_REPOSITORY';
 
@@ -11,7 +12,7 @@ export interface IAccessRequest {
   environment?: Record<string, any>;
 }
 
-export interface IPolicyRepository {
+export interface IPolicyRepository extends IPaginate<PolicyEntity>, ICursor<PolicyEntity> {
   findMany(filter: { action?: string; resource?: string; organization_id?: string }): Promise<PolicyEntity[]>;
   create(policy: PolicyEntity): Promise<PolicyEntity>;
   update(id: string, policy: PolicyEntity): Promise<PolicyEntity>;

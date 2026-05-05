@@ -33,6 +33,7 @@ export class UserMapper {
         organization_id: org.organization_id,
         status: org.status as AccessControlStatus,
         context_attributes: Attributes.create(org.context_attributes),
+        department_id: org.department_id ?? undefined,
       })) : [],
     });
   }

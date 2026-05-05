@@ -1,4 +1,5 @@
 import { PolicyEntity, Effect } from '@/modules/iam/domain/entities/policy.entity';
+import { PolicyResponseDto } from '@/modules/iam/presentation/dtos/res/policy-response.dto';
 import { IEntityID } from '@/shared/domain/entities/base.entity';
 import { Prisma, Policy } from '@internal/rbac/client';
 
@@ -22,6 +23,21 @@ export class PolicyMapper {
       created_at: props.created_at,
       updated_at: props.updated_at,
     });
+  }
+
+  static toResponse(props: PolicyEntity): PolicyResponseDto {
+    return {
+      id: props.id.value,
+      name: props.name,
+      description: props.description,
+      effect: props.effect,
+      action: props.action,
+      resource: props.resource,
+      condition: props.condition,
+      organization_id: props.organizationId,
+      created_at: props.createdAt,
+      updated_at: props.updatedAt,
+    };
   }
 
   static toPrisma(props: PolicyEntity): Policy {

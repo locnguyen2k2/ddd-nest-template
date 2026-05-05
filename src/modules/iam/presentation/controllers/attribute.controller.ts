@@ -18,8 +18,8 @@ import {
   ApiParam,
   ApiBearerAuth,
 } from '@nestjs/swagger';
-import { CreateAttributeDto, UpdateAttributeDto } from '../dtos/req/attribute-request.dto';
-import { AttributeResponseDto } from '../dtos/res/attribute-response.dto';
+import { CreateAttributeDto, CursorAttributesQuery, PaginateAttributesQuery, UpdateAttributeDto } from '../dtos/req/attribute-request.dto';
+import { AttributeResponseDto, CursorAttributesResponseDto, PaginateAttributesResponseDto } from '../dtos/res/attribute-response.dto';
 import { AttributeCommandHandler } from '@/modules/iam/application/services/attributes/command.handler';
 import { AttributeQueryHandler } from '@/modules/iam/application/services/attributes/query.handler';
 import { AttributeMapper } from '@/modules/iam/infrastructure/persistence/mappers/attribute.mapper';
@@ -34,23 +34,33 @@ export class AttributeController {
     private readonly queryHandler: AttributeQueryHandler,
   ) { }
 
-  @Post()
+  @Get('cursor')
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
-  @ApiOperation({ summary: 'Create a new attribute' })
-  @ApiResponse({ status: 201, type: AttributeResponseDto })
-  async create(@Body() dto: CreateAttributeDto): Promise<AttributeResponseDto> {
-    const attribute = await this.commandHandler.handleCreate(dto);
-    return AttributeMapper.toResponseDto(attribute);
+  @ApiOperation({ summary: 'List attributes with cursor pagination' })
+  @ApiResponse({
+    status: 200,
+    description: 'Attributes retrieved successfully',
+    type: CursorAttributesResponseDto,
+  })
+  async cursorPagination(
+    @Query() listQuery: CursorAttributesQuery,
+  ): Promise<CursorAttributesResponseDto> {
+    const result = await this.queryHandler.handleCursorPaginate(listQuery);
+    return {
+      data: result.data.map((item) => AttributeMapper.toResponseDto(item)),
+      paginated: result.paginated,
+    };
   }
 
-  @Get()
+  @Get('entity-type/:type')
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
-  @ApiOperation({ summary: 'Get all attributes' })
+  @ApiOperation({ summary: 'Get attributes by entity type' })
+  @ApiParam({ name: 'type' })
   @ApiResponse({ status: 200, type: [AttributeResponseDto] })
-  async findAll(): Promise<AttributeResponseDto[]> {
-    const attributes = await this.queryHandler.findAll();
+  async findByEntityType(@Param('type') type: string): Promise<AttributeResponseDto[]> {
+    const attributes = await this.queryHandler.findByEntityType(type);
     return attributes.map(AttributeMapper.toResponseDto);
   }
 
@@ -68,15 +78,29 @@ export class AttributeController {
     return AttributeMapper.toResponseDto(attribute);
   }
 
-  @Get('entity-type/:type')
+  @Get()
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
-  @ApiOperation({ summary: 'Get attributes by entity type' })
-  @ApiParam({ name: 'type' })
-  @ApiResponse({ status: 200, type: [AttributeResponseDto] })
-  async findByEntityType(@Param('type') type: string): Promise<AttributeResponseDto[]> {
-    const attributes = await this.queryHandler.findByEntityType(type);
-    return attributes.map(AttributeMapper.toResponseDto);
+  @ApiOperation({ summary: 'List attributes with pagination' })
+  @ApiResponse({
+    status: 200,
+    description: 'Attributes retrieved successfully',
+    type: PaginateAttributesResponseDto,
+  })
+  async pagination(
+    @Query() listQuery: PaginateAttributesQuery,
+  ): Promise<PaginateAttributesResponseDto> {
+    return await this.queryHandler.handlePaginate(listQuery);
+  }
+
+  @Post()
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: 'Create a new attribute' })
+  @ApiResponse({ status: 201, type: AttributeResponseDto })
+  async create(@Body() dto: CreateAttributeDto): Promise<AttributeResponseDto> {
+    const attribute = await this.commandHandler.handleCreate(dto);
+    return AttributeMapper.toResponseDto(attribute);
   }
 
   @Patch(':id')
