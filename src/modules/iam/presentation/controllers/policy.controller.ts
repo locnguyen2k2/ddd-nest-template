@@ -37,7 +37,7 @@ import { AbacGuard } from '../guards/abac.guard';
 
 @ApiTags('policies')
 @ApiBearerAuth()
-@Controller(API_VERS.V1 + '')
+@Controller(API_VERS.V1 + '/policies')
 export class PolicyController {
   constructor(
     private readonly policyCmdHandler: PolicyCommandHandler,
@@ -46,7 +46,7 @@ export class PolicyController {
     private readonly cls: ClsService<MyClsStore>,
   ) { }
 
-  @Post('organizations/:orgId/policies/evaluate')
+  @Post('organizations/:orgId/evaluate')
   @ApiOperation({ summary: 'Evaluate policy decision' })
   @ApiParam({ name: 'orgId', type: 'string' })
   @ApiResponse({
@@ -66,7 +66,7 @@ export class PolicyController {
     });
   }
 
-  @Get('organizations/:orgId/policies')
+  @Get('organizations/:orgId')
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard, TenantContextGuard)
   @ApiOperation({ summary: 'List policies with pagination' })
@@ -83,7 +83,7 @@ export class PolicyController {
     return await this.policyQueryHandler.handlePaginate(listQuery);
   }
 
-  @Get('organizations/:orgId/policies/cursor')
+  @Get('organizations/:orgId/cursor')
   @ApiOperation({ summary: 'List policies with cursor pagination' })
   @ApiResponse({
     status: 200,
@@ -102,7 +102,7 @@ export class PolicyController {
     };
   }
 
-  @Get('policies/resources/cursor')
+  @Get('resources/cursor')
   @ApiOperation({ summary: 'List available resources' })
   @ApiResponse({
     status: 200,
@@ -136,7 +136,7 @@ export class PolicyController {
       },
     };
   }
-  @Post('organizations/:orgId/policies')
+  @Post('organizations/:orgId')
   @ApiOperation({ summary: 'Create a custom policy' })
   @ApiParam({ name: 'orgId', type: 'string' })
   @ApiResponse({
@@ -157,9 +157,8 @@ export class PolicyController {
     return PolicyResponseDto.fromDomain(policy);
   }
 
-  @Patch('organizations/:orgId/policies/:id')
+  @Patch('/:id')
   @ApiOperation({ summary: 'Update policy' })
-  @ApiParam({ name: 'orgId', type: 'string' })
   @ApiParam({ name: 'id', type: 'string' })
   @ApiResponse({
     status: 200,
@@ -179,9 +178,8 @@ export class PolicyController {
     return PolicyResponseDto.fromDomain(policy);
   }
 
-  @Delete('organizations/:orgId/policies/:id')
+  @Delete('/:id')
   @ApiOperation({ summary: 'Remove a policy' })
-  @ApiParam({ name: 'orgId', type: 'string' })
   @ApiParam({ name: 'id', type: 'string' })
   @ApiResponse({
     status: 204,
