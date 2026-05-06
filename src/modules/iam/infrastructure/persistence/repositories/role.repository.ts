@@ -47,6 +47,11 @@ export class RoleRepository
             await paginateHelper<Prisma.RoleGetPayload<{}>>({
                 query: this.rbacDBService.role,
                 pageOptions,
+                filterOptions: [
+                    {
+                        organization_id: pageOptions.organization_id,
+                    },
+                ],
             });
 
         return {
@@ -63,6 +68,11 @@ export class RoleRepository
                 pageOptions,
                 cursorField: SortableFieldEnum.CREATED_AT,
                 orderDirection: SortedEnum.DESC,
+                filterOptions: [
+                    {
+                        organization_id: pageOptions.organization_id,
+                    },
+                ],
             });
 
         return {

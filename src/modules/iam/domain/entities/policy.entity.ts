@@ -106,8 +106,8 @@ export class PolicyEntity extends AggregateRoot<PolicyEntity, string> {
       }
     }
 
-    const resourceAttributes = resource?.attributes?.value !== undefined 
-      ? resource.attributes.value 
+    const resourceAttributes = resource?.attributes?.value !== undefined
+      ? resource.attributes.value
       : (resource?.attributes || {});
 
     const resourceType = this.getResourceType(resource);
@@ -141,10 +141,7 @@ export class PolicyEntity extends AggregateRoot<PolicyEntity, string> {
 
   public static getResourceType(resource: any): string {
     if (typeof resource === 'string') return resource;
-    if (resource.constructor && resource.constructor.name !== 'Object') {
-      return resource.constructor.name;
-    }
-    return resource.type || 'Unknown';
+    return resource?.type || 'Unknown';
   }
 
   get name(): string {

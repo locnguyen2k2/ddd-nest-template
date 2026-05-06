@@ -9,7 +9,7 @@ export class JsonLogicEngineAdapter implements JsonLogicEnginePort {
             const result = jsonLogic.apply(condition, context);
             console.dir(context, { depth: null });
             console.dir(condition, { depth: null });
-            // console.log(result, "result")
+            console.log(result, "result")
             return result;
         } catch (error) {
             console.error('JSON Logic evaluation failed:', error);

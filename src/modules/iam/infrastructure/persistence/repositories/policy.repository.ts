@@ -8,6 +8,7 @@ import { cursorHelper, paginateHelper, SortableFieldEnum, SortedEnum } from '@/c
 import { CursorPoliciesQuery, PaginatePoliciesQuery } from '@/modules/iam/presentation/dtos/req/policy.dto';
 import { Prisma } from "@internal/rbac/client"
 import { LogExecutionTime } from '@/common/decorators/log-execution.decorator';
+import { capitalize } from '@/utils/string';
 
 @Injectable()
 export class PrismaPolicyRepository implements IPolicyRepository {
@@ -145,8 +146,8 @@ export class PrismaPolicyRepository implements IPolicyRepository {
 
     if (filter.action || filter.resource) {
       where.OR = [
-        { action: filter.action || '*', resource: filter.resource || '*' },
-        { action: '*', resource: filter.resource || '*' },
+        { action: filter.action || '*', resource: capitalize(filter.resource || '') || '*' },
+        { action: '*', resource: capitalize(filter.resource || '') || '*' },
         { action: filter.action || '*', resource: '*' },
         { action: '*', resource: '*' },
       ];

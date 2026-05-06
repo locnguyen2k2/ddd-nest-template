@@ -48,7 +48,13 @@ export class UpdateRoleDto {
 }
 
 export class PaginateRolesQuery extends BasePageOptionDto {
+  @IsString()
+  @IsOptional()
+  organization_id?: string;
 }
 
 export class CursorRolesQuery extends BaseCursorPageOptionDto {
+  @IsString()
+  @IsOptional()
+  organization_id?: string;
 }

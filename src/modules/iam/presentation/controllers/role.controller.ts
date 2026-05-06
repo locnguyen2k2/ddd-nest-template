@@ -34,7 +34,7 @@ import {
 import { RoleMapper } from '@/modules/iam/infrastructure/persistence/mappers/role.mapper';
 import { API_VERS, HeaderKeys, StorageKeys } from '@/common/constant';
 import { JwtAuthGuard } from '../guards/jwt-auth.guard';
-import { HeaderKey, Permissions } from '@/common/decorators'
+import { GetHeaderKey, HeaderKey, Permissions } from '@/common/decorators'
 import { PermissionAction } from '@/common/enum';
 import { TenantContextGuard } from '../guards/tenant-context.guard';
 import { AbacGuard } from '../guards/abac.guard';
@@ -134,11 +134,12 @@ export class RoleController {
         type: PaginateRolesResponseDto,
     })
     @HeaderKey(HeaderKeys.ORG_ID)
-    @CheckAbac(PermissionAction.READ, 'Role')
-    @UseGuards(JwtAuthGuard, HeadersAuthGuard, TenantContextGuard, AbacGuard)
+    @UseGuards(JwtAuthGuard, HeadersAuthGuard)
     async pagination(
         @Query() listQuery: PaginateRolesQuery,
+        @GetHeaderKey(HeaderKeys.ORG_ID) orgId: string,
     ): Promise<PaginateRolesResponseDto> {
+        listQuery.organization_id = orgId;
         const result = await this.queryHandler.handlePaginate(listQuery);
 
         return {
@@ -157,11 +158,12 @@ export class RoleController {
         type: CursorRolesResponseDto,
     })
     @HeaderKey(HeaderKeys.ORG_ID)
-    @CheckAbac(PermissionAction.READ, 'Role')
-    @UseGuards(JwtAuthGuard, HeadersAuthGuard, TenantContextGuard, AbacGuard)
+    @UseGuards(JwtAuthGuard, HeadersAuthGuard)
     async cursorPagination(
         @Query() listQuery: CursorRolesQuery,
+        @GetHeaderKey(HeaderKeys.ORG_ID) orgId: string,
     ): Promise<CursorRolesResponseDto> {
+        listQuery.organization_id = orgId;
         const result = await this.queryHandler.handleCursorPaginate(listQuery);
 
         return {

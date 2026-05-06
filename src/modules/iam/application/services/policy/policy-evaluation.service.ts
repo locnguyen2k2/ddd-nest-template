@@ -12,6 +12,8 @@ import { PolicyQueryService } from './policy-query.service';
 import { FeatureMapper } from '@/modules/iam/infrastructure/persistence/mappers/feature.mapper';
 import { OrganizationMapper } from '@/modules/iam/infrastructure/persistence/mappers/organization.mapper';
 import { ProjectMapper } from '@/modules/iam/infrastructure/persistence/mappers/project.mapper';
+import { BusinessException } from '@/common/http/business-exception';
+import { ErrorEnum } from '@/common/exception.enum';
 
 export enum EvaluateStatus {
   APPLIED = 'APPLIED',
@@ -35,7 +37,7 @@ export class PolicyEvaluationService {
 
   async evaluate(dto: PolicyEvaluateDto): Promise<EvaluationResponseDto> {
     const { action, resource, subject, context, organization_id } = dto;
-    const user = await this.userRepo.findByIdWithOrganizations(resource.user_id);
+    const user = await this.userRepo.findByIdWithOrganizations(resource?.user_id || '');
     let decision: Effect = Effect.ALLOW;
     let evaluationContext: any = {};
     const evaluatedPolicies: EvaluatedPolicyDto[] = [];
@@ -47,9 +49,13 @@ export class PolicyEvaluationService {
       });
 
       const resourceData = await this.fetchResource(resource.type, resource.id);
-      const organizationData = organization_id 
+      const organizationData = organization_id
         ? await this.organizationRepo.findById(organization_id)
         : null;
+
+      if (!resourceData) {
+        throw new BusinessException(ErrorEnum.RECORD_NOT_FOUND, 'Resource not found');
+      }
 
       evaluationContext = PolicyEntity.buildContext(
         user,
@@ -94,6 +100,7 @@ export class PolicyEvaluationService {
 
       if (decision !== Effect.DENY) {
         const allowPolicies = policies.filter((p) => p.effect === Effect.ALLOW);
+        let hasMatchedPolicy = false;
         for (const policy of allowPolicies) {
           const isMatched = policy.evaluate(evaluationContext, this.ruleEvaluator);
 
@@ -106,6 +113,7 @@ export class PolicyEvaluationService {
           if (isMatched && !appliedPolicyId) {
             decision = Effect.ALLOW;
             appliedPolicyId = policy.id.value;
+            hasMatchedPolicy = true;
           }
 
           evaluatedPolicies.push({
@@ -113,6 +121,9 @@ export class PolicyEvaluationService {
             status,
             priority: 'P50',
           });
+        }
+        if (!hasMatchedPolicy) {
+          decision = Effect.DENY;
         }
       } else {
         const allowPolicies = policies.filter((p) => p.effect === Effect.ALLOW);
@@ -138,13 +149,13 @@ export class PolicyEvaluationService {
     switch (resourceName.toLowerCase()) {
       case 'project':
         const projectItem = await this.projectRepo.findById(id);
-        return projectItem ? ProjectMapper.toPrisma(projectItem) : null;
+        return projectItem ? { ...ProjectMapper.toPrisma(projectItem), type: 'project' } : null;
       case 'organization':
         const orgItem = await this.organizationRepo.findById(id);
-        return orgItem ? OrganizationMapper.toPrisma(orgItem) : null;
+        return orgItem ? { ...OrganizationMapper.toPrisma(orgItem), type: 'organization' } : null;
       case 'feature':
         const featureItem = await this.featureRepo.findOneById(id);
-        return featureItem ? FeatureMapper.toPrisma(featureItem) : null;
+        return featureItem ? { ...FeatureMapper.toPrisma(featureItem), type: 'feature' } : null;
       default:
         return null;
     }
