@@ -114,9 +114,8 @@ export class PolicyController {
     description: 'Resources retrieved successfully',
     type: CursorResourcesResponseDto,
   })
-  @CheckAbac(PermissionAction.READ, 'Policy')
   @HeaderKey(HeaderKeys.ORG_ID)
-  @UseGuards(HeadersAuthGuard, JwtAuthGuard, TenantContextGuard, AbacGuard)
+  @UseGuards(HeadersAuthGuard, JwtAuthGuard, TenantContextGuard)
   async getResources(): Promise<CursorResourcesResponseDto> {
     const mockResources = [
       { name: 'Organization', slug: 'organization', description: 'Organization resource' },
@@ -153,6 +152,7 @@ export class PolicyController {
     type: PolicyResponseDto,
   })
   @CheckAbac(PermissionAction.CREATE, 'Policy')
+  @HeaderKey(HeaderKeys.ORG_ID)
   @UseGuards(HeadersAuthGuard, JwtAuthGuard, TenantContextGuard, AbacGuard)
   @HttpCode(HttpStatus.CREATED)
   async create(
