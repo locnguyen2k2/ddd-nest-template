@@ -22,7 +22,7 @@ export class MemberQueryHandler {
     return await this.memberRepository.findByProjectId(query.project_id);
   }
 
-  async handleGetMemberByStaffId(query: GetMemberByStaffIdQuery): Promise<Member | null> {
+  async handleGetMemberByStaffId(query: GetMemberByStaffIdQuery): Promise<Member[]> {
     return await this.memberRepository.findByStaffId(query.staff_id);
   }
 }

@@ -196,6 +196,7 @@ export class PolicyController {
     status: 204,
     description: 'Policy removed successfully',
   })
+  @HeaderKey(HeaderKeys.ORG_ID)
   @CheckAbac(PermissionAction.DELETE, 'Policy')
   @UseGuards(HeadersAuthGuard, JwtAuthGuard, TenantContextGuard, AbacGuard)
   @HttpCode(HttpStatus.NO_CONTENT)

@@ -34,6 +34,7 @@ export interface IEvaluationContext {
     attributes: any;
     context_attributes: any;
     department_id?: string;
+    members?: any[];
   };
   resource: {
     type: string;
@@ -119,6 +120,7 @@ export class PolicyEntity extends AggregateRoot<PolicyEntity, string> {
         username: subject.username,
         attributes: subject.attributes.value,
         context_attributes,
+        members: subject.members,
         department_id,
       },
       resource: {

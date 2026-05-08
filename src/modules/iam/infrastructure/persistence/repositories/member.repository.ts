@@ -72,12 +72,12 @@ export class MemberRepository extends CacheRepository implements IMemberReposito
         if (!item) return null;
         return MemberMapper.toDomain(item);
     };
-    async findByStaffId(staffId: string): Promise<Member | null> {
+    async findByStaffId(staffId: string): Promise<Member[]> {
         const items = await this.getWithCache(`members:staff:${staffId}`, async () => {
             return this.rbacDBService.member.findMany({ where: { staff_id: staffId } });
         });
-        if (!items || items.length === 0) return null;
-        return items.map((item) => MemberMapper.toDomain(item))[0];
+        if (!items || items.length === 0) return [];
+        return items.map((item) => MemberMapper.toDomain(item));
     };
     async findByProjectId(projectId: string): Promise<Member[]> {
         const items = await this.getWithCache(`members:project:${projectId}`, async () => {

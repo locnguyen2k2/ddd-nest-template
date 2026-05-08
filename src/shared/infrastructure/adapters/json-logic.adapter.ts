@@ -7,7 +7,6 @@ export class JsonLogicEngineAdapter implements JsonLogicEnginePort {
     evaluate(condition: any, context: any): boolean {
         try {
             const result = jsonLogic.apply(condition, context);
-            console.dir(context, { depth: null });
             console.dir(condition, { depth: null });
             console.log(result, "result")
             return result;

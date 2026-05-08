@@ -123,6 +123,7 @@ export class PrismaPolicyRepository implements IPolicyRepository {
       environment,
       organization,
     );
+    console.dir(context, { depth: null });
 
     const denyPolicies = policies.filter((p) => p.effect === Effect.DENY);
     for (const policy of denyPolicies) {

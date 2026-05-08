@@ -190,8 +190,8 @@ export class ProjectController {
     required: true,
   })
   @HeaderKey(HeaderKeys.ORG_ID)
-  @CheckAbac(PermissionAction.READ, 'project')
-  @UseGuards(JwtAuthGuard, HeadersAuthGuard, TenantContextGuard, AbacGuard)
+  // @CheckAbac(PermissionAction.READ, 'project')
+  @UseGuards(JwtAuthGuard, HeadersAuthGuard, TenantContextGuard)
   async cursorPagination(
     @Query() listQuery: CursorProjectsQuery,
   ): Promise<CursorProjectsResponseDto> {

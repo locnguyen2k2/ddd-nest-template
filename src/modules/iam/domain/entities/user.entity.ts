@@ -9,6 +9,13 @@ export interface IStaff {
   context_attributes?: Attributes;
   role_id?: string;
   department_id?: string;
+  id: string;
+}
+
+export interface IMember {
+  project_id: string;
+  staff_id: string;
+  id: string;
 }
 
 export interface IUserBaseInfo {
@@ -22,6 +29,7 @@ export interface IUserBaseInfo {
   updated_at?: Date;
   organizations?: IStaff[];
   attributes?: Attributes;
+  members?: IMember[];
 }
 
 export interface IUpdateUserArgs {
@@ -41,6 +49,7 @@ export class UserEntity extends AggregateRoot<UserEntity, string> {
   private readonly _status: AccessControlStatus;
   private readonly _organizations: IStaff[];
   private readonly _attributes: Attributes;
+  private readonly _members: IMember[];
 
   private constructor(props: IUserBaseInfo) {
     super(props.id);
@@ -55,6 +64,7 @@ export class UserEntity extends AggregateRoot<UserEntity, string> {
     this._status = AccessControlStatus.ACTIVE;
     this._organizations = props.organizations ?? [];
     this._attributes = props.attributes ?? Attributes.create({});
+    this._members = props.members ?? [];
   }
 
   canAuthenticate() {
@@ -96,5 +106,8 @@ export class UserEntity extends AggregateRoot<UserEntity, string> {
   }
   get attributes() {
     return this._attributes;
+  }
+  get members() {
+    return this._members;
   }
 }

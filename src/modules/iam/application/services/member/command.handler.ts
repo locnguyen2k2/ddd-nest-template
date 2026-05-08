@@ -16,7 +16,9 @@ export class MemberCommandHandler {
 
   async handleCreateMember(command: CreateMemberArgs): Promise<Member> {
     const existing = await this.memberRepo.findByStaffId(command.staff_id);
-    if (existing && existing.project_id === command.project_id) {
+
+    const existingInProject = existing.find((m) => m.project_id === command.project_id);
+    if (existingInProject) {
       throw new BusinessException(
         ErrorEnum.REQUEST_VALIDATION_ERROR,
         `Staff with id '${command.staff_id}' is already a member of project '${command.project_id}'`,
