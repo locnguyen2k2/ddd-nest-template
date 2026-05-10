@@ -15,4 +15,6 @@ export interface IStaffRepository
     create(data: Staffs): Promise<Staffs>;
     update(id: string, data: Staffs): Promise<Staffs>;
     delete(id: string): Promise<void>;
+
+    staffsGrowthByMonthByOrgId(orgId: string): Promise<{ month: string; count: number }[]>
 }

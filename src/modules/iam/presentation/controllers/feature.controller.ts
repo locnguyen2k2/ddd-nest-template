@@ -133,7 +133,7 @@ export class FeatureController {
     description: 'Features retrieved successfully',
     type: PaginateFeaturesResponseDto,
   })
-  @HeaderKey(HeaderKeys.PROJECT_ID, HeaderKeys.ORG_ID)
+  @HeaderKey(HeaderKeys.ORG_ID)
   @CheckAbac(PermissionAction.READ, 'Feature')
   @UseGuards(JwtAuthGuard, HeadersAuthGuard, TenantContextGuard, AbacGuard)
   async pagination(

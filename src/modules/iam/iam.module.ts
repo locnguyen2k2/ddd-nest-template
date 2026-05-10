@@ -81,6 +81,8 @@ import { RoleQueryHandler } from './application/services/role/query.handler';
 import { ROLE_REPO } from './domain/repositories/role.repository';
 import { RoleRepository } from './infrastructure/persistence/repositories/role.repository';
 import { RoleController } from './presentation/controllers/role.controller';
+import { StaffQueryHandler } from './application/services/staffs/query.handler';
+import { StaffController } from './presentation/controllers/staff.controller';
 
 const abacProviders = [
   PrismaPolicyRepository,
@@ -134,6 +136,7 @@ const userProviders = [
 ];
 const staffProviders = [
   StaffRepository,
+  StaffQueryHandler,
   { provide: STAFF_REPO, useClass: StaffRepository },
 ];
 const departmentProviders = [
@@ -228,6 +231,7 @@ const roleExports = [RoleRepository, RoleCommandHandler, RoleQueryHandler];
     DepartmentController,
     MemberController,
     RoleController,
+    StaffController,
   ],
   providers: [
     ...abacProviders,

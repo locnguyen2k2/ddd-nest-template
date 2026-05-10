@@ -3,7 +3,6 @@ import {
   CanActivate,
   ExecutionContext,
   Inject,
-  ForbiddenException,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { CHECK_ABAC_KEY, AbacMetadata } from '../../../../common/decorators/check-abac.decorator';
@@ -16,12 +15,12 @@ import { ClsService } from 'nestjs-cls';
 import { MyClsStore } from '@/common/interfaces/cls-store.interface';
 import { HeaderKeys, StorageKeys } from '@/common/constant';
 import { IMemberRepository, MEMBER_REPO } from '../../domain/repositories/member.repository';
-import { IStaffRepository, STAFF_REPO } from '../../domain/repositories/staff.repository';
 import { MemberMapper } from '../../infrastructure/persistence/mappers/member.mapper';
 import { UserMapper } from '../../infrastructure/persistence/mappers/user.mapper';
 import { ProjectMapper } from '../../infrastructure/persistence/mappers/project.mapper';
 import { OrganizationMapper } from '../../infrastructure/persistence/mappers/organization.mapper';
 import { FeatureMapper } from '../../infrastructure/persistence/mappers/feature.mapper';
+import { BusinessException } from '@/common/http/business-exception';
 
 @Injectable()
 export class AbacGuard implements CanActivate {
@@ -75,8 +74,9 @@ export class AbacGuard implements CanActivate {
       },
     });
 
+
     if (!isAllowed) {
-      throw new ForbiddenException('Access denied by ABAC policy');
+      throw new BusinessException('400|Access denied by ABAC policy');
     }
 
     return true;

@@ -11,6 +11,8 @@ import { ConfigService } from "@nestjs/config";
 import { StaffMapper } from "../mappers/staff.mapper";
 import { cursorHelper, paginateHelper, SortableFieldEnum, SortedEnum } from "@/common/pagination";
 import { Prisma } from "@internal/rbac/client";
+import { BusinessException } from "@/common/http/business-exception";
+import { ErrorEnum } from "@/common/exception.enum";
 
 @Injectable()
 export class StaffRepository extends CacheRepository implements IStaffRepository {
@@ -25,6 +27,43 @@ export class StaffRepository extends CacheRepository implements IStaffRepository
         @Inject(CACHE_PORT) cachePort: CachePort,
     ) {
         super(redisConfig, cachePort)
+    }
+
+    async staffsGrowthByMonthByOrgId(orgId: string): Promise<{ month: string; count: number }[]> {
+        try {
+            const result = await this.rbacDBService.$queryRaw<{ date: Date, count: number }[]>`
+                WITH month_info AS ( 
+                    SELECT
+                        DATE_TRUNC('month', CURRENT_DATE)::date AS month_start,
+                        (DATE_TRUNC('month', CURRENT_DATE) + INTERVAL '1 month - 1 day')::date AS month_end
+                ),
+                month_days AS (
+                    SELECT (month_end - month_start + 1) AS days_in_month
+                    FROM month_info
+                ),
+                range_start AS (
+                    SELECT CURRENT_DATE - (days_in_month - 1) * INTERVAL '1 day' AS start_date
+                    FROM month_days
+                )
+                SELECT
+                    DATE(u.created_at) AS date,
+                    COUNT(*)::int AS count
+                FROM "Staff" u 
+                    JOIN range_start r
+                        ON u.created_at >= r.start_date 
+                WHERE DATE(u.created_at) <= CURRENT_DATE 
+                    AND u.organization_id = ${orgId}
+                GROUP BY DATE(u.created_at)
+                ORDER BY DATE(u.created_at);
+            `;
+            console.log(result);
+            return result.map((item) => ({
+                month: item.date.toISOString().split('T')[0],
+                count: item.count,
+            }));
+        } catch (e: any) {
+            throw new BusinessException(ErrorEnum.REQUEST_FAILED_TO_EXECUTE, e.message);
+        }
     }
 
     @LogExecutionTime()

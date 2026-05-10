@@ -12,7 +12,7 @@ export class MemberQueryHandler {
   constructor(
     @Inject(MEMBER_REPO)
     private readonly memberRepository: IMemberRepository,
-  ) {}
+  ) { }
 
   async handleGetMemberById(query: GetMemberByIdQuery): Promise<Member | null> {
     return await this.memberRepository.findById(query.id);

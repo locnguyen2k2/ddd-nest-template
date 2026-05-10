@@ -31,7 +31,7 @@ export class MemberController {
   constructor(
     private readonly commandHandler: MemberCommandHandler,
     private readonly queryHandler: MemberQueryHandler,
-  ) {}
+  ) { }
 
   @Post()
   @ApiBearerAuth()
