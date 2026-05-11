@@ -58,11 +58,11 @@ export class ProjectMapper {
       },
       created_at: prj.createdAt,
       updated_at: prj.updatedAt,
-      created_by_user: {
+      created_by_user: prj.createdBy ? {
         connect: {
-          id: prj.createdBy || '',
+          id: prj.createdBy,
         },
-      },
+      } : undefined,
       updated_by: prj.updatedBy || undefined,
       attributes: prj.attributes.value as Prisma.JsonObject,
     };

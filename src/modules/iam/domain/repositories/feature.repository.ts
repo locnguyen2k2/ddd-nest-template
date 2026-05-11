@@ -1,3 +1,4 @@
+import { StatsGrowInfo } from '@/common/interfaces/stats.interface';
 import { Feature } from '../entities/feature.entity';
 import {
   IPaginate,
@@ -13,4 +14,5 @@ export interface IFeatureRepository
   update(id: string, data: Feature): Promise<Feature>;
   delete(id: string): Promise<void>;
   findByProjectId(prjId: string): Promise<Feature[]>
+  growth(organization_id: string, period?: string): Promise<StatsGrowInfo>
 }

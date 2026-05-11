@@ -71,7 +71,9 @@ export class OrganizationController {
   @UseGuards(JwtAuthGuard, AbacGuard)
   async pagination(
     @Query() listQuery: PaginateOrganizationsQuery,
+    @User() user: IPayload,
   ): Promise<PaginateOrganizationsResponseDto> {
+    listQuery.userId = user.sub;
     const result = await this.queryHandler.handlePaginate(listQuery);
 
     return {

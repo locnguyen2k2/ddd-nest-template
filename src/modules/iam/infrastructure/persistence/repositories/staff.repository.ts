@@ -13,6 +13,8 @@ import { cursorHelper, paginateHelper, SortableFieldEnum, SortedEnum } from "@/c
 import { Prisma } from "@internal/rbac/client";
 import { BusinessException } from "@/common/http/business-exception";
 import { ErrorEnum } from "@/common/exception.enum";
+import { Period } from "@/common/enum";
+import { StatsGrowInfo } from "@/common/interfaces/stats.interface";
 
 @Injectable()
 export class StaffRepository extends CacheRepository implements IStaffRepository {
@@ -29,9 +31,29 @@ export class StaffRepository extends CacheRepository implements IStaffRepository
         super(redisConfig, cachePort)
     }
 
-    async staffsGrowthByMonthByOrgId(orgId: string): Promise<{ month: string; count: number }[]> {
+    private readonly staffGrowth = {
+        [Period.WEEK]: async (orgId: string) => this.orgStaffGrowthByWeek(orgId),
+        [Period.MONTH]: async (orgId: string) => this.orgStaffGrowthByMonth(orgId),
+        [Period.DAY]: async (orgId: string) => this.orgStaffGrowthByDay(orgId),
+        [Period.YEAR]: async (orgId: string) => this.orgStaffGrowthByYear(orgId),
+    };
+
+    async staffGrowthByOrgId(orgId: string, period?: string) {
+        return await this.staffGrowth[period || Period.MONTH](orgId);
+    }
+
+    async orgStaffGrowthByMonth(orgId: string): Promise<StatsGrowInfo> {
         try {
-            const result = await this.rbacDBService.$queryRaw<{ date: Date, count: number }[]>`
+            const result: StatsGrowInfo = {
+                data: {
+                    labels: [],
+                    values: [],
+                },
+                title: '',
+                from: '',
+                to: '',
+            }
+            const data = await this.rbacDBService.$queryRaw<{ date: Date, count: number }[]>`
                 WITH month_info AS ( 
                     SELECT
                         DATE_TRUNC('month', CURRENT_DATE)::date AS month_start,
@@ -56,11 +78,136 @@ export class StaffRepository extends CacheRepository implements IStaffRepository
                 GROUP BY DATE(u.created_at)
                 ORDER BY DATE(u.created_at);
             `;
-            console.log(result);
-            return result.map((item) => ({
-                month: item.date.toISOString().split('T')[0],
-                count: item.count,
-            }));
+            if (data.length === 0) {
+                return result;
+            }
+            return {
+                data: {
+                    labels: data.map((item) => item.date.toISOString()),
+                    values: data.map((item) => item.count),
+                },
+                title: '',
+                from: data[0].date.toISOString(),
+                to: data[data.length - 1].date.toISOString(),
+            };
+        } catch (e: any) {
+            throw new BusinessException(ErrorEnum.REQUEST_FAILED_TO_EXECUTE, e.message);
+        }
+    }
+
+    async orgStaffGrowthByYear(orgId: string): Promise<StatsGrowInfo> {
+        try {
+            const result: StatsGrowInfo = {
+                data: {
+                    labels: [],
+                    values: [],
+                },
+                title: '',
+                from: '',
+                to: '',
+            }
+            const data = await this.rbacDBService.$queryRaw<{ date: Date, count: number }[]>`
+            SELECT
+                TO_CHAR(DATE_TRUNC('month', created_at), 'YYYY-MM') AS date,
+                COUNT(*)::int AS count
+            FROM "Staff"
+            WHERE created_at >= DATE_TRUNC('month', CURRENT_DATE) - INTERVAL '11 months'
+            AND created_at < DATE_TRUNC('month', CURRENT_DATE) + INTERVAL '1 month'
+            AND organization_id = ${orgId}
+            GROUP BY DATE_TRUNC('month', created_at)
+            ORDER BY DATE_TRUNC('month', created_at);
+            `;
+            if (data.length === 0) {
+                return result;
+            }
+            return {
+                data: {
+                    labels: data.map((item) => item.date.toISOString()),
+                    values: data.map((item) => item.count),
+                },
+                title: 'Year Growth',
+                from: data[0].date.toISOString(),
+                to: data[data.length - 1].date.toISOString(),
+            };
+        } catch (e: any) {
+            throw new BusinessException(ErrorEnum.REQUEST_FAILED_TO_EXECUTE, e.message);
+        }
+    }
+
+    async orgStaffGrowthByWeek(orgId: string): Promise<StatsGrowInfo> {
+        try {
+            const result: StatsGrowInfo = {
+                data: {
+                    labels: [],
+                    values: [],
+                },
+                title: 'Week Growth',
+                from: '',
+                to: '',
+            }
+            const data = await this.rbacDBService.$queryRaw<{ date: Date, count: number }[]>`
+            SELECT
+                DATE(created_at) AS date,
+                COUNT(*)::int AS count
+            FROM "Staff"
+            WHERE created_at >= CURRENT_DATE - INTERVAL '6 days'
+            AND created_at < CURRENT_DATE + INTERVAL '1 day'
+            AND organization_id = ${orgId}
+            GROUP BY DATE(created_at)
+            ORDER BY DATE(created_at);
+            `;
+            if (data.length === 0) {
+                return result;
+            }
+            return {
+                data: {
+                    labels: data.map((item) => item.date.toISOString()),
+                    values: data.map((item) => item.count),
+                },
+                title: 'Week Growth',
+                from: data[0].date.toISOString(),
+                to: data[data.length - 1].date.toISOString(),
+            };
+        } catch (e: any) {
+            throw new BusinessException(ErrorEnum.REQUEST_FAILED_TO_EXECUTE, e.message);
+        }
+    }
+
+    async orgStaffGrowthByDay(orgId: string): Promise<StatsGrowInfo> {
+        try {
+            const result: StatsGrowInfo = {
+                data: {
+                    labels: [],
+                    values: [],
+                },
+                title: 'Day Growth',
+                from: '',
+                to: '',
+            }
+            const data = await this.rbacDBService.$queryRaw<{ date: Date, count: number }[]>`
+            SELECT
+                date_trunc('hour', created_at) AS date,
+                COUNT(*)::int AS count
+            FROM "Staff"
+            WHERE created_at >= date_trunc('hour', CURRENT_TIMESTAMP) - INTERVAL '23 hours'
+            AND created_at < date_trunc('hour', CURRENT_TIMESTAMP)
+            AND organization_id = ${orgId}
+            GROUP BY date_trunc('hour', created_at)
+            ORDER BY date_trunc('hour', created_at);
+            `;
+
+            if (data.length === 0) {
+                return result;
+            }
+            return {
+                data: {
+                    labels: data.map((item) => item.date.toISOString()),
+                    values: data.map((item) => item.count),
+                },
+                title: 'Day Growth',
+                from: data[0].date.toISOString(),
+                to: data[data.length - 1].date.toISOString(),
+            };
         } catch (e: any) {
             throw new BusinessException(ErrorEnum.REQUEST_FAILED_TO_EXECUTE, e.message);
         }

@@ -23,7 +23,9 @@ export interface ListFeaturesQuery {
 }
 
 export interface PaginateFeaturesQuery extends BasePageOptionDto {
+  project_id?: string;
 }
 
 export interface CursorFeaturesQuery extends BaseCursorPageOptionDto {
+  project_id?: string;
 }

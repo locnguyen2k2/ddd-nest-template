@@ -20,6 +20,11 @@ export class FeatureQueryHandler {
   ) { }
 
   @LogExecutionTime()
+  async handleGetFeatureGrowth(organization_id: string, period?: string) {
+    return await this.featureRepository.growth(organization_id, period);
+  }
+
+  @LogExecutionTime()
   async handleGetFeatureRoles(prj_id: string, slug: string) {
   }
 

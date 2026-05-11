@@ -38,19 +38,27 @@ export class OrganizationRepository
 
     if (pageOptions.userId) {
       filterOptions.push({
-        users: {
+        staffs: {
           some: {
             user_id: pageOptions.userId,
           },
         },
       })
     }
-
     const { data = [], paginated } =
       await paginateHelper<Prisma.OrganizationGetPayload<{}>>({
         query: this.rbacDBService.organization,
         pageOptions,
-        filterOptions,
+        ...filterOptions.length > 0 && {
+          filterOptions,
+          include: {
+            staffs: {
+              select: {
+                user_id: true
+              }
+            }
+          },
+        },
       });
 
     return {
@@ -61,12 +69,34 @@ export class OrganizationRepository
 
   @LogExecutionTime()
   async cursorPagination(pageOptions: CursorOrganizationsQuery) {
+    const filterOptions: any[] = [];
+
+    if (pageOptions.userId) {
+      filterOptions.push({
+        staffs: {
+          some: {
+            user_id: pageOptions.userId,
+          },
+        },
+      })
+    }
+
     const { data = [], paginated } =
       await cursorHelper<Prisma.OrganizationGetPayload<{}>>({
         query: this.rbacDBService.organization,
         pageOptions,
         cursorField: SortableFieldEnum.CREATED_AT,
         orderDirection: SortedEnum.DESC,
+        ...filterOptions.length > 0 && {
+          filterOptions,
+          include: {
+            staffs: {
+              select: {
+                user_id: true
+              }
+            }
+          },
+        },
       });
 
     return {

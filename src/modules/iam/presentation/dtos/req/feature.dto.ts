@@ -53,7 +53,15 @@ export class UpdateFeatureDto {
 }
 
 export class PaginateFeaturesQuery extends BasePageOptionDto {
+  @ApiProperty({ required: false })
+  @IsString()
+  @IsOptional()
+  project_id?: string;
 }
 
 export class CursorFeaturesQuery extends BaseCursorPageOptionDto {
+  @ApiProperty({ required: false })
+  @IsString()
+  @IsOptional()
+  project_id?: string;
 }

@@ -12,7 +12,7 @@ export class StaffQueryHandler {
     ) { }
 
     @LogExecutionTime()
-    async handleStaffsGrowthByMonth(orgId: string): Promise<{ month: string; count: number }[]> {
-        return await this.staffRepo.staffsGrowthByMonthByOrgId(orgId);
+    async handleStaffsGrowthByOrgId(orgId: string, period?: string): Promise<{ date: string; count: number }[]> {
+        return await this.staffRepo.staffGrowthByOrgId(orgId, period);
     }
 }
