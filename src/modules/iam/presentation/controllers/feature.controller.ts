@@ -44,7 +44,7 @@ import { MyClsStore } from '@/common/interfaces/cls-store.interface';
 import { CheckAbac } from '@/common/decorators/check-abac.decorator';
 import { HeadersAuthGuard } from '../guards/headers-auth.guard';
 import { GetFeatureByIdQuery, GetFeatureBySlugQuery } from '../../application/dtos/queries/feature-query.dto';
-import { StatsGrowInfo } from '@/common/interfaces/stats.interface';
+import { StatsGrowInfo, StatsPercentInfo } from '@/common/interfaces/stats.interface';
 
 const name = 'features';
 
@@ -56,6 +56,18 @@ export class FeatureController {
     private readonly queryHandler: FeatureQueryHandler,
     private readonly cls: ClsService<MyClsStore>,
   ) { }
+
+  @Get('percent-growth')
+  @ApiOperation({ summary: 'Get feature percent growth stats' })
+  @ApiBearerAuth()
+  @HeaderKey(HeaderKeys.ORG_ID)
+  @UseGuards(JwtAuthGuard, HeadersAuthGuard)
+  async percentGrowth(
+    @GetHeaderKey(HeaderKeys.ORG_ID) orgId: string,
+    @Query('period') period: string,
+  ): Promise<StatsPercentInfo> {
+    return await this.queryHandler.percentGrowth(orgId, period);
+  }
 
   @Get('growth/:orgId')
   @ApiOperation({ summary: 'Get feature growth stats' })

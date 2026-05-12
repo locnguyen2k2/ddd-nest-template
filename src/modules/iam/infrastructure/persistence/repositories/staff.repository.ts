@@ -13,7 +13,6 @@ import { cursorHelper, paginateHelper, SortableFieldEnum, SortedEnum } from "@/c
 import { Prisma } from "@internal/rbac/client";
 import { BusinessException } from "@/common/http/business-exception";
 import { ErrorEnum } from "@/common/exception.enum";
-import { Period } from "@/common/enum";
 import { StatsGrowInfo } from "@/common/interfaces/stats.interface";
 
 @Injectable()
@@ -31,15 +30,55 @@ export class StaffRepository extends CacheRepository implements IStaffRepository
         super(redisConfig, cachePort)
     }
 
-    private readonly staffGrowth = {
-        [Period.WEEK]: async (orgId: string) => this.orgStaffGrowthByWeek(orgId),
-        [Period.MONTH]: async (orgId: string) => this.orgStaffGrowthByMonth(orgId),
-        [Period.DAY]: async (orgId: string) => this.orgStaffGrowthByDay(orgId),
-        [Period.YEAR]: async (orgId: string) => this.orgStaffGrowthByYear(orgId),
-    };
+    async countBeforeByMonth(org_id: string): Promise<number> {
+        try {
+            const result = await this.rbacDBService.$queryRaw<{ count: number }[]>`
+            WITH month_info AS (
+                SELECT
+                    DATE_TRUNC('month', CURRENT_DATE)::date AS month_start,
+                    (DATE_TRUNC('month', CURRENT_DATE) + INTERVAL '1 month - 1 day')::date AS month_end
+            ),
+                month_days AS (
+                    SELECT (month_end - month_start + 1) AS days_in_month
+                    FROM month_info
+                )
+            SELECT COUNT(*)::int
+            FROM "Staff"
+            WHERE created_at < CURRENT_DATE - (SELECT days_in_month - 1 FROM month_days) * INTERVAL '1 day' AND organization_id = ${org_id};
+            `
+            return result[0].count;
+        } catch (e: any) {
+            throw new BusinessException(ErrorEnum.REQUEST_FAILED_TO_QUERY)
+        }
+    }
 
-    async staffGrowthByOrgId(orgId: string, period?: string) {
-        return await this.staffGrowth[period || Period.MONTH](orgId);
+    async countByMonth(org_id: string): Promise<number> {
+        try {
+            const result = await this.rbacDBService.$queryRaw<{ count: number }[]>`
+            WITH month_info AS (
+                SELECT
+                    DATE_TRUNC('month', CURRENT_DATE)::date AS month_start,
+                    (DATE_TRUNC('month', CURRENT_DATE) + INTERVAL '1 month - 1 day')::date AS month_end
+            ),
+                month_days AS (
+                    SELECT (month_end - month_start + 1) AS days_in_month
+                    FROM month_info
+                ),
+                range_start AS (
+                    SELECT CURRENT_DATE - (days_in_month - 1) * INTERVAL '1 day' AS start_date
+            FROM month_days
+                )
+            SELECT
+                COUNT(*)::int AS count
+            FROM "Staff" prj
+                JOIN range_start r
+            ON prj.created_at >= r.start_date
+            WHERE DATE(prj.created_at) <= CURRENT_DATE AND prj.organization_id = ${org_id};
+              `;
+            return result[0].count;
+        } catch (e: any) {
+            throw new BusinessException(ErrorEnum.REQUEST_FAILED_TO_EXECUTE, e.message);
+        }
     }
 
     async orgStaffGrowthByMonth(orgId: string): Promise<StatsGrowInfo> {

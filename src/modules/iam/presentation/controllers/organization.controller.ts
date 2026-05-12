@@ -48,6 +48,7 @@ import { CheckAbac } from '../../../../common/decorators/check-abac.decorator';
 import { AbacGuard } from '../guards/abac.guard';
 import { TenantContextGuard } from '../guards/tenant-context.guard';
 import { PermissionAction } from '@/common/enum';
+import { StatsPercentInfo } from '@/common/interfaces/stats.interface';
 
 const name = 'organizations'
 
@@ -58,6 +59,23 @@ export class OrganizationController {
     private readonly commandHandler: OrganizationCommandHandler,
     private readonly queryHandler: OrganizationQueryHandler,
   ) { }
+
+  @Get('percent-growth')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get organization percent growth' })
+  @ApiResponse({
+    status: 200,
+    description: 'Organization percent growth retrieved successfully',
+    type: Object,
+  })
+  @HeaderKey(HeaderKeys.ORG_ID)
+  @UseGuards(JwtAuthGuard, HeadersAuthGuard)
+  async percent(
+    @Query('period') period: string,
+    @User() user: IPayload,
+  ): Promise<StatsPercentInfo> {
+    return await this.queryHandler.handlePercentByMonth(user.sub, period);
+  }
 
   @Get()
   @ApiBearerAuth()

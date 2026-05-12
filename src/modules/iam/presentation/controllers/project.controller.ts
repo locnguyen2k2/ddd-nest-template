@@ -43,7 +43,7 @@ import { JwtAuthGuard } from '../guards/jwt-auth.guard';
 import { TenantContextGuard } from '../guards/tenant-context.guard';
 import { AbacGuard } from '../guards/abac.guard';
 import { CheckAbac } from '../../../../common/decorators/check-abac.decorator';
-import { HeaderKey, User } from '@/common/decorators'
+import { GetHeaderKey, HeaderKey, User } from '@/common/decorators'
 import { ClsService } from 'nestjs-cls';
 import { MyClsStore } from '@/common/interfaces/cls-store.interface';
 import { CreateProjectArgs, UpdateProjectArgs, DeleteProjectArgs } from '../../application/dtos/commands/project-cmd.dto';
@@ -60,6 +60,24 @@ export class ProjectController {
     private readonly prjectQueryHandler: ProjectQueryHandler,
     private readonly cls: ClsService<MyClsStore>,
   ) { }
+
+  @Get('percent-growth')
+  @ApiOperation({ summary: 'Get project percent growth' })
+  @ApiResponse({
+    status: 200,
+    description: 'Project percent growth',
+    type: Number,
+  })
+  @ApiResponse({ status: 400, description: 'Bad Request' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 403, description: 'Forbidden' })
+  @ApiResponse({ status: 404, description: 'Not Found' })
+  @ApiResponse({ status: 500, description: 'Internal Server Error' })
+  @HeaderKey(HeaderKeys.ORG_ID)
+  @UseGuards(JwtAuthGuard, HeadersAuthGuard)
+  async percentGrowth(@Query('period') period: string, @GetHeaderKey(HeaderKeys.ORG_ID) orgId: string) {
+    return await this.prjectQueryHandler.percentGrowth(orgId, period);
+  }
 
   // CREATE
   @Post()

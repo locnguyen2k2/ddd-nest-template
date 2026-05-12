@@ -3,6 +3,7 @@ import {
     ICursor,
 } from '@/shared/domain/repositories/base.repository';
 import { Staffs } from '../entities/staffs.entity';
+import { StatsGrowInfo } from '@/common/interfaces/stats.interface';
 
 export const STAFF_REPO = Symbol('STAFF_REPO');
 export interface IStaffRepository
@@ -16,5 +17,11 @@ export interface IStaffRepository
     update(id: string, data: Staffs): Promise<Staffs>;
     delete(id: string): Promise<void>;
 
-    staffGrowthByOrgId(orgId: string, period?: string): Promise<{ date: string; count: number }[]>
+    orgStaffGrowthByMonth(orgId: string): Promise<StatsGrowInfo>
+    orgStaffGrowthByYear(orgId: string): Promise<StatsGrowInfo>
+    orgStaffGrowthByWeek(orgId: string): Promise<StatsGrowInfo>
+    orgStaffGrowthByDay(orgId: string): Promise<StatsGrowInfo>
+
+    countBeforeByMonth(org_id: string): Promise<number>
+    countByMonth(org_id: string): Promise<number>
 }

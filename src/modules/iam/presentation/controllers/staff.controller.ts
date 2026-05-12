@@ -12,10 +12,12 @@ import {
     ApiParam,
     ApiBearerAuth,
 } from '@nestjs/swagger';
-import { API_VERS } from '@/common/constant';
+import { API_VERS, HeaderKeys } from '@/common/constant';
 import { JwtAuthGuard } from '@/modules/iam/presentation/guards/jwt-auth.guard';
 import { StaffQueryHandler } from '@/modules/iam/application/services/staffs/query.handler';
 import { Period } from '@/common/enum';
+import { GetHeaderKey, HeaderKey } from '@/common/decorators';
+import { HeadersAuthGuard } from '@/modules/iam/presentation/guards/headers-auth.guard';
 
 @ApiTags('staffs')
 @Controller(API_VERS.V1 + '/staffs')
@@ -23,6 +25,25 @@ export class StaffController {
     constructor(
         private readonly queryHandler: StaffQueryHandler,
     ) { }
+    @Get('percent-growth')
+    @ApiOperation({ summary: 'Get staff percent growth' })
+    @ApiResponse({
+        status: 200,
+        description: 'Staff percent growth',
+        type: Number,
+    })
+    @ApiResponse({ status: 400, description: 'Bad Request' })
+    @ApiResponse({ status: 401, description: 'Unauthorized' })
+    @ApiResponse({ status: 403, description: 'Forbidden' })
+    @ApiResponse({ status: 404, description: 'Not Found' })
+    @ApiResponse({ status: 500, description: 'Internal Server Error' })
+    @HeaderKey(HeaderKeys.ORG_ID)
+    @UseGuards(JwtAuthGuard, HeadersAuthGuard)
+    async percentGrowth(@Query('period') period: string, @GetHeaderKey(HeaderKeys.ORG_ID) orgId: string) {
+        return await this.queryHandler.percentGrowth(orgId, period);
+    }
+
+
     @Get('growth/:orgId')
     @ApiBearerAuth()
     @UseGuards(JwtAuthGuard)

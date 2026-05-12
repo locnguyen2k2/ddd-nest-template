@@ -17,4 +17,7 @@ export interface IProjectRepository
   ): Promise<ProjectEntity | null>;
   update(id: string, project: ProjectEntity): Promise<ProjectEntity>;
   delete(id: string): Promise<void>;
+
+  countBeforeByMonth(org_id: string): Promise<number>
+  countByMonth(org_id: string): Promise<number>
 }

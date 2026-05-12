@@ -23,7 +23,6 @@ import { Feature } from '@/modules/iam/domain/entities/feature.entity';
 import { BusinessException } from '@/common/http/business-exception';
 import { ErrorEnum } from '@/common/exception.enum';
 import { StatsGrowInfo } from '@/common/interfaces/stats.interface';
-import { Period } from '@/common/enum';
 
 @Injectable()
 export class FeatureRepository
@@ -43,15 +42,56 @@ export class FeatureRepository
         super(redisConfig, cachePort);
     }
 
-    private readonly statsGrowth = {
-        [Period.WEEK]: async (organization_id: string) => this.growthByWeek(organization_id),
-        [Period.MONTH]: async (organization_id: string) => this.growthByMonth(organization_id),
-        [Period.DAY]: async (organization_id: string) => this.growthByDay(organization_id),
-        [Period.YEAR]: async (organization_id: string) => this.growthByYear(organization_id),
-    };
+    async countBeforeByMonth(org_id: string): Promise<number> {
+        try {
+            const result = await this.rbacDBService.$queryRaw<{ count: number }[]>`
+            WITH month_info AS (
+                SELECT
+                    DATE_TRUNC('month', CURRENT_DATE)::date AS month_start,
+                    (DATE_TRUNC('month', CURRENT_DATE) + INTERVAL '1 month - 1 day')::date AS month_end
+            ),
+                month_days AS (
+                    SELECT (month_end - month_start + 1) AS days_in_month
+                    FROM month_info
+                )
+            SELECT COUNT(*)::int
+            FROM "Feature" LEFT JOIN "Project" ON "Feature"."project_id" = "Project"."id"
+            WHERE "Feature"."created_at" < CURRENT_DATE - (SELECT days_in_month - 1 FROM month_days) * INTERVAL '1 day' AND "Project"."organization_id" = ${org_id};
+      `
+            return result[0].count;
+        } catch (e: any) {
+            throw new BusinessException(ErrorEnum.REQUEST_FAILED_TO_QUERY)
+        }
+    }
 
-    async growth(organization_id: string, period?: string): Promise<StatsGrowInfo> {
-        return await this.statsGrowth[period || Period.MONTH](organization_id);
+    async countByMonth(org_id: string): Promise<number> {
+        try {
+            const result = await this.rbacDBService.$queryRaw<{ count: number }[]>`
+            WITH month_info AS (
+                SELECT
+                    DATE_TRUNC('month', CURRENT_DATE)::date AS month_start,
+                    (DATE_TRUNC('month', CURRENT_DATE) + INTERVAL '1 month - 1 day')::date AS month_end
+            ),
+                month_days AS (
+                    SELECT (month_end - month_start + 1) AS days_in_month
+                    FROM month_info
+                ),
+                range_start AS (
+                    SELECT CURRENT_DATE - (days_in_month - 1) * INTERVAL '1 day' AS start_date
+            FROM month_days
+                )
+            SELECT
+                COUNT(*)::int AS count
+            FROM "Feature" f
+                JOIN "Project" p ON f."project_id" = p."id"
+                JOIN range_start r
+            ON f."created_at" >= r.start_date
+            WHERE DATE(f."created_at") <= CURRENT_DATE AND p."organization_id" = ${org_id};
+              `;
+            return result[0].count;
+        } catch (e: any) {
+            throw new BusinessException(ErrorEnum.REQUEST_FAILED_TO_EXECUTE, e.message);
+        }
     }
 
     async growthByMonth(organization_id: string,): Promise<StatsGrowInfo> {
@@ -84,11 +124,9 @@ export class FeatureRepository
                     COUNT(*)::int AS count,
                      "Project"."organization_id" as "organization_id"
                 FROM "Feature" u 
-                    JOIN range_start r
-                        ON u.created_at >= r.start_date AND
-                    left join "Project" on "Project"."id" = "Feature"."project_id" 
-                WHERE DATE(u.created_at) <= CURRENT_DATE 
-                    AND "organization_id" = ${organization_id}
+                LEFT JOIN "Project" on "Project"."id" = u."project_id"
+                JOIN range_start r ON u.created_at >= r.start_date
+                WHERE DATE(u.created_at) <= CURRENT_DATE AND "organization_id" = ${organization_id}
                 GROUP BY DATE(u.created_at), "organization_id"
                 ORDER BY DATE(u.created_at);
             `;
@@ -135,6 +173,16 @@ export class FeatureRepository
             if (data.length === 0) {
                 return result;
             }
+            let max = { label: '', value: 0 };
+            let min = { label: '', value: 0 };
+            data.forEach((item) => {
+                if (item.count > max.value) {
+                    max = { label: new Date(item.date).toISOString(), value: item.count };
+                }
+                if (item.count < min.value) {
+                    min = { label: new Date(item.date).toISOString(), value: item.count };
+                }
+            });
             return {
                 data: {
                     labels: data.map((item) => new Date(item.date).toISOString()),
@@ -143,6 +191,8 @@ export class FeatureRepository
                 title: 'Year Growth',
                 from: new Date(data[0].date).toISOString(),
                 to: new Date(data[data.length - 1].date).toISOString(),
+                max,
+                min,
             };
         } catch (e: any) {
             throw new BusinessException(ErrorEnum.REQUEST_FAILED_TO_EXECUTE, e.message);
@@ -183,6 +233,8 @@ export class FeatureRepository
                 title: 'Week Growth',
                 from: data[0].date.toISOString(),
                 to: data[data.length - 1].date.toISOString(),
+                max: { label: '', value: 0 },
+                min: { label: '', value: 0 },
             };
         } catch (e: any) {
             throw new BusinessException(ErrorEnum.REQUEST_FAILED_TO_EXECUTE, e.message);
@@ -199,6 +251,8 @@ export class FeatureRepository
                 title: 'Day Growth',
                 from: '',
                 to: '',
+                max: { label: '', value: 0 },
+                min: { label: '', value: 0 },
             }
             const data = await this.rbacDBService.$queryRaw<{ date: Date, count: number }[]>`
             SELECT
@@ -213,19 +267,29 @@ export class FeatureRepository
             ORDER BY date_trunc('hour', "Feature"."created_at");
             `;
 
-            console.log(data);
-
             if (data.length === 0) {
                 return result;
             }
+            let max = { label: '', value: 0 };
+            let min = { label: '', value: 0 };
             return {
                 data: {
-                    labels: data.map((item) => item.date.toISOString()),
+                    labels: data.map((item) => {
+                        if (item.count > max.value) {
+                            max = { label: item.date.toISOString(), value: item.count };
+                        }
+                        if (item.count < min.value) {
+                            min = { label: item.date.toISOString(), value: item.count };
+                        }
+                        return item.date.toISOString();
+                    }),
                     values: data.map((item) => item.count),
                 },
                 title: 'Day Growth',
                 from: data[0].date.toISOString(),
                 to: data[data.length - 1].date.toISOString(),
+                max,
+                min,
             };
         } catch (e: any) {
             throw new BusinessException(ErrorEnum.REQUEST_FAILED_TO_EXECUTE, e.message);

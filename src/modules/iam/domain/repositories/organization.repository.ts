@@ -33,4 +33,8 @@ export interface IOrganizationRepository extends IPaginate<Organization>, ICurso
   handleListOrganizationsByJoiner(query: PaginateOrganizationsQuery, joinerId: string);
   cursorPaginationByJoiner(query: CursorOrganizationsQuery, joinerId: string): Promise<CursorPageDto<Organization>>;
   findStaffs(userId: string): Promise<Organization[]>
+
+  percentByMonth(user_id: string): Promise<number>
+  countBeforeByMonth(user_id: string): Promise<number>
+  countByMonth(user_id: string): Promise<number>
 }
