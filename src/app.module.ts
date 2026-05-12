@@ -5,6 +5,7 @@ import { SharedModules } from '@/shared/shared.modules';
 import { ScheduleModule } from '@nestjs/schedule';
 import { IamModule } from '@/modules/iam/iam.module';
 import { ClsModule } from 'nestjs-cls';
+import { AppController } from './app.controller';
 
 const modules = [IamModule];
 
@@ -24,6 +25,10 @@ const modules = [IamModule];
     }),
     SharedModules,
     ...modules,
+  ],
+
+  controllers: [
+    AppController,
   ],
 
   providers: [
