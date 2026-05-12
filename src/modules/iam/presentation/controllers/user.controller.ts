@@ -14,7 +14,7 @@ import {
   ApiBearerAuth,
 } from '@nestjs/swagger';
 import { RegisterUserDto, LoginUserDto, VerifyAccessTokenDto, RefreshTokenDto, LogoutDto } from '@/modules/iam/presentation/dtos/req/user.dto';
-import { AuthResponseDto, UserResponseDto, TokenResponseDto } from '@/modules/iam/presentation/dtos/res/user-response.dto';
+import { AuthResponseDto, UserResponseDto, TokenResponseDto, CaptchaResponseDto } from '@/modules/iam/presentation/dtos/res/user-response.dto';
 import { UserCmdHandler } from '@/modules/iam/application/services/user/command.handler';
 import { AuthCmdHandler } from '@/modules/iam/application/services/auth/command.handler';
 import { RegisterUserArgs } from '@/modules/iam/application/dtos/commands/user-cmd.dto';
@@ -75,6 +75,18 @@ export class UserController {
     return await this.userCmdHandler.register(command);
   }
 
+  @Post('captcha')
+  @ApiOperation({ summary: 'Get captcha' })
+  @ApiResponse({
+    status: 200,
+    description: 'Captcha retrieved successfully',
+    type: CaptchaResponseDto,
+  })
+  @HttpCode(HttpStatus.OK)
+  async captcha(): Promise<CaptchaResponseDto> {
+    return await this.authCmdHandler.reCaptcha();
+  }
+
   @Post('login')
   @ApiOperation({ summary: 'Login user' })
   @ApiResponse({
@@ -91,6 +103,8 @@ export class UserController {
       const command: LoginArgs = {
         username: loginUserDto.username,
         password: loginUserDto.password,
+        captchaId: loginUserDto.captcha_id,
+        captcha: loginUserDto.captcha,
       };
 
       return await this.authCmdHandler.login(command);

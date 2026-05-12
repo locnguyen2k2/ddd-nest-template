@@ -3,10 +3,10 @@ import { Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { JwtAdapter } from "@/shared/infrastructure/adapters/jwt.adapter";
 import { UserRepository } from "@/modules/iam/infrastructure/persistence/repositories/user.repository";
-import { SessionCacheRepository, TokenBlacklistCacheRepository } from "@/modules/iam/infrastructure/persistence/repositories/auth-cache.repository";
+import { SessionCacheRepository, TokenBlacklistCacheRepository, CaptchaCacheRepository } from "@/modules/iam/infrastructure/persistence/repositories/auth-cache.repository";
 import { AuthDomainService } from "@/modules/iam/domain/services/auth.service";
 import { UserEntity } from "@/modules/iam/domain/entities/user.entity";
-import { TokenResponseDto } from "@/modules/iam/presentation/dtos/res/user-response.dto";
+import { CaptchaResponseDto, TokenResponseDto } from "@/modules/iam/presentation/dtos/res/user-response.dto";
 import { BcryptAdapter } from "@/shared/infrastructure/adapters/bcrypt.adapter";
 
 export const AUTH_WRAPPER_CMD_HANDLER = 'AUTH_WRAPPER_CMD_HANDLER'
@@ -22,6 +22,7 @@ export class AuthWrapperCmdHandler {
         private readonly sessionRepo: SessionCacheRepository,
         private readonly blacklistRepo: TokenBlacklistCacheRepository,
         private readonly bcryptAdapter: BcryptAdapter,
+        private readonly captchaRepo: CaptchaCacheRepository,
     ) {
         this.jwtConfigs = this.configService.get<IJwtConfig>(jwtConfigKey)!;
         this.domainService = new AuthDomainService(
@@ -31,7 +32,21 @@ export class AuthWrapperCmdHandler {
             this.sessionRepo,
             this.blacklistRepo,
             this.bcryptAdapter,
+            this.captchaRepo,
         );
+    }
+
+    async reCaptcha(): Promise<CaptchaResponseDto> {
+        const result = await this.domainService.reCaptcha();
+        return {
+            captcha_id: result.captchaId,
+            captcha: result.captcha,
+        };
+    }
+
+    async verifyCaptcha(captchaId: string, captcha: string): Promise<boolean> {
+        await this.domainService.validateCaptcha(captchaId, captcha);
+        return true;
     }
 
     async validateUser(username: string, password: string): Promise<UserEntity> {

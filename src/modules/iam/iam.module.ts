@@ -21,10 +21,12 @@ import { PROJECT_REPO } from './domain/repositories/project.repository';
 import { AuthCmdHandler } from './application/services/auth/command.handler';
 import { AuthDomainService } from './domain/services/auth.service';
 import {
+  CAPTCHA_REPO,
   SESSION_REPO,
   TOKEN_BLACKLIST_REPO,
 } from './domain/repositories/auth.repository';
 import {
+  CaptchaCacheRepository,
   SessionCacheRepository,
   TokenBlacklistCacheRepository,
 } from './infrastructure/persistence/repositories/auth-cache.repository';
@@ -156,11 +158,16 @@ const authProviders = [
   AuthDomainService,
   SessionCacheRepository,
   TokenBlacklistCacheRepository,
+  CaptchaCacheRepository,
   AuthWrapperCmdHandler,
   {
     provide: SESSION_REPO,
     useClass: SessionCacheRepository,
   },
+  {
+    provide: CAPTCHA_REPO,
+    useClass: CaptchaCacheRepository,
+  }, 
   {
     provide: TOKEN_BLACKLIST_REPO,
     useClass: TokenBlacklistCacheRepository,

@@ -68,6 +68,16 @@ export class LoginUserDto {
   @IsString()
   @Validate(PasswordValidator)
   password!: string;
+  
+  @ApiProperty()
+  @IsNotEmpty()
+  @IsString()
+  captcha_id!: string;
+  
+  @ApiProperty()
+  @IsNotEmpty()
+  @IsString()
+  captcha!: string;
 }
 
 export class UpdateProfileDto {
@@ -108,6 +118,18 @@ export class RefreshTokenDto {
   @IsNotEmpty()
   @IsString()
   refresh_token!: string;
+}
+
+export class CaptchaDto {
+  @ApiProperty()
+  @IsNotEmpty()
+  @IsString()
+  captcha_id!: string;
+  
+  @ApiProperty()
+  @IsNotEmpty()
+  @IsString()
+  captcha!: string;
 }
 
 export class LogoutDto {

@@ -98,3 +98,19 @@ export class AuthResponseDto {
     this.token = token;
   }
 }
+
+export class CaptchaResponseDto {
+  @ApiProperty()
+  @IsString()
+  captcha_id: string;
+  
+  @ApiProperty()
+  @IsString()
+  captcha: string;
+  
+  constructor(captcha_id: string, captcha: string) {
+    this.captcha_id = captcha_id;
+    this.captcha = captcha;
+  }
+}
+

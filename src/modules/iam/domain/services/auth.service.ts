@@ -8,7 +8,7 @@ import {
 import { UserEntity } from '../entities/user.entity';
 import { JwtAdapter } from '@/shared/infrastructure/adapters/jwt.adapter';
 import { UserRepository } from '../../infrastructure/persistence/repositories/user.repository';
-import { SessionCacheRepository, TokenBlacklistCacheRepository } from '../../infrastructure/persistence/repositories/auth-cache.repository';
+import { SessionCacheRepository, TokenBlacklistCacheRepository, CaptchaCacheRepository } from '../../infrastructure/persistence/repositories/auth-cache.repository';
 import { BcryptAdapter } from '@/shared/infrastructure/adapters/bcrypt.adapter';
 import { REGEX } from '@/common/constant';
 
@@ -27,7 +27,16 @@ export class AuthDomainService {
         private readonly sessionRepo: SessionCacheRepository,
         private readonly blacklistRepo: TokenBlacklistCacheRepository,
         private readonly bcryptAdapter: BcryptAdapter,
+        private readonly captchaRepo: CaptchaCacheRepository,
     ) {
+    }
+
+    async reCaptcha(): Promise<{ captchaId: string, captcha: string }> {
+        return await this.captchaRepo.getCaptcha();
+    }
+    
+    async validateCaptcha(captchaId: string, captcha: string): Promise<void> {
+        return await this.captchaRepo.confirmedCaptcha({ captchaId, captcha });
     }
 
     async prepareTokens(user: UserEntity): Promise<{

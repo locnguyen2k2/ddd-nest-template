@@ -5,7 +5,7 @@ import {
     RefreshTokenArgs,
     VerifyAccessTokenArgs,
 } from '../../dtos/commands/auth-cmd.dto';
-import { AuthResponseDto, TokenResponseDto, UserResponseDto } from '@/modules/iam/presentation/dtos/res/user-response.dto';
+import { AuthResponseDto, CaptchaResponseDto, TokenResponseDto, UserResponseDto } from '@/modules/iam/presentation/dtos/res/user-response.dto';
 import { BusinessException } from '@/common/http/business-exception';
 import { ErrorEnum } from '@/common/exception.enum';
 import { AuthMapper } from '@/modules/iam/infrastructure/persistence/mappers/auth.mapper';
@@ -23,9 +23,17 @@ export class AuthCmdHandler {
     ) { }
 
     @LogExecutionTime()
+    async reCaptcha(): Promise<CaptchaResponseDto> {
+        return await this.authWrapperCmdHandler.reCaptcha();
+    }
+
+    @LogExecutionTime()
     async login(args: LoginArgs): Promise<AuthResponseDto> {
         try {
-            const validUser = await this.authWrapperCmdHandler.validateUser(args.username, args.password);
+            const [validUser] = await Promise.all([
+                this.authWrapperCmdHandler.validateUser(args.username, args.password),
+                this.authWrapperCmdHandler.verifyCaptcha(args.captchaId, args.captcha),
+            ]);
             const [tokenInfo, orgs] = await Promise.all([
                 this.authWrapperCmdHandler.prepareTokens(validUser),
                 this.orgRepo.findByIds(validUser.organizations.map(org => org.organization_id)),

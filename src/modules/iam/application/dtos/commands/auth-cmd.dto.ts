@@ -1,6 +1,8 @@
 export interface LoginArgs {
   username: string;
   password: string;
+  captchaId: string;
+  captcha: string;
 }
 
 export interface LogoutArgs {
