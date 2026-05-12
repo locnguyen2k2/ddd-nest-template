@@ -36,7 +36,6 @@ export class StaffController {
     @ApiResponse({ status: 401, description: 'Unauthorized' })
     @ApiResponse({ status: 403, description: 'Forbidden' })
     @ApiResponse({ status: 404, description: 'Not Found' })
-    @ApiResponse({ status: 500, description: 'Internal Server Error' })
     @HeaderKey(HeaderKeys.ORG_ID)
     @UseGuards(JwtAuthGuard, HeadersAuthGuard)
     async percentGrowth(@Query('period') period: string, @GetHeaderKey(HeaderKeys.ORG_ID) orgId: string) {
