@@ -19,13 +19,17 @@ import { Period } from '@/common/enum';
 import { GetHeaderKey, HeaderKey } from '@/common/decorators';
 import { HeadersAuthGuard } from '@/modules/iam/presentation/guards/headers-auth.guard';
 
-@ApiTags('staffs')
-@Controller(API_VERS.V1 + '/staffs')
+const name = 'staffs';
+
+@ApiTags(name)
+@Controller(API_VERS.V1 + `/${name}`)
 export class StaffController {
     constructor(
         private readonly queryHandler: StaffQueryHandler,
     ) { }
     @Get('percent-growth')
+    @ApiBearerAuth()
+    @UseGuards(JwtAuthGuard)
     @ApiOperation({ summary: 'Get staff percent growth' })
     @ApiResponse({
         status: 200,
