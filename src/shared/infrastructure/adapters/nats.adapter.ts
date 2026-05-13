@@ -17,8 +17,9 @@ export class NatsAdapter implements OnModuleInit {
   async onModuleInit() {
     console.log('🚀 ~ NatsAdapter ~ onModuleInit ~ this.configs:', this.configs);
     this.nats = await connect({
-      servers: this.configs.url,
-      timeout: 60000,
+      servers: [this.configs.url],
+      user: this.configs.user,
+      pass: this.configs.pass,
     });
     console.log('🚀 ~ NatsAdapter ~ onModuleInit ~ this.nats:', this.nats);
   }
