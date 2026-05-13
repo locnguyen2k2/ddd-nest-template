@@ -1,7 +1,7 @@
 import { USER_REPO } from '@/modules/iam/domain/repositories/user.repository';
 import { UserRepository } from '@/modules/iam/infrastructure/persistence/repositories/user.repository';
 import { Inject, Injectable } from '@nestjs/common';
-import { RegisterUserArgs, UpdateProfileArgs } from '../../dtos/commands/user-cmd.dto';
+import { RegisterUserArgs, UpdateProfileArgs } from '../../dtos/commands/auth-cmd.dto';
 import { IEntityID } from '@/shared/domain/entities/base.entity';
 import { uuidv7 } from 'uuidv7';
 import { UserEntity } from '@/modules/iam/domain/entities/user.entity';
@@ -35,17 +35,24 @@ export class UserCmdHandler {
     const hashedPassword = this.authService.hash(args.password);
     const password: Password = Password.create(hashedPassword);
 
-    const [isUsernameExisted, isEmailExisted] =
-      await Promise.all([
-        await this.userService.usernameIsExisted(args.username),
-        await this.userService.emailIsExisted(args.email),
-      ]);
+    if (!this.userService.isUsername(args.username) && !this.userService.isEmail(args.username)) {
+      throw new BusinessException('400|Invalid username');
+    }
+    if (!this.userService.isEmail(args.email)) {
+      throw new BusinessException('400|Invalid email');
+    }
 
-    switch (true) {
-      case isUsernameExisted:
-        throw new BusinessException('400|Username is already taken');
-      case !!isEmailExisted:
-        throw new BusinessException('400|Email is already taken');
+    const [isUsernameExisted, isEmailExisted] = await Promise.all([
+      this.userRepo.findByUsername(args.username),
+      this.userRepo.findByEmail(args.email),
+      this.authService.verifyCaptcha(args.captchaId, args.captcha),
+    ]);
+
+    if (isUsernameExisted !== null) {
+      throw new BusinessException('400|Username is already taken');
+    }
+    if (isEmailExisted !== null) {
+      throw new BusinessException('400|Email is already taken');
     }
 
     const userDomain = UserEntity.create({

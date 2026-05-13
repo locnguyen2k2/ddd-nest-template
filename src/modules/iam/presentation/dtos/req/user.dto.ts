@@ -19,6 +19,18 @@ class PermissionDto {
   action!: string;
 }
 
+export class CaptchaDto {
+  @ApiProperty()
+  @IsNotEmpty()
+  @IsString()
+  captcha_id!: string;
+  
+  @ApiProperty()
+  @IsNotEmpty()
+  @IsString()
+  captcha!: string;
+}
+
 export class CheckPermissionDto {
   @ApiProperty({ type: [PermissionDto] })
   @ArrayMinSize(1)
@@ -27,7 +39,7 @@ export class CheckPermissionDto {
   permission!: PermissionDto[];
 }
 
-export class RegisterUserDto {
+export class RegisterUserDto extends CaptchaDto {
   @ApiProperty()
   @IsNotEmpty()
   @IsString()
@@ -56,7 +68,7 @@ export class RegisterUserDto {
   email!: string;
 }
 
-export class LoginUserDto {
+export class LoginUserDto extends CaptchaDto {
   @ApiProperty()
   @IsNotEmpty()
   @IsString()
@@ -68,16 +80,6 @@ export class LoginUserDto {
   @IsString()
   @Validate(PasswordValidator)
   password!: string;
-  
-  @ApiProperty()
-  @IsNotEmpty()
-  @IsString()
-  captcha_id!: string;
-  
-  @ApiProperty()
-  @IsNotEmpty()
-  @IsString()
-  captcha!: string;
 }
 
 export class UpdateProfileDto {
@@ -118,18 +120,6 @@ export class RefreshTokenDto {
   @IsNotEmpty()
   @IsString()
   refresh_token!: string;
-}
-
-export class CaptchaDto {
-  @ApiProperty()
-  @IsNotEmpty()
-  @IsString()
-  captcha_id!: string;
-  
-  @ApiProperty()
-  @IsNotEmpty()
-  @IsString()
-  captcha!: string;
 }
 
 export class LogoutDto {

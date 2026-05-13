@@ -8,6 +8,7 @@ import { BcryptAdapter } from './infrastructure/adapters/bcrypt.adapter';
 import { BCRYPT_PORT } from './application/ports/bcrypt.port';
 import { JSON_LOGIC_ENGINE } from './application/ports/json-log-engine.port';
 import { JsonLogicEngineAdapter } from './infrastructure/adapters/json-logic.adapter';
+import { NatsModule } from './infrastructure/nats.module';
 
 @Global()
 @Module({
@@ -16,6 +17,7 @@ import { JsonLogicEngineAdapter } from './infrastructure/adapters/json-logic.ada
     CacheModule,
     SwaggerModule,
     AblyModule,
+    NatsModule,
     JwtModule,
   ],
   providers: [PrismaAdapter, BcryptAdapter, JsonLogicEngineAdapter,
@@ -28,6 +30,6 @@ import { JsonLogicEngineAdapter } from './infrastructure/adapters/json-logic.ada
       useClass: JsonLogicEngineAdapter,
     }
   ],
-  exports: [CacheModule, SwaggerModule, AblyModule, JwtModule, PrismaAdapter, BcryptAdapter, JsonLogicEngineAdapter],
+  exports: [CacheModule, SwaggerModule, AblyModule, NatsModule, JwtModule, PrismaAdapter, BcryptAdapter, JsonLogicEngineAdapter],
 })
 export class SharedModules { }

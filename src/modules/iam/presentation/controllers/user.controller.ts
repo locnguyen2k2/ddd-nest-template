@@ -17,7 +17,7 @@ import { RegisterUserDto, LoginUserDto, VerifyAccessTokenDto, RefreshTokenDto, L
 import { AuthResponseDto, UserResponseDto, TokenResponseDto, CaptchaResponseDto } from '@/modules/iam/presentation/dtos/res/user-response.dto';
 import { UserCmdHandler } from '@/modules/iam/application/services/user/command.handler';
 import { AuthCmdHandler } from '@/modules/iam/application/services/auth/command.handler';
-import { RegisterUserArgs } from '@/modules/iam/application/dtos/commands/user-cmd.dto';
+import { RegisterUserArgs } from '@/modules/iam/application/dtos/commands/auth-cmd.dto';
 import { VerifyAccessTokenArgs, RefreshTokenArgs, LogoutArgs } from '@/modules/iam/application/dtos/commands/auth-cmd.dto';
 import { LoginArgs } from '@/modules/iam/application/dtos/commands/auth-cmd.dto';
 import { API_VERS } from '@/common/constant';
@@ -70,6 +70,8 @@ export class UserController {
       first_name: registerUserDto.first_name,
       last_name: registerUserDto.last_name,
       email: registerUserDto.email,
+      captchaId: registerUserDto.captcha_id,
+      captcha: registerUserDto.captcha,
     };
 
     return await this.userCmdHandler.register(command);

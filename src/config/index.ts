@@ -21,6 +21,7 @@ import {
 } from '@/config/database.config';
 import { ablyConfigKey, AblyConfig, IAblyConfig } from '@/config/ably.config';
 import { JwtConfig, jwtConfigKey, IJwtConfig } from '@/config/jwt.config';
+import { natsConfigKey, NatsConfig, INatsConfig } from '@/config/nats.config';
 
 export * from '@/config/redis.config';
 export * from '@/config/throttle.config';
@@ -29,6 +30,7 @@ export * from '@/config/swagger.config';
 export * from '@/config/database.config';
 export * from '@/config/ably.config';
 export * from '@/config/jwt.config';
+export * from '@/config/nats.config';
 
 export interface AllConfigTypes {
   [redisConfigKey]: IRedisConfig;
@@ -38,6 +40,7 @@ export interface AllConfigTypes {
   [databaseConfigKey]: IDatabaseConfig;
   [ablyConfigKey]: IAblyConfig;
   [jwtConfigKey]: IJwtConfig;
+  [natsConfigKey]: INatsConfig;
 }
 
 export type ConfigKeyPaths = RecordNamePaths<AllConfigTypes>;
@@ -50,4 +53,5 @@ export default {
   DatabaseConfig,
   AblyConfig,
   JwtConfig,
+  NatsConfig,
 };
