@@ -18,6 +18,6 @@ export interface IProjectRepository
   update(id: string, project: ProjectEntity): Promise<ProjectEntity>;
   delete(id: string): Promise<void>;
 
-  countBeforeByMonth(org_id: string): Promise<number>
-  countByMonth(org_id: string): Promise<number>
+  countBeforeByMonth(org_id: string): Promise<number>;
+  countByMonth(org_id: string): Promise<number>;
 }

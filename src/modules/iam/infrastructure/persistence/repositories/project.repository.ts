@@ -24,7 +24,10 @@ import { ConfigKeyPaths } from '@/config';
 import { CACHE_PORT, CachePort } from '@/shared/application/ports/cache.port';
 
 @Injectable()
-export class ProjectRepository extends CacheRepository implements IProjectRepository {
+export class ProjectRepository
+  extends CacheRepository
+  implements IProjectRepository
+{
   private readonly logger = new Logger(ProjectRepository.name);
   protected readonly boundedContext: string = 'iam';
   protected readonly aggregateType: string = 'project';
@@ -54,10 +57,10 @@ export class ProjectRepository extends CacheRepository implements IProjectReposi
       SELECT COUNT(*)::int
       FROM "Project"
       WHERE created_at < CURRENT_DATE - (SELECT days_in_month - 1 FROM month_days) * INTERVAL '1 day' AND organization_id = ${org_id};
-      `
+      `;
       return result[0].count;
     } catch (e: any) {
-      throw new BusinessException(ErrorEnum.REQUEST_FAILED_TO_QUERY)
+      throw new BusinessException(ErrorEnum.REQUEST_FAILED_TO_QUERY);
     }
   }
 
@@ -86,7 +89,10 @@ export class ProjectRepository extends CacheRepository implements IProjectReposi
               `;
       return result[0].count;
     } catch (e: any) {
-      throw new BusinessException(ErrorEnum.REQUEST_FAILED_TO_EXECUTE, e.message);
+      throw new BusinessException(
+        ErrorEnum.REQUEST_FAILED_TO_EXECUTE,
+        e.message,
+      );
     }
   }
 
@@ -102,11 +108,13 @@ export class ProjectRepository extends CacheRepository implements IProjectReposi
   }
 
   async findById(id: string): Promise<ProjectEntity | null> {
-    const prj = await this.getWithCache(id, async () =>
-      await this.rbacDBService.project.findFirst({
-        where: { id },
-        include: { department: true }
-      })
+    const prj = await this.getWithCache(
+      id,
+      async () =>
+        await this.rbacDBService.project.findFirst({
+          where: { id },
+          include: { department: true },
+        }),
     );
     if (!prj) {
       return null;
@@ -120,7 +128,7 @@ export class ProjectRepository extends CacheRepository implements IProjectReposi
   ): Promise<ProjectEntity | null> {
     const prj = await this.rbacDBService.project.findUnique({
       where: { slug, organization_id },
-      include: { department: true }
+      include: { department: true },
     });
 
     if (!prj) return null;
@@ -145,16 +153,17 @@ export class ProjectRepository extends CacheRepository implements IProjectReposi
   @LogExecutionTime()
   async paginate(pageOptions: PaginateProjectsQuery) {
     try {
-      const { data = [], paginated } =
-        await paginateHelper<ProjectResponseDto>({
+      const { data = [], paginated } = await paginateHelper<ProjectResponseDto>(
+        {
           query: this.rbacDBService.project,
           pageOptions,
           filterOptions: [
             {
               organization_id: pageOptions.organization_id,
-            }
+            },
           ],
-        });
+        },
+      );
 
       return {
         data: data,
@@ -169,18 +178,17 @@ export class ProjectRepository extends CacheRepository implements IProjectReposi
   @LogExecutionTime()
   async cursorPagination(pageOptions: CursorProjectsQuery) {
     try {
-      const { data = [], paginated } =
-        await cursorHelper<ProjectResponseDto>({
-          query: this.rbacDBService.project,
-          pageOptions,
-          cursorField: SortableFieldEnum.CREATED_AT,
-          orderDirection: SortedEnum.DESC,
-          filterOptions: [
-            {
-              organization_id: pageOptions.organization_id,
-            }
-          ],
-        });
+      const { data = [], paginated } = await cursorHelper<ProjectResponseDto>({
+        query: this.rbacDBService.project,
+        pageOptions,
+        cursorField: SortableFieldEnum.CREATED_AT,
+        orderDirection: SortedEnum.DESC,
+        filterOptions: [
+          {
+            organization_id: pageOptions.organization_id,
+          },
+        ],
+      });
 
       return {
         data: data,

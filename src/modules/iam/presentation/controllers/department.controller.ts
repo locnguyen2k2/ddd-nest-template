@@ -18,8 +18,17 @@ import {
   ApiParam,
   ApiBearerAuth,
 } from '@nestjs/swagger';
-import { CreateDepartmentDto, CursorDepartmentsQuery, PaginateDepartmentsQuery, UpdateDepartmentDto } from '../dtos/req/department.dto';
-import { CursorDepartmentsResponseDto, DepartmentResponseDto, PaginateDepartmentsResponseDto } from '../dtos/res/department-response.dto';
+import {
+  CreateDepartmentDto,
+  CursorDepartmentsQuery,
+  PaginateDepartmentsQuery,
+  UpdateDepartmentDto,
+} from '../dtos/req/department.dto';
+import {
+  CursorDepartmentsResponseDto,
+  DepartmentResponseDto,
+  PaginateDepartmentsResponseDto,
+} from '../dtos/res/department-response.dto';
 import { DepartmentCommandHandler } from '@/modules/iam/application/services/department/command.handler';
 import { DepartmentQueryHandler } from '@/modules/iam/application/services/department/query.handler';
 import { DepartmentMapper } from '@/modules/iam/infrastructure/persistence/mappers/department.mapper';
@@ -33,47 +42,49 @@ export class DepartmentController {
     private readonly commandHandler: DepartmentCommandHandler,
     private readonly queryHandler: DepartmentQueryHandler,
   ) {}
-  
-    @Get()
-    @ApiBearerAuth()
-    @UseGuards(JwtAuthGuard)
-    @ApiOperation({ summary: 'List departments with pagination' })
-    @ApiResponse({
-      status: 200,
-      description: 'Departments retrieved successfully',
-      type: PaginateDepartmentsResponseDto,
-    })
-    async pagination(
-      @Query() listQuery: PaginateDepartmentsQuery,
-    ): Promise<PaginateDepartmentsResponseDto> {
-      return await this.queryHandler.handlePaginate(listQuery);
-    }
 
-    @Get('cursor')
-    @ApiBearerAuth()
-    @UseGuards(JwtAuthGuard)
-    @ApiOperation({ summary: 'List departments with cursor pagination' })
-    @ApiResponse({
-      status: 200,
-      description: 'Departments retrieved successfully',
-      type: CursorDepartmentsResponseDto,
-    })
-    async cursorPagination(
-      @Query() listQuery: CursorDepartmentsQuery,
-    ): Promise<CursorDepartmentsResponseDto> {
-      const result = await this.queryHandler.handleCursorPaginate(listQuery);
-      return {
-        data: result.data.map((item) => DepartmentMapper.toResponseDto(item)),
-        paginated: result.paginated,
-      };
-    }
+  @Get()
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: 'List departments with pagination' })
+  @ApiResponse({
+    status: 200,
+    description: 'Departments retrieved successfully',
+    type: PaginateDepartmentsResponseDto,
+  })
+  async pagination(
+    @Query() listQuery: PaginateDepartmentsQuery,
+  ): Promise<PaginateDepartmentsResponseDto> {
+    return await this.queryHandler.handlePaginate(listQuery);
+  }
+
+  @Get('cursor')
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: 'List departments with cursor pagination' })
+  @ApiResponse({
+    status: 200,
+    description: 'Departments retrieved successfully',
+    type: CursorDepartmentsResponseDto,
+  })
+  async cursorPagination(
+    @Query() listQuery: CursorDepartmentsQuery,
+  ): Promise<CursorDepartmentsResponseDto> {
+    const result = await this.queryHandler.handleCursorPaginate(listQuery);
+    return {
+      data: result.data.map((item) => DepartmentMapper.toResponseDto(item)),
+      paginated: result.paginated,
+    };
+  }
 
   @Post()
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: 'Create a new department' })
   @ApiResponse({ status: 201, type: DepartmentResponseDto })
-  async create(@Body() dto: CreateDepartmentDto): Promise<DepartmentResponseDto> {
+  async create(
+    @Body() dto: CreateDepartmentDto,
+  ): Promise<DepartmentResponseDto> {
     const department = await this.commandHandler.handleCreateDepartment(dto);
     return DepartmentMapper.toResponseDto(department);
   }
@@ -84,8 +95,12 @@ export class DepartmentController {
   @ApiOperation({ summary: 'Get departments by organization ID' })
   @ApiParam({ name: 'orgId' })
   @ApiResponse({ status: 200, type: [DepartmentResponseDto] })
-  async findByOrgId(@Param('orgId') orgId: string): Promise<DepartmentResponseDto[]> {
-    const departments = await this.queryHandler.handleGetDepartmentsByOrgId({ organization_id: orgId });
+  async findByOrgId(
+    @Param('orgId') orgId: string,
+  ): Promise<DepartmentResponseDto[]> {
+    const departments = await this.queryHandler.handleGetDepartmentsByOrgId({
+      organization_id: orgId,
+    });
     return departments.map(DepartmentMapper.toResponseDto);
   }
 
@@ -113,7 +128,10 @@ export class DepartmentController {
     @Param('id') id: string,
     @Body() dto: UpdateDepartmentDto,
   ): Promise<DepartmentResponseDto> {
-    const department = await this.commandHandler.handleUpdateDepartment({ id, ...dto });
+    const department = await this.commandHandler.handleUpdateDepartment({
+      id,
+      ...dto,
+    });
     return DepartmentMapper.toResponseDto(department);
   }
 

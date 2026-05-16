@@ -25,7 +25,9 @@ export class ProjectMapper {
       updated_by: prj.updated_by || undefined,
       attributes: Attributes.create(prj.attributes),
       department_id: prj.department_id || undefined,
-      department: prj.department ? DepartmentMapper.toDomain(prj.department) : undefined,
+      department: prj.department
+        ? DepartmentMapper.toDomain(prj.department)
+        : undefined,
     });
   }
 
@@ -42,7 +44,9 @@ export class ProjectMapper {
       updated_by: prj.updatedBy,
       attributes: prj.attributes.value as Prisma.JsonObject,
       department_id: prj.departmentID,
-      department: prj.department ? DepartmentMapper.toPrisma(prj.department) : undefined,
+      department: prj.department
+        ? DepartmentMapper.toPrisma(prj.department)
+        : undefined,
     };
   }
 
@@ -58,11 +62,13 @@ export class ProjectMapper {
       },
       created_at: prj.createdAt,
       updated_at: prj.updatedAt,
-      created_by_user: prj.createdBy ? {
-        connect: {
-          id: prj.createdBy,
-        },
-      } : undefined,
+      created_by_user: prj.createdBy
+        ? {
+            connect: {
+              id: prj.createdBy,
+            },
+          }
+        : undefined,
       updated_by: prj.updatedBy || undefined,
       attributes: prj.attributes.value as Prisma.JsonObject,
     };

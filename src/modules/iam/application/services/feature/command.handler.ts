@@ -21,17 +21,13 @@ export class FeatureCommandHandler {
     private readonly featureRepository: IFeatureRepository,
     @Inject(PROJECT_REPO)
     private readonly projectRepository: IProjectRepository,
-  ) { }
+  ) {}
 
   async handleCreateFeature(command: CreateFeatureArgs): Promise<Feature> {
     const [existingFeature, existingProject] = await Promise.all([
-      this.featureRepository.findOneBySlug(
-        command.slug,
-        command.project_id,
-      ),
+      this.featureRepository.findOneBySlug(command.slug, command.project_id),
       this.projectRepository.findById(command.project_id),
     ]);
-
 
     if (!existingProject) {
       throw new BusinessException(ErrorEnum.RECORD_NOT_FOUND, 'Project');
@@ -41,7 +37,10 @@ export class FeatureCommandHandler {
       case !!existingFeature:
         throw new BusinessException(ErrorEnum.RECORD_ALREADY_EXISTS, 'Feature');
       case existingProject.organizationID !== command.organization_id:
-        throw new BusinessException(ErrorEnum.ACCESS_DENIED, 'Project does not belong to your organization');
+        throw new BusinessException(
+          ErrorEnum.ACCESS_DENIED,
+          'Project does not belong to your organization',
+        );
     }
 
     const id = uuidv7();

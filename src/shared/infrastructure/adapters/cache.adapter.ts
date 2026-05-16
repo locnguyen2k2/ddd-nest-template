@@ -141,4 +141,38 @@ export class CacheAdapter implements CachePort {
   async onModuleDestroy() {
     await this.client.quit();
   }
+
+  async incr(key: string): Promise<number> {
+    return await this.client.incr(key);
+  }
+
+  async decr(key: string): Promise<number> {
+    return await this.client.decr(key);
+  }
+
+  async hset(key: string, field: string, value: any): Promise<void> {
+    const serialized =
+      typeof value === 'string' ? value : JSON.stringify(value);
+    await this.client.hset(key, field, serialized);
+  }
+
+  async hgetall<T>(key: string): Promise<T | null> {
+    const data = await this.client.hgetall(key);
+    if (!data || Object.keys(data).length === 0) {
+      return null;
+    }
+    const result: any = {};
+    for (const [field, value] of Object.entries(data)) {
+      try {
+        result[field] = JSON.parse(value);
+      } catch {
+        result[field] = value;
+      }
+    }
+    return result as T;
+  }
+
+  async getKeys(pattern: string): Promise<string[]> {
+    return await this.scanKeys(pattern);
+  }
 }

@@ -30,7 +30,9 @@ export class ClearanceMapper {
     };
   }
 
-  static toPrismaCreate(clearance: ClearanceEntity): Prisma.ClearanceCreateInput {
+  static toPrismaCreate(
+    clearance: ClearanceEntity,
+  ): Prisma.ClearanceCreateInput {
     return {
       id: clearance.id.value,
       name: clearance.name,
@@ -41,7 +43,9 @@ export class ClearanceMapper {
     };
   }
 
-  static toPrismaUpdate(clearance: ClearanceEntity): Prisma.ClearanceUpdateInput {
+  static toPrismaUpdate(
+    clearance: ClearanceEntity,
+  ): Prisma.ClearanceUpdateInput {
     return {
       name: clearance.name,
       level: clearance.level,

@@ -11,7 +11,7 @@ export const paginateHelper = async <T>({
 }: IPageOptions): Promise<PageDto<T>> => {
   const { from_date, to_date, sort, sorted, take, page } = pageOptions;
   const skip = (page - 1) * take;
-  const where: any = {}
+  const where: any = {};
 
   if (filterOptions && filterOptions.length > 0) {
     filterOptions.map((option: object) => {
@@ -43,6 +43,6 @@ export const paginateHelper = async <T>({
 
     return new PageDto(entities, pageMetaDto);
   } catch (e: any) {
-    throw new BusinessException(`400:${e}`);
+    throw new BusinessException(`400|${e}`);
   }
 };

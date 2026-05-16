@@ -7,5 +7,5 @@ export interface AbacMetadata {
   resource: string;
 }
 
-export const CheckAbac = (action: string, resource: string) => 
+export const CheckAbac = (action: string, resource: string) =>
   SetMetadata(CHECK_ABAC_KEY, { action, resource });

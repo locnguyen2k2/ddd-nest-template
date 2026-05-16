@@ -1,5 +1,5 @@
 export class Attributes {
-  private constructor(private readonly _value: Record<string, any>) { }
+  private constructor(private readonly _value: Record<string, any>) {}
 
   static create(value: any): Attributes {
     if (typeof value !== 'object' || value === null) {

@@ -18,8 +18,17 @@ import {
   ApiParam,
   ApiBearerAuth,
 } from '@nestjs/swagger';
-import { CreateAttributeDto, CursorAttributesQuery, PaginateAttributesQuery, UpdateAttributeDto } from '../dtos/req/attribute-request.dto';
-import { AttributeResponseDto, CursorAttributesResponseDto, PaginateAttributesResponseDto } from '../dtos/res/attribute-response.dto';
+import {
+  CreateAttributeDto,
+  CursorAttributesQuery,
+  PaginateAttributesQuery,
+  UpdateAttributeDto,
+} from '../dtos/req/attribute-request.dto';
+import {
+  AttributeResponseDto,
+  CursorAttributesResponseDto,
+  PaginateAttributesResponseDto,
+} from '../dtos/res/attribute-response.dto';
 import { AttributeCommandHandler } from '@/modules/iam/application/services/attributes/command.handler';
 import { AttributeQueryHandler } from '@/modules/iam/application/services/attributes/query.handler';
 import { AttributeMapper } from '@/modules/iam/infrastructure/persistence/mappers/attribute.mapper';
@@ -32,7 +41,7 @@ export class AttributeController {
   constructor(
     private readonly commandHandler: AttributeCommandHandler,
     private readonly queryHandler: AttributeQueryHandler,
-  ) { }
+  ) {}
 
   @Get('cursor')
   @ApiBearerAuth()
@@ -59,7 +68,9 @@ export class AttributeController {
   @ApiOperation({ summary: 'Get attributes by entity type' })
   @ApiParam({ name: 'type' })
   @ApiResponse({ status: 200, type: [AttributeResponseDto] })
-  async findByEntityType(@Param('type') type: string): Promise<AttributeResponseDto[]> {
+  async findByEntityType(
+    @Param('type') type: string,
+  ): Promise<AttributeResponseDto[]> {
     const attributes = await this.queryHandler.findByEntityType(type);
     return attributes.map(AttributeMapper.toResponseDto);
   }

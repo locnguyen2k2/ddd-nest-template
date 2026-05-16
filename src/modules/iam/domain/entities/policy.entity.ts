@@ -107,9 +107,10 @@ export class PolicyEntity extends AggregateRoot<PolicyEntity, string> {
       }
     }
 
-    const resourceAttributes = resource?.attributes?.value !== undefined
-      ? resource.attributes.value
-      : (resource?.attributes || {});
+    const resourceAttributes =
+      resource?.attributes?.value !== undefined
+        ? resource.attributes.value
+        : resource?.attributes || {};
 
     const resourceType = this.getResourceType(resource);
 
@@ -128,11 +129,14 @@ export class PolicyEntity extends AggregateRoot<PolicyEntity, string> {
         attributes: resourceAttributes,
         ...(typeof resource === 'object' ? resource : {}),
       },
-      organization: organization ? {
-        id: organization.id?.value || organization.id,
-        attributes: organization.attributes?.value || organization.attributes || {},
-        ...(typeof organization === 'object' ? organization : {}),
-      } : undefined,
+      organization: organization
+        ? {
+            id: organization.id?.value || organization.id,
+            attributes:
+              organization.attributes?.value || organization.attributes || {},
+            ...(typeof organization === 'object' ? organization : {}),
+          }
+        : undefined,
       env: {
         time: new Date().toISOString(),
         ...(environment || {}),
@@ -182,7 +186,11 @@ export class PolicyEntity extends AggregateRoot<PolicyEntity, string> {
     return this._updated_at;
   }
 
-  update(props: Partial<Omit<IPolicyProps, 'organization_id' | 'created_at' | 'updated_at'>>): void {
+  update(
+    props: Partial<
+      Omit<IPolicyProps, 'organization_id' | 'created_at' | 'updated_at'>
+    >,
+  ): void {
     if (props.name !== undefined) this._name = props.name;
     if (props.description !== undefined) this._description = props.description;
     if (props.effect !== undefined) this._effect = props.effect;

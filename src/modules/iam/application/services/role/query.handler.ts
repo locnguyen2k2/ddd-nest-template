@@ -17,19 +17,18 @@ export class RoleQueryHandler {
   constructor(
     @Inject(ROLE_REPO)
     private readonly roleRepository: IRoleRepository,
-  ) { }
+  ) {}
 
   @LogExecutionTime()
-  async handleGetRoleById(
-    query: GetRoleByIdQuery,
-  ): Promise<Role | null> {
-    return await this.roleRepository.findOneById(query.id, query.organization_id);
+  async handleGetRoleById(query: GetRoleByIdQuery): Promise<Role | null> {
+    return await this.roleRepository.findOneById(
+      query.id,
+      query.organization_id,
+    );
   }
 
   @LogExecutionTime()
-  async handleGetRoleBySlug(
-    query: GetRoleBySlugQuery,
-  ): Promise<Role | null> {
+  async handleGetRoleBySlug(query: GetRoleBySlugQuery): Promise<Role | null> {
     return await this.roleRepository.findOneBySlug(
       query.slug,
       query.organization_id,

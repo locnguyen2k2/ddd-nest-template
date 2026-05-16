@@ -1,6 +1,13 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { DEPARTMENT_REPO, IDepartmentRepository } from '@/modules/iam/domain/repositories/department.repository';
-import { CreateDepartmentArgs, UpdateDepartmentArgs, DeleteDepartmentArgs } from '../../dtos/commands/department-cmd.dto';
+import {
+  DEPARTMENT_REPO,
+  IDepartmentRepository,
+} from '@/modules/iam/domain/repositories/department.repository';
+import {
+  CreateDepartmentArgs,
+  UpdateDepartmentArgs,
+  DeleteDepartmentArgs,
+} from '../../dtos/commands/department-cmd.dto';
 import { Department } from '@/modules/iam/domain/entities/department.entity';
 import { uuidv7 } from 'uuidv7';
 import { BusinessException } from '@/common/http/business-exception';
@@ -12,10 +19,15 @@ export class DepartmentCommandHandler {
   constructor(
     @Inject(DEPARTMENT_REPO)
     private readonly departmentRepo: IDepartmentRepository,
-  ) { }
+  ) {}
 
-  async handleCreateDepartment(command: CreateDepartmentArgs): Promise<Department> {
-    const existing = await this.departmentRepo.findBySlug(command.slug, command.organization_id);
+  async handleCreateDepartment(
+    command: CreateDepartmentArgs,
+  ): Promise<Department> {
+    const existing = await this.departmentRepo.findBySlug(
+      command.slug,
+      command.organization_id,
+    );
     if (existing) {
       throw new BusinessException(
         ErrorEnum.REQUEST_VALIDATION_ERROR,
@@ -41,7 +53,9 @@ export class DepartmentCommandHandler {
     return await this.departmentRepo.create(department);
   }
 
-  async handleUpdateDepartment(command: UpdateDepartmentArgs): Promise<Department> {
+  async handleUpdateDepartment(
+    command: UpdateDepartmentArgs,
+  ): Promise<Department> {
     const existing = await this.departmentRepo.findById(command.id);
     if (!existing) {
       throw new BusinessException(
@@ -56,7 +70,10 @@ export class DepartmentCommandHandler {
     });
 
     if (command.slug) {
-      const isExisted = await this.departmentRepo.findBySlug(command.slug, existing.org_id);
+      const isExisted = await this.departmentRepo.findBySlug(
+        command.slug,
+        existing.org_id,
+      );
       if (isExisted && isExisted.id.value !== existing.id.value) {
         throw new BusinessException(
           ErrorEnum.REQUEST_VALIDATION_ERROR,

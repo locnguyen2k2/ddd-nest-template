@@ -1,19 +1,26 @@
 import { USER_REPO } from '@/modules/iam/domain/repositories/user.repository';
 import { UserRepository } from '@/modules/iam/infrastructure/persistence/repositories/user.repository';
 import { Inject, Injectable } from '@nestjs/common';
-import { RegisterUserArgs, UpdateProfileArgs } from '../../dtos/commands/auth-cmd.dto';
+import {
+  RegisterUserArgs,
+  UpdateProfileArgs,
+} from '../../dtos/commands/auth-cmd.dto';
 import { IEntityID } from '@/shared/domain/entities/base.entity';
 import { uuidv7 } from 'uuidv7';
 import { UserEntity } from '@/modules/iam/domain/entities/user.entity';
 import { UserService } from '@/modules/iam/domain/services/user.service';
 import { BusinessException } from '@/common/http/business-exception';
-import { AuthResponseDto, UserResponseDto } from '@/modules/iam/presentation/dtos/res/user-response.dto';
+import {
+  AuthResponseDto,
+  UserResponseDto,
+} from '@/modules/iam/presentation/dtos/res/user-response.dto';
 import { Password } from '@/modules/iam/domain/vo/password.vo';
 import { AuthMapper } from '@/modules/iam/infrastructure/persistence/mappers/auth.mapper';
 import { ORGANIZATION_REPO } from '@/modules/iam/domain/repositories/organization.repository';
 import { IOrganizationRepository } from '@/modules/iam/domain/repositories/organization.repository';
 import { OrganizationMapper } from '@/modules/iam/infrastructure/persistence/mappers/organization.mapper';
 import { AuthWrapperCmdHandler } from '../auth/wrapper.command.handler';
+import { UserEventPublisher } from '@/modules/iam/infrastructure/events/user.event-publisher';
 
 @Injectable()
 export class UserCmdHandler {
@@ -21,9 +28,10 @@ export class UserCmdHandler {
     @Inject(USER_REPO) private readonly userRepo: UserRepository,
     private readonly userService: UserService,
     private readonly authService: AuthWrapperCmdHandler,
-    @Inject(ORGANIZATION_REPO) private readonly orgRepo: IOrganizationRepository,
-  ) {
-  }
+    @Inject(ORGANIZATION_REPO)
+    private readonly orgRepo: IOrganizationRepository,
+    private readonly userEventPublisher: UserEventPublisher,
+  ) {}
 
   async register(args: RegisterUserArgs): Promise<AuthResponseDto> {
     const _id = uuidv7();
@@ -35,7 +43,10 @@ export class UserCmdHandler {
     const hashedPassword = this.authService.hash(args.password);
     const password: Password = Password.create(hashedPassword);
 
-    if (!this.userService.isUsername(args.username) && !this.userService.isEmail(args.username)) {
+    if (
+      !this.userService.isUsername(args.username) &&
+      !this.userService.isEmail(args.username)
+    ) {
       throw new BusinessException('400|Invalid username');
     }
     if (!this.userService.isEmail(args.email)) {
@@ -66,13 +77,17 @@ export class UserCmdHandler {
     });
 
     await this.userRepo.create(userDomain);
+    await this.userEventPublisher.publishEvents([...userDomain.getEvents()]);
+    userDomain.clearEvents();
 
     const [tokensInfo, orgs] = await Promise.all([
       this.authService.prepareTokens(userDomain),
-      this.orgRepo.findByIds(userDomain.organizations.map((org) => org.organization_id)),
+      this.orgRepo.findByIds(
+        userDomain.organizations.map((org) => org.organization_id),
+      ),
     ]);
 
-    const orgsPrisma = orgs.map(org => OrganizationMapper.toPrisma(org));
+    const orgsPrisma = orgs.map((org) => OrganizationMapper.toPrisma(org));
     return AuthMapper.toResponseDto(tokensInfo, userDomain, orgsPrisma);
   }
 

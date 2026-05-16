@@ -7,7 +7,10 @@ import {
 } from '../../dtos/queries/organization-query.dto';
 import { IOrganizationRepository } from '@/modules/iam/domain/repositories/organization.repository';
 import { LogExecutionTime } from '@/common/decorators/log-execution.decorator';
-import { CursorOrganizationsQuery, PaginateOrganizationsQuery } from '@/modules/iam/presentation/dtos/req/organization.dto';
+import {
+  CursorOrganizationsQuery,
+  PaginateOrganizationsQuery,
+} from '@/modules/iam/presentation/dtos/req/organization.dto';
 import { Period } from '@/common/enum';
 import { StatsPercentInfo } from '@/common/interfaces/stats.interface';
 
@@ -16,10 +19,11 @@ export class OrganizationQueryHandler {
   constructor(
     @Inject(ORGANIZATION_REPO)
     private readonly organizationRepository: IOrganizationRepository,
-  ) { }
+  ) {}
 
   private readonly percentGrowthCalc = {
-    [Period.MONTH]: async (user_id: string) => this.organizationRepository.percentByMonth(user_id),
+    [Period.MONTH]: async (user_id: string) =>
+      this.organizationRepository.percentByMonth(user_id),
   };
 
   async percentGrowth(user_id: string, period?: string): Promise<number> {
@@ -27,7 +31,10 @@ export class OrganizationQueryHandler {
   }
 
   @LogExecutionTime()
-  async handlePercentByMonth(userId: string, period: string): Promise<StatsPercentInfo> {
+  async handlePercentByMonth(
+    userId: string,
+    period: string,
+  ): Promise<StatsPercentInfo> {
     let result: StatsPercentInfo = {
       percent_growth: 0,
       total: 0,
@@ -64,9 +71,15 @@ export class OrganizationQueryHandler {
   }
 
   @LogExecutionTime()
-  async handleCursorOrganizationsByJoiner(query: CursorOrganizationsQuery, joinerId: string) {
+  async handleCursorOrganizationsByJoiner(
+    query: CursorOrganizationsQuery,
+    joinerId: string,
+  ) {
     try {
-      return await this.organizationRepository.cursorPaginationByJoiner(query, joinerId);
+      return await this.organizationRepository.cursorPaginationByJoiner(
+        query,
+        joinerId,
+      );
     } catch (error) {
       console.error('Error listing organizations by joiner:', error);
     }
@@ -85,9 +98,15 @@ export class OrganizationQueryHandler {
     return await this.organizationRepository.findBySlug(query.slug);
   }
 
-  async handleListOrganizationsByJoiner(query: PaginateOrganizationsQuery, joinerId: string) {
+  async handleListOrganizationsByJoiner(
+    query: PaginateOrganizationsQuery,
+    joinerId: string,
+  ) {
     try {
-      return await this.organizationRepository.handleListOrganizationsByJoiner(query, joinerId);
+      return await this.organizationRepository.handleListOrganizationsByJoiner(
+        query,
+        joinerId,
+      );
     } catch (error) {
       console.error('Error listing organizations by joiner:', error);
     }

@@ -1,11 +1,23 @@
-import { BaseCursorPageOptionDto, BasePageOptionDto } from '@/common/pagination';
+import {
+  BaseCursorPageOptionDto,
+  BasePageOptionDto,
+} from '@/common/pagination';
 import {
   PasswordValidator,
   UsernameValidator,
 } from '@/common/validators/user.validator';
 import { ApiProperty } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
-import { IsNotEmpty, IsString, IsEmail, IsOptional, Validate, IsArray, ArrayMinSize, ValidateNested } from 'class-validator';
+import {
+  IsNotEmpty,
+  IsString,
+  IsEmail,
+  IsOptional,
+  Validate,
+  IsArray,
+  ArrayMinSize,
+  ValidateNested,
+} from 'class-validator';
 
 class PermissionDto {
   @ApiProperty()
@@ -24,7 +36,7 @@ export class CaptchaDto {
   @IsNotEmpty()
   @IsString()
   captcha_id!: string;
-  
+
   @ApiProperty()
   @IsNotEmpty()
   @IsString()
@@ -134,8 +146,6 @@ export class LogoutDto {
   refresh_token!: string;
 }
 
-export class PaginateUsersQuery extends BasePageOptionDto {
-}
+export class PaginateUsersQuery extends BasePageOptionDto {}
 
-export class CursorUsersQuery extends BaseCursorPageOptionDto {
-}
+export class CursorUsersQuery extends BaseCursorPageOptionDto {}

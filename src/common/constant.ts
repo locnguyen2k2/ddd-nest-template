@@ -13,7 +13,7 @@ export const HeaderKeys = {
   ORG_ID: 'organization-id',
   ORG_SLUG: 'organization-slug',
   PROJECT_ID: 'project-id',
-}
+};
 
 export const StorageKeys = {
   ORG_ID: 'org_id',
@@ -32,3 +32,53 @@ export const REGEX = {
   regValidPassword: /^\S*(?=\S{6,})(?=\S*\d)(?=\S*[A-Za-z])\S*$/,
   regValidEmail: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
 };
+
+export const RABBITMQ = {
+  EXCHANGE_BASE_NAME: {
+    NOTIFICATION_MODULE: 'cjool_exchange_notification',
+    IAM_MODULE: 'cjool_exchange_iam',
+  },
+  QUEUE_BASE_NAME: {
+    NOTIFICATION_MODULE: 'cjool_queue_notification',
+    IAM_MODULE: 'cjool_queue_iam',
+  },
+};
+
+export const RABBITMQ_EXCHANGE = {
+  NOTIFICATIONS: `${RABBITMQ.EXCHANGE_BASE_NAME.NOTIFICATION_MODULE}.notifications`,
+  IAM: `${RABBITMQ.EXCHANGE_BASE_NAME.IAM_MODULE}.iam`,
+} as const;
+
+export const RABBITMQ_QUEUE = {
+  NOTIFICATIONS: `${RABBITMQ.QUEUE_BASE_NAME.NOTIFICATION_MODULE}.notifications:2`,
+  IAM: `${RABBITMQ.QUEUE_BASE_NAME.IAM_MODULE}.iam:2`,
+} as const;
+
+export const RABBITMQ_ROUTING_KEY = {
+  USER_CREATED: 'user.created',
+} as const;
+
+export const SETTING_KEYS = {
+  PASSWORD_SECURITY: 'password_attempts_policy',
+} as const;
+
+export interface IAttemptPolicy {
+  failed_attempts: number;
+  lock_duration: number;
+}
+
+export const SETTINGS = {
+  [SETTING_KEYS.PASSWORD_SECURITY]: {
+    cooldown_period: 60, // Cooldown period in seconds before retrying 
+    attempts: [
+      {
+        failed_attempts: 5, // Maximum failed login attempts before lockout
+        lock_duration: 60, // Lockout duration in seconds (5 minutes)
+      },
+      {
+        failed_attempts: 10, // Maximum failed login attempts before lockout
+        lock_duration: 120, // Lockout duration in seconds (10 minutes)
+      },
+    ] as IAttemptPolicy[],
+  },
+} as const;

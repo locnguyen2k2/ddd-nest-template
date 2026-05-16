@@ -2,6 +2,7 @@ import { AccessControlStatus } from '@/common/enum';
 import { AggregateRoot, IEntityID } from '@/shared/domain/entities/base.entity';
 import { Password } from '../vo/password.vo';
 import { Attributes } from '../vo/attributes.vo';
+import { UserCreatedEvent } from '../events/user.event';
 
 export interface IStaff {
   organization_id: string;
@@ -72,10 +73,21 @@ export class UserEntity extends AggregateRoot<UserEntity, string> {
   }
 
   static create(props: IUserBaseInfo) {
-    return new UserEntity(props);
+    const user = new UserEntity(props);
+    // Add event only for new creation or reconstitution (currently used for both)
+    user.addDomainEvent(
+      new UserCreatedEvent({
+        id: user.id.value,
+        email: user.email,
+        name: `${user.first_name} ${user.last_name}`,
+        password: user.password.value,
+        organizationId: '',
+      }),
+    );
+    return user;
   }
 
-  static update(props: IUpdateUserArgs) { }
+  static update(props: IUpdateUserArgs) {}
 
   get first_name() {
     return this._first_name;

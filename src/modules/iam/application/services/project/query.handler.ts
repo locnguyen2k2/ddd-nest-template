@@ -20,7 +20,7 @@ import { StatsPercentInfo } from '@/common/interfaces/stats.interface';
 export class ProjectQueryHandler {
   constructor(
     @Inject(PROJECT_REPO) private readonly projectRepo: IProjectRepository,
-  ) { }
+  ) {}
 
   private readonly percentGrowthCalc = {
     [Period.MONTH]: async (user_id: string) => this.percentByMonth(user_id),
@@ -36,7 +36,7 @@ export class ProjectQueryHandler {
       total: 0,
       current: 0,
       title: '',
-    }
+    };
     try {
       const [beforeCount, currentCount] = await Promise.all([
         this.projectRepo.countBeforeByMonth(user_id),
@@ -55,14 +55,22 @@ export class ProjectQueryHandler {
       return result;
     }
   }
-  
+
   @LogExecutionTime()
-  async handlerGetByID(query: GetProjectByIdQuery): Promise<ProjectEntity | null> {
+  async handlerGetByID(
+    query: GetProjectByIdQuery,
+  ): Promise<ProjectEntity | null> {
     const item = await this.projectRepo.findById(query.id);
     if (!item) throw new BusinessException(ErrorEnum.RECORD_NOT_FOUND);
 
-    if (query.organization_id && item.organizationID !== query.organization_id) {
-      throw new BusinessException(ErrorEnum.ACCESS_DENIED, 'Project does not belong to your organization');
+    if (
+      query.organization_id &&
+      item.organizationID !== query.organization_id
+    ) {
+      throw new BusinessException(
+        ErrorEnum.ACCESS_DENIED,
+        'Project does not belong to your organization',
+      );
     }
 
     return item;

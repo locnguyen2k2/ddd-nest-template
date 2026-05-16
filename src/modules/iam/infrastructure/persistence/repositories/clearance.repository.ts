@@ -1,24 +1,36 @@
 import { Injectable } from '@nestjs/common';
-import { IClearanceRepository, CLEARANCE_REPO } from '@/modules/iam/domain/repositories/clearance.repository';
+import {
+  IClearanceRepository,
+  CLEARANCE_REPO,
+} from '@/modules/iam/domain/repositories/clearance.repository';
 import { ClearanceEntity } from '@/modules/iam/domain/entities/clearance.entity';
 import { PrismaAdapter } from '@/shared/infrastructure/adapters/prisma.adapter';
 import { ClearanceMapper } from '../mappers/clearance.mapper';
-import { cursorHelper, paginateHelper, SortableFieldEnum, SortedEnum } from '@/common/pagination';
-import { CursorClearancesQuery, PaginateClearancesQuery } from '@/modules/iam/presentation/dtos/req/clearance-request.dto';
-import { Prisma } from "@internal/rbac/client"
+import {
+  cursorHelper,
+  paginateHelper,
+  SortableFieldEnum,
+  SortedEnum,
+} from '@/common/pagination';
+import {
+  CursorClearancesQuery,
+  PaginateClearancesQuery,
+} from '@/modules/iam/presentation/dtos/req/clearance-request.dto';
+import { Prisma } from '@internal/rbac/client';
 
 @Injectable()
 export class ClearanceRepository implements IClearanceRepository {
-  constructor(private readonly prisma: PrismaAdapter) { }
+  constructor(private readonly prisma: PrismaAdapter) {}
 
   async cursorPagination(pageOptions: CursorClearancesQuery) {
-    const { data = [], paginated } =
-      await cursorHelper<Prisma.ClearanceGetPayload<{}>>({
-        query: this.prisma.clearance,
-        pageOptions,
-        cursorField: SortableFieldEnum.CREATED_AT,
-        orderDirection: SortedEnum.DESC,
-      });
+    const { data = [], paginated } = await cursorHelper<
+      Prisma.ClearanceGetPayload<{}>
+    >({
+      query: this.prisma.clearance,
+      pageOptions,
+      cursorField: SortableFieldEnum.CREATED_AT,
+      orderDirection: SortedEnum.DESC,
+    });
 
     return {
       data: data.map((item) => ClearanceMapper.toDomain(item)),
@@ -27,11 +39,12 @@ export class ClearanceRepository implements IClearanceRepository {
   }
 
   async paginate(pageOptions: PaginateClearancesQuery) {
-    const { data = [], paginated } =
-      await paginateHelper<Prisma.ClearanceGetPayload<{}>>({
-        query: this.prisma.clearance,
-        pageOptions,
-      });
+    const { data = [], paginated } = await paginateHelper<
+      Prisma.ClearanceGetPayload<{}>
+    >({
+      query: this.prisma.clearance,
+      pageOptions,
+    });
 
     return {
       data: data.map((item) => ClearanceMapper.toDomain(item)),

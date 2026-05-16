@@ -18,7 +18,7 @@ export class OrganizationCommandHandler {
   constructor(
     @Inject(ORGANIZATION_REPO)
     private readonly organizationRepo: IOrganizationRepository,
-  ) { }
+  ) {}
 
   async handleCreateOrganization(
     command: CreateOrganizationArgs,
@@ -27,7 +27,10 @@ export class OrganizationCommandHandler {
       command.slug,
     );
     if (existingOrganization) {
-      throw new BusinessException(ErrorEnum.REQUEST_VALIDATION_ERROR, `Organization with slug '${command.slug}' already exists`);
+      throw new BusinessException(
+        ErrorEnum.REQUEST_VALIDATION_ERROR,
+        `Organization with slug '${command.slug}' already exists`,
+      );
     }
 
     const id = uuidv7();
@@ -55,13 +58,19 @@ export class OrganizationCommandHandler {
       command.id,
     );
     if (!existingOrganization) {
-      throw new BusinessException(ErrorEnum.REQUEST_VALIDATION_ERROR, `Organization with id '${command.id}' not found`);
+      throw new BusinessException(
+        ErrorEnum.REQUEST_VALIDATION_ERROR,
+        `Organization with id '${command.id}' not found`,
+      );
     }
 
     if (command.slug && command.slug !== existingOrganization.slug().value) {
       const slugConflict = await this.organizationRepo.findBySlug(command.slug);
       if (slugConflict) {
-        throw new BusinessException(ErrorEnum.REQUEST_VALIDATION_ERROR, `Organization with slug '${command.slug}' already exists`);
+        throw new BusinessException(
+          ErrorEnum.REQUEST_VALIDATION_ERROR,
+          `Organization with slug '${command.slug}' already exists`,
+        );
       }
     }
 
@@ -84,7 +93,10 @@ export class OrganizationCommandHandler {
       command.id,
     );
     if (!existingOrganization) {
-      throw new BusinessException(ErrorEnum.REQUEST_VALIDATION_ERROR, `Organization with id '${command.id}' not found`);
+      throw new BusinessException(
+        ErrorEnum.REQUEST_VALIDATION_ERROR,
+        `Organization with id '${command.id}' not found`,
+      );
     }
 
     existingOrganization.delete();
@@ -92,15 +104,19 @@ export class OrganizationCommandHandler {
     await this.organizationRepo.delete(command.id);
   }
 
-  async handleJoinOrganization(
-    command: { userId: string; organizationId: string },
-  ): Promise<void> {
+  async handleJoinOrganization(command: {
+    userId: string;
+    organizationId: string;
+  }): Promise<void> {
     const alreadyJoined = await this.organizationRepo.organizationHasUser(
       command.organizationId,
       command.userId,
     );
     if (alreadyJoined) {
-      throw new BusinessException(ErrorEnum.REQUEST_VALIDATION_ERROR, `User with id '${command.userId}' already joined organization '${command.organizationId}'`);
+      throw new BusinessException(
+        ErrorEnum.REQUEST_VALIDATION_ERROR,
+        `User with id '${command.userId}' already joined organization '${command.organizationId}'`,
+      );
     }
     return await this.organizationRepo.assignUser(
       command.organizationId,
@@ -116,7 +132,10 @@ export class OrganizationCommandHandler {
       command.userId,
     );
     if (!hasAccess) {
-      throw new BusinessException(ErrorEnum.RECORD_NOT_FOUND, `User with id '${command.userId}' is not a member of organization '${command.organizationId}'`);
+      throw new BusinessException(
+        ErrorEnum.RECORD_NOT_FOUND,
+        `User with id '${command.userId}' is not a member of organization '${command.organizationId}'`,
+      );
     }
     return await this.organizationRepo.updateUserAttributes(
       command.organizationId,

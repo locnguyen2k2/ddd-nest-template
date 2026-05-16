@@ -1,6 +1,9 @@
 import { EnvironmentEntity } from '@/modules/iam/domain/entities/environment.entity';
 import { IEntityID } from '@/shared/domain/entities/base.entity';
-import { Environment as PrismaEnvironment, Prisma } from '@internal/rbac/client';
+import {
+  Environment as PrismaEnvironment,
+  Prisma,
+} from '@internal/rbac/client';
 import { EnvironmentResponseDto } from '@/modules/iam/presentation/dtos/res/environment-response.dto';
 
 export class EnvironmentMapper {
@@ -30,7 +33,9 @@ export class EnvironmentMapper {
     };
   }
 
-  static toPrismaCreate(environment: EnvironmentEntity): Prisma.EnvironmentCreateInput {
+  static toPrismaCreate(
+    environment: EnvironmentEntity,
+  ): Prisma.EnvironmentCreateInput {
     return {
       id: environment.id.value,
       name: environment.name,
@@ -41,7 +46,9 @@ export class EnvironmentMapper {
     };
   }
 
-  static toPrismaUpdate(environment: EnvironmentEntity): Prisma.EnvironmentUpdateInput {
+  static toPrismaUpdate(
+    environment: EnvironmentEntity,
+  ): Prisma.EnvironmentUpdateInput {
     return {
       name: environment.name,
       slug: environment.slug,

@@ -21,7 +21,12 @@ export class ClearanceResponseDto {
   @IsOptional()
   description?: string;
 
-  constructor(id: string, name: string, level: number, description?: string | null) {
+  constructor(
+    id: string,
+    name: string,
+    level: number,
+    description?: string | null,
+  ) {
     this.id = id;
     this.name = name;
     this.level = level;

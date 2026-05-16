@@ -35,7 +35,15 @@ export class AttributeResponseDto {
   @IsOptional()
   category?: string;
 
-  constructor(id: string, entity_type: string, key: string, data_type: string, description?: string | null, label?: string | null, category?: string | null) {
+  constructor(
+    id: string,
+    entity_type: string,
+    key: string,
+    data_type: string,
+    description?: string | null,
+    label?: string | null,
+    category?: string | null,
+  ) {
     this.id = id;
     this.entity_type = entity_type;
     this.key = key;

@@ -18,8 +18,17 @@ import {
   ApiParam,
   ApiBearerAuth,
 } from '@nestjs/swagger';
-import { CreateEnvironmentDto, CursorEnvironmentsQuery, PaginateEnvironmentsQuery, UpdateEnvironmentDto } from '../dtos/req/environment-request.dto';
-import { EnvironmentResponseDto, CursorEnvironmentsResponseDto, PaginateEnvironmentsResponseDto } from '../dtos/res/environment-response.dto';
+import {
+  CreateEnvironmentDto,
+  CursorEnvironmentsQuery,
+  PaginateEnvironmentsQuery,
+  UpdateEnvironmentDto,
+} from '../dtos/req/environment-request.dto';
+import {
+  EnvironmentResponseDto,
+  CursorEnvironmentsResponseDto,
+  PaginateEnvironmentsResponseDto,
+} from '../dtos/res/environment-response.dto';
 import { EnvironmentCommandHandler } from '@/modules/iam/application/services/environment/command.handler';
 import { EnvironmentQueryHandler } from '@/modules/iam/application/services/environment/query.handler';
 import { EnvironmentMapper } from '@/modules/iam/infrastructure/persistence/mappers/environment.mapper';
@@ -32,7 +41,7 @@ export class EnvironmentController {
   constructor(
     private readonly commandHandler: EnvironmentCommandHandler,
     private readonly queryHandler: EnvironmentQueryHandler,
-  ) { }
+  ) {}
 
   @Get('cursor')
   @ApiBearerAuth()
@@ -59,7 +68,9 @@ export class EnvironmentController {
   @ApiOperation({ summary: 'Get environment by slug' })
   @ApiParam({ name: 'slug' })
   @ApiResponse({ status: 200, type: EnvironmentResponseDto })
-  async findBySlug(@Param('slug') slug: string): Promise<EnvironmentResponseDto> {
+  async findBySlug(
+    @Param('slug') slug: string,
+  ): Promise<EnvironmentResponseDto> {
     const environment = await this.queryHandler.findBySlug(slug);
     if (!environment) {
       throw new Error('Environment not found');
@@ -101,7 +112,9 @@ export class EnvironmentController {
   @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: 'Create a new environment' })
   @ApiResponse({ status: 201, type: EnvironmentResponseDto })
-  async create(@Body() dto: CreateEnvironmentDto): Promise<EnvironmentResponseDto> {
+  async create(
+    @Body() dto: CreateEnvironmentDto,
+  ): Promise<EnvironmentResponseDto> {
     const environment = await this.commandHandler.handleCreate(dto);
     return EnvironmentMapper.toResponseDto(environment);
   }

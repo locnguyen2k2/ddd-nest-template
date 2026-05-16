@@ -18,8 +18,19 @@ import {
   ApiBearerAuth,
   ApiParam,
 } from '@nestjs/swagger';
-import { CreatePolicyDto, CursorPoliciesQuery, PaginatePoliciesQuery, PolicyEvaluateDto, UpdatePolicyDto } from '../dtos/req/policy.dto';
-import { CursorPoliciesResponseDto, EvaluationResponseDto, PaginatePoliciesResponseDto, PolicyResponseDto } from '../dtos/res/policy-response.dto';
+import {
+  CreatePolicyDto,
+  CursorPoliciesQuery,
+  PaginatePoliciesQuery,
+  PolicyEvaluateDto,
+  UpdatePolicyDto,
+} from '../dtos/req/policy.dto';
+import {
+  CursorPoliciesResponseDto,
+  EvaluationResponseDto,
+  PaginatePoliciesResponseDto,
+  PolicyResponseDto,
+} from '../dtos/res/policy-response.dto';
 import { CursorResourcesResponseDto } from '../dtos/res/resource-response.dto';
 import { SortedEnum } from '@/common/pagination/dtos/page-options.dto';
 import { PolicyCommandHandler } from '../../application/services/policy/command.handler';
@@ -47,7 +58,7 @@ export class PolicyController {
     private readonly policyQueryHandler: PolicyQueryHandler,
     private readonly policyEvaluationService: PolicyEvaluationService,
     private readonly cls: ClsService<MyClsStore>,
-  ) { }
+  ) {}
 
   @Post('organizations/:orgId/evaluate')
   @ApiOperation({ summary: 'Evaluate policy decision' })
@@ -61,7 +72,7 @@ export class PolicyController {
   @UseGuards(JwtAuthGuard, TenantContextGuard)
   async evaluate(
     @Body() dto: PolicyEvaluateDto,
-    @User() user: IPayload
+    @User() user: IPayload,
   ): Promise<EvaluationResponseDto> {
     const orgId = this.cls.get(StorageKeys.ORG_ID);
     dto.resource.user_id = user.sub;
@@ -100,7 +111,8 @@ export class PolicyController {
   async cursorPagination(
     @Query() listQuery: CursorPoliciesQuery,
   ): Promise<CursorPoliciesResponseDto> {
-    const result = await this.policyQueryHandler.handleCursorPaginate(listQuery);
+    const result =
+      await this.policyQueryHandler.handleCursorPaginate(listQuery);
     return {
       data: result.data.map((item) => PolicyMapper.toResponse(item)),
       paginated: result.paginated,
@@ -118,7 +130,11 @@ export class PolicyController {
   @UseGuards(HeadersAuthGuard, JwtAuthGuard, TenantContextGuard)
   async getResources(): Promise<CursorResourcesResponseDto> {
     const mockResources = [
-      { name: 'Organization', slug: 'organization', description: 'Organization resource' },
+      {
+        name: 'Organization',
+        slug: 'organization',
+        description: 'Organization resource',
+      },
       { name: 'Project', slug: 'project', description: 'Project resource' },
       { name: 'Feature', slug: 'feature', description: 'Feature resource' },
       { name: 'User', slug: 'user', description: 'User resource' },
@@ -155,9 +171,7 @@ export class PolicyController {
   @HeaderKey(HeaderKeys.ORG_ID)
   @UseGuards(HeadersAuthGuard, JwtAuthGuard, TenantContextGuard, AbacGuard)
   @HttpCode(HttpStatus.CREATED)
-  async create(
-    @Body() dto: CreatePolicyDto,
-  ): Promise<PolicyResponseDto> {
+  async create(@Body() dto: CreatePolicyDto): Promise<PolicyResponseDto> {
     const orgId = this.cls.get(StorageKeys.ORG_ID);
     const policy = await this.policyCmdHandler.handleCreatePolicy({
       ...dto,
@@ -200,9 +214,7 @@ export class PolicyController {
   @CheckAbac(PermissionAction.DELETE, 'Policy')
   @UseGuards(HeadersAuthGuard, JwtAuthGuard, TenantContextGuard, AbacGuard)
   @HttpCode(HttpStatus.NO_CONTENT)
-  async remove(
-    @Param('id') id: string,
-  ): Promise<void> {
+  async remove(@Param('id') id: string): Promise<void> {
     const orgId = this.cls.get(StorageKeys.ORG_ID);
     await this.policyCmdHandler.handleDeletePolicy({
       id,
@@ -210,4 +222,3 @@ export class PolicyController {
     });
   }
 }
-

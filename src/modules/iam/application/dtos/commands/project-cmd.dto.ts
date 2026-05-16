@@ -5,7 +5,7 @@ export interface CreateProjectArgs {
   organization_id: string;
 }
 
-export interface UpdateProjectArgs extends Partial<CreateProjectArgs> { }
+export interface UpdateProjectArgs extends Partial<CreateProjectArgs> {}
 
 export interface DeleteProjectArgs {
   id: string;

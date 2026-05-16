@@ -1,24 +1,24 @@
 export class CreateSubscriptionCommand {
-    name!: string;
-    slug!: string;
-    description?: string;
+  name!: string;
+  slug!: string;
+  description?: string;
 }
 
 export class UpdateSubscriptionCommand {
-    id!: string;
-    name?: string;
-    slug?: string;
-    description?: string;
+  id!: string;
+  name?: string;
+  slug?: string;
+  description?: string;
 }
 
 export class DeleteSubscriptionCommand {
-    id!: string;
+  id!: string;
 }
 
 export class GetSubscriptionByIdQuery {
-    id!: string;
+  id!: string;
 }
 
 export class GetSubscriptionBySlugQuery {
-    slug!: string;
+  slug!: string;
 }

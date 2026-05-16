@@ -1,26 +1,33 @@
-import { UserEntity } from "@/modules/iam/domain/entities/user.entity";
-import { AuthResponseDto, TokenResponseDto } from "@/modules/iam/presentation/dtos/res/user-response.dto";
-import { Organization } from "@internal/rbac/client"
-import { UserMapper } from "./user.mapper";
+import { UserEntity } from '@/modules/iam/domain/entities/user.entity';
+import {
+  AuthResponseDto,
+  TokenResponseDto,
+} from '@/modules/iam/presentation/dtos/res/user-response.dto';
+import { Organization } from '@internal/rbac/client';
+import { UserMapper } from './user.mapper';
 
 export interface ITokenResponse {
-    access_token: string;
-    refresh_token: string;
-    expires_in: number;
-    token_type: string;
+  access_token: string;
+  refresh_token: string;
+  expires_in: number;
+  token_type: string;
 }
 
 export class AuthMapper {
-    static toResponseDto(tokenResponse: ITokenResponse, user: UserEntity, orgs: Organization[]) {
-        const userResponse = UserMapper.toResponseDto(user, orgs);
-        return new AuthResponseDto(
-            userResponse,
-            new TokenResponseDto(
-                tokenResponse.access_token,
-                tokenResponse.refresh_token,
-                tokenResponse.expires_in,
-                tokenResponse.token_type,
-            ),
-        );
-    }
+  static toResponseDto(
+    tokenResponse: ITokenResponse,
+    user: UserEntity,
+    orgs: Organization[],
+  ) {
+    const userResponse = UserMapper.toResponseDto(user, orgs);
+    return new AuthResponseDto(
+      userResponse,
+      new TokenResponseDto(
+        tokenResponse.access_token,
+        tokenResponse.refresh_token,
+        tokenResponse.expires_in,
+        tokenResponse.token_type,
+      ),
+    );
+  }
 }

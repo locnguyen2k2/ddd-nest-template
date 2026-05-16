@@ -3,7 +3,11 @@ import { Slug } from '../vo/slug.vo';
 import { Attributes } from '../vo/attributes.vo';
 
 import { AccessControlStatus } from '@/common/enum';
-import { RoleCreatedEvent, RoleUpdatedEvent, RoleDeletedEvent } from '../events/role.events';
+import {
+  RoleCreatedEvent,
+  RoleUpdatedEvent,
+  RoleDeletedEvent,
+} from '../events/role.events';
 
 export interface RoleBaseProps {
   name: string;
@@ -41,9 +45,7 @@ export class Role extends AggregateRoot<Role, string> {
   private _updated_by: string | undefined;
   private _attributes: Attributes;
 
-  private constructor(
-    props: CreateRoleProps,
-  ) {
+  private constructor(props: CreateRoleProps) {
     super(props.id);
     this._name = props.name;
     this._slug = props.slug;

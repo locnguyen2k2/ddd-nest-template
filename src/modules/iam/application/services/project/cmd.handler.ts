@@ -18,9 +18,9 @@ import { IPayload } from '@/modules/iam/domain/services/auth.service';
 export class ProjectCmdHandler {
   constructor(
     @Inject(PROJECT_REPO) private readonly pojectRepo: IProjectRepository,
-  ) { }
+  ) {}
 
-  async handleCreate(user: IPayload,props: CreateProjectArgs) {
+  async handleCreate(user: IPayload, props: CreateProjectArgs) {
     const isExisted = await this.pojectRepo.findBySlug(
       props.slug,
       props.organization_id,
@@ -49,7 +49,10 @@ export class ProjectCmdHandler {
     if (!isExisted) throw new BusinessException(ErrorEnum.RECORD_NOT_FOUND);
 
     if (isExisted.organizationID !== props.organization_id) {
-      throw new BusinessException(ErrorEnum.ACCESS_DENIED, 'Project does not belong to your organization');
+      throw new BusinessException(
+        ErrorEnum.ACCESS_DENIED,
+        'Project does not belong to your organization',
+      );
     }
 
     isExisted.update({ ...props });
@@ -62,7 +65,10 @@ export class ProjectCmdHandler {
     if (!isExisted) throw new BusinessException(ErrorEnum.RECORD_NOT_FOUND);
 
     if (isExisted.organizationID !== props.organization_id) {
-      throw new BusinessException(ErrorEnum.ACCESS_DENIED, 'Project does not belong to your organization');
+      throw new BusinessException(
+        ErrorEnum.ACCESS_DENIED,
+        'Project does not belong to your organization',
+      );
     }
 
     return await this.pojectRepo.delete(props.id);

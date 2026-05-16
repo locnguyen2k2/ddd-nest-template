@@ -61,9 +61,11 @@ export class FeatureMapper {
           id: feature.project_id,
         },
       },
-      created_by_user: feature.created_by ? {
-        connect: { id: feature.created_by }
-      } : undefined,
+      created_by_user: feature.created_by
+        ? {
+            connect: { id: feature.created_by },
+          }
+        : undefined,
       updated_by: feature.updated_by,
       attributes: feature.attributes.value as Prisma.JsonObject,
     };

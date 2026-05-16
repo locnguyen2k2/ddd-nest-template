@@ -1,19 +1,28 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { ATTRIBUTE_REPO, IAttributeRepository } from '@/modules/iam/domain/repositories/attribute.repository';
+import {
+  ATTRIBUTE_REPO,
+  IAttributeRepository,
+} from '@/modules/iam/domain/repositories/attribute.repository';
 import { AttributeEntity } from '@/modules/iam/domain/entities/attribute.entity';
 import { uuidv7 } from 'uuidv7';
 import { BusinessException } from '@/common/http/business-exception';
 import { ErrorEnum } from '@/common/exception.enum';
-import { CreateAttributeCommand, UpdateAttributeCommand, DeleteAttributeCommand } from '../../dtos/commands/atttribute-cmd.dto';
+import {
+  CreateAttributeCommand,
+  UpdateAttributeCommand,
+  DeleteAttributeCommand,
+} from '../../dtos/commands/atttribute-cmd.dto';
 
 @Injectable()
 export class AttributeCommandHandler {
   constructor(
     @Inject(ATTRIBUTE_REPO)
     private readonly attributeRepo: IAttributeRepository,
-  ) { }
+  ) {}
 
-  async handleCreate(command: CreateAttributeCommand): Promise<AttributeEntity> {
+  async handleCreate(
+    command: CreateAttributeCommand,
+  ): Promise<AttributeEntity> {
     const existing = await this.attributeRepo.findByEntityTypeAndKey(
       command.entity_type,
       command.key,
@@ -43,7 +52,9 @@ export class AttributeCommandHandler {
     return await this.attributeRepo.create(attribute);
   }
 
-  async handleUpdate(command: UpdateAttributeCommand): Promise<AttributeEntity> {
+  async handleUpdate(
+    command: UpdateAttributeCommand,
+  ): Promise<AttributeEntity> {
     const existing = await this.attributeRepo.findById(command.id);
     if (!existing) {
       throw new BusinessException(
@@ -56,7 +67,10 @@ export class AttributeCommandHandler {
     const key = command.key ?? existing.key;
 
     if (command.entity_type || command.key) {
-      const conflict = await this.attributeRepo.findByEntityTypeAndKey(entity_type, key);
+      const conflict = await this.attributeRepo.findByEntityTypeAndKey(
+        entity_type,
+        key,
+      );
       if (conflict && conflict.id.value !== command.id) {
         throw new BusinessException(
           ErrorEnum.REQUEST_VALIDATION_ERROR,
@@ -70,7 +84,10 @@ export class AttributeCommandHandler {
       entity_type: entity_type,
       key: key,
       data_type: command.data_type ?? existing.data_type,
-      description: command.description !== undefined ? command.description : existing.description,
+      description:
+        command.description !== undefined
+          ? command.description
+          : existing.description,
     });
 
     return await this.attributeRepo.update(updatedAttribute);

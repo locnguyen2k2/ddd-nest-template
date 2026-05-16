@@ -4,10 +4,14 @@ import configs from '@/config';
 import { SharedModules } from '@/shared/shared.modules';
 import { ScheduleModule } from '@nestjs/schedule';
 import { IamModule } from '@/modules/iam/iam.module';
+import { NotificationModule } from '@/modules/notification/notification.module';
 import { ClsModule } from 'nestjs-cls';
 import { AppController } from './app.controller';
+import { PasswordSecurityGuard } from './modules/iam/presentation/guards/passsword-security.guard';
+import { APP_GUARD } from '@nestjs/core';
+import { ThrottlerGuard } from '@nestjs/throttler';
 
-const modules = [IamModule];
+const modules = [IamModule, NotificationModule];
 
 @Module({
   imports: [
@@ -27,9 +31,7 @@ const modules = [IamModule];
     ...modules,
   ],
 
-  controllers: [
-    AppController,
-  ],
+  controllers: [AppController],
 
   providers: [
     // JWT Guard
@@ -38,6 +40,14 @@ const modules = [IamModule];
     // { provide: APP_GUARD, useClass: GqlThrottlerGuard },
     // // Role-base access control authorization
     // { provide: APP_GUARD, useClass: RbacAuthGuard },
+    {
+      provide: APP_GUARD,
+      useClass: PasswordSecurityGuard,
+    },
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard,
+    },
   ],
 })
 export class AppModule { }

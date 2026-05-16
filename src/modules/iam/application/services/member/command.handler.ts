@@ -1,6 +1,13 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { MEMBER_REPO, IMemberRepository } from '@/modules/iam/domain/repositories/member.repository';
-import { CreateMemberArgs, UpdateMemberArgs, DeleteMemberArgs } from '../../dtos/commands/member-cmd.dto';
+import {
+  MEMBER_REPO,
+  IMemberRepository,
+} from '@/modules/iam/domain/repositories/member.repository';
+import {
+  CreateMemberArgs,
+  UpdateMemberArgs,
+  DeleteMemberArgs,
+} from '../../dtos/commands/member-cmd.dto';
 import { Member } from '@/modules/iam/domain/entities/member.entity';
 import { uuidv7 } from 'uuidv7';
 import { BusinessException } from '@/common/http/business-exception';
@@ -12,12 +19,14 @@ export class MemberCommandHandler {
   constructor(
     @Inject(MEMBER_REPO)
     private readonly memberRepo: IMemberRepository,
-  ) { }
+  ) {}
 
   async handleCreateMember(command: CreateMemberArgs): Promise<Member> {
     const existing = await this.memberRepo.findByStaffId(command.staff_id);
 
-    const existingInProject = existing.find((m) => m.project_id === command.project_id);
+    const existingInProject = existing.find(
+      (m) => m.project_id === command.project_id,
+    );
     if (existingInProject) {
       throw new BusinessException(
         ErrorEnum.REQUEST_VALIDATION_ERROR,

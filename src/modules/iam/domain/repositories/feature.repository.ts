@@ -13,13 +13,13 @@ export interface IFeatureRepository
   create(data: Feature): Promise<Feature>;
   update(id: string, data: Feature): Promise<Feature>;
   delete(id: string): Promise<void>;
-  findByProjectId(prjId: string): Promise<Feature[]>
+  findByProjectId(prjId: string): Promise<Feature[]>;
 
-  growthByMonth(organization_id: string): Promise<StatsGrowInfo>
-  growthByYear(organization_id: string): Promise<StatsGrowInfo>
-  growthByWeek(organization_id: string): Promise<StatsGrowInfo>
-  growthByDay(organization_id: string): Promise<StatsGrowInfo>
+  growthByMonth(organization_id: string): Promise<StatsGrowInfo>;
+  growthByYear(organization_id: string): Promise<StatsGrowInfo>;
+  growthByWeek(organization_id: string): Promise<StatsGrowInfo>;
+  growthByDay(organization_id: string): Promise<StatsGrowInfo>;
 
-  countBeforeByMonth(org_id: string): Promise<number>
-  countByMonth(org_id: string): Promise<number>
+  countBeforeByMonth(org_id: string): Promise<number>;
+  countByMonth(org_id: string): Promise<number>;
 }

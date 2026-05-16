@@ -1,9 +1,18 @@
 import { ApiProperty, ApiPropertyOptional, PartialType } from '@nestjs/swagger';
-import { IsEnum, IsNotEmpty, IsOptional, IsString, ValidateNested } from 'class-validator';
+import {
+  IsEnum,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  ValidateNested,
+} from 'class-validator';
 import { Effect } from '../../../domain/entities/policy.entity';
 import { PermissionAction } from '@/common/enum';
 import { IsJsonLogic } from '@/common/validators/json-logic.validator';
-import { BasePageOptionDto, BaseCursorPageOptionDto } from '@/common/pagination';
+import {
+  BasePageOptionDto,
+  BaseCursorPageOptionDto,
+} from '@/common/pagination';
 import { Expose, Type } from 'class-transformer';
 
 export enum Clearance {
@@ -19,8 +28,7 @@ export enum PlanTier {
   ENTERPRISE = 'enterprise',
 }
 
-export enum Sensitivity {
-}
+export enum Sensitivity {}
 
 export class SubjectAttributes {
   @ApiPropertyOptional({ example: 'developer' })
@@ -151,13 +159,15 @@ export class CreatePolicyDto {
   @IsNotEmpty()
   resource!: string;
 
-  @ApiProperty({ example: { '==': [{ var: 'user.id' }, { var: 'resource.owner_id' }] } })
+  @ApiProperty({
+    example: { '==': [{ var: 'user.id' }, { var: 'resource.owner_id' }] },
+  })
   @IsJsonLogic()
   @IsNotEmpty()
   condition!: any;
 }
 
-export class UpdatePolicyDto extends PartialType(CreatePolicyDto) { }
+export class UpdatePolicyDto extends PartialType(CreatePolicyDto) {}
 
 export class PaginatePoliciesQuery extends BasePageOptionDto {
   @ApiPropertyOptional({ example: 'CREATE' })

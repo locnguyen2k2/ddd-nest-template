@@ -8,5 +8,4 @@ export interface GetOrganizationBySlugQuery {
   slug: string;
 }
 
-export interface ListOrganizationsQuery extends BasePageOptionDto {
-}
+export interface ListOrganizationsQuery extends BasePageOptionDto {}

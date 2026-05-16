@@ -13,12 +13,27 @@ import {
   ApiResponse,
   ApiBearerAuth,
 } from '@nestjs/swagger';
-import { RegisterUserDto, LoginUserDto, VerifyAccessTokenDto, RefreshTokenDto, LogoutDto } from '@/modules/iam/presentation/dtos/req/user.dto';
-import { AuthResponseDto, UserResponseDto, TokenResponseDto, CaptchaResponseDto } from '@/modules/iam/presentation/dtos/res/user-response.dto';
+import {
+  RegisterUserDto,
+  LoginUserDto,
+  VerifyAccessTokenDto,
+  RefreshTokenDto,
+  LogoutDto,
+} from '@/modules/iam/presentation/dtos/req/user.dto';
+import {
+  AuthResponseDto,
+  UserResponseDto,
+  TokenResponseDto,
+  CaptchaResponseDto,
+} from '@/modules/iam/presentation/dtos/res/user-response.dto';
 import { UserCmdHandler } from '@/modules/iam/application/services/user/command.handler';
 import { AuthCmdHandler } from '@/modules/iam/application/services/auth/command.handler';
 import { RegisterUserArgs } from '@/modules/iam/application/dtos/commands/auth-cmd.dto';
-import { VerifyAccessTokenArgs, RefreshTokenArgs, LogoutArgs } from '@/modules/iam/application/dtos/commands/auth-cmd.dto';
+import {
+  VerifyAccessTokenArgs,
+  RefreshTokenArgs,
+  LogoutArgs,
+} from '@/modules/iam/application/dtos/commands/auth-cmd.dto';
 import { LoginArgs } from '@/modules/iam/application/dtos/commands/auth-cmd.dto';
 import { API_VERS } from '@/common/constant';
 import { BusinessException } from '@/common/http/business-exception';
@@ -27,6 +42,7 @@ import { User } from '@/common/decorators';
 import { UserQueryHandler } from '../../application/services/user/query.handler';
 import { JwtAuthGuard } from '../guards/jwt-auth.guard';
 import { IPayload } from '../../domain/services/auth.service';
+import { PasswordSecurityGuard } from '../guards/passsword-security.guard';
 
 @ApiTags('users')
 @Controller(API_VERS.V1 + '/users')
@@ -46,9 +62,7 @@ export class UserController {
     type: UserResponseDto,
   })
   @UseGuards(JwtAuthGuard)
-  async me(
-    @User() user: IPayload,
-  ): Promise<UserResponseDto> {
+  async me(@User() user: IPayload): Promise<UserResponseDto> {
     return await this.userQueryHandler.profile(user.sub);
   }
 
@@ -59,7 +73,10 @@ export class UserController {
     description: 'User registered successfully',
     type: AuthResponseDto,
   })
-  @ApiResponse({ status: 400, description: 'Bad Request - Username or email already taken' })
+  @ApiResponse({
+    status: 400,
+    description: 'Bad Request - Username or email already taken',
+  })
   @HttpCode(HttpStatus.CREATED)
   async register(
     @Body() registerUserDto: RegisterUserDto,
@@ -96,11 +113,13 @@ export class UserController {
     description: 'User logged in successfully',
     type: AuthResponseDto,
   })
-  @ApiResponse({ status: 401, description: 'Unauthorized - Invalid credentials' })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - Invalid credentials',
+  })
+  @UseGuards(PasswordSecurityGuard)
   @HttpCode(HttpStatus.OK)
-  async login(
-    @Body() loginUserDto: LoginUserDto,
-  ): Promise<AuthResponseDto> {
+  async login(@Body() loginUserDto: LoginUserDto): Promise<AuthResponseDto> {
     try {
       const command: LoginArgs = {
         username: loginUserDto.username,
@@ -111,8 +130,8 @@ export class UserController {
 
       return await this.authCmdHandler.login(command);
     } catch (error: any) {
-      console.log(error)
-      throw new BusinessException(ErrorEnum.UNAUTHORIZED, error?.message);
+      console.log(error);
+      throw new BusinessException(`400|${error?.message}`);
     }
   }
 
@@ -123,7 +142,10 @@ export class UserController {
     description: 'Access token is valid',
     type: UserResponseDto,
   })
-  @ApiResponse({ status: 401, description: 'Unauthorized - Invalid or expired token' })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - Invalid or expired token',
+  })
   @HttpCode(HttpStatus.OK)
   async verifyAccessToken(
     @Body() verifyAccessTokenDto: VerifyAccessTokenDto,
@@ -145,7 +167,10 @@ export class UserController {
     description: 'Token refreshed successfully',
     type: TokenResponseDto,
   })
-  @ApiResponse({ status: 401, description: 'Unauthorized - Invalid or expired refresh token' })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - Invalid or expired refresh token',
+  })
   @HttpCode(HttpStatus.OK)
   async refreshToken(
     @Body() refreshTokenDto: RefreshTokenDto,
@@ -168,9 +193,7 @@ export class UserController {
   })
   @ApiResponse({ status: 401, description: 'Unauthorized - Invalid tokens' })
   @HttpCode(HttpStatus.OK)
-  async logout(
-    @Body() logoutDto: LogoutDto,
-  ): Promise<void> {
+  async logout(@Body() logoutDto: LogoutDto): Promise<void> {
     try {
       const userResponse = await this.authCmdHandler.verifyAccessToken({
         accessToken: logoutDto.access_token,

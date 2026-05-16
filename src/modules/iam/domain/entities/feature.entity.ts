@@ -44,9 +44,7 @@ export class Feature extends AggregateRoot<Feature, string> {
   private _updated_by: string | undefined;
   private _attributes: Attributes;
 
-  private constructor(
-    props: CreateFeatureProps,
-  ) {
+  private constructor(props: CreateFeatureProps) {
     super(props.id);
     this._name = props.name;
     this._slug = props.slug;

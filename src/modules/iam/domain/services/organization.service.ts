@@ -1,8 +1,5 @@
-import { OrganizationRepository } from "../../infrastructure/persistence/repositories/organization.repository";
+import { OrganizationRepository } from '../../infrastructure/persistence/repositories/organization.repository';
 
 export class OrgSerevice {
-    constructor(
-        private readonly orgRepo: OrganizationRepository,
-    ) {
-    }
+  constructor(private readonly orgRepo: OrganizationRepository) {}
 }

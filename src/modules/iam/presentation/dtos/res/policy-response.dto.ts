@@ -50,7 +50,6 @@ export class PolicyResponseDto {
   }
 }
 
-
 export class PaginatePoliciesResponseDto {
   @ApiProperty({ type: [PolicyResponseDto] })
   data!: PolicyResponseDto[];
@@ -68,7 +67,6 @@ export class CursorPoliciesResponseDto {
   @Type(() => CursorPaginationDto)
   paginated!: CursorPaginationDto;
 }
-
 
 export class EvaluatedPolicyDto extends PolicyResponseDto {
   @ApiProperty()

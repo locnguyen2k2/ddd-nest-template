@@ -1,0 +1,355 @@
+import {
+  Inject,
+  Injectable,
+  OnModuleDestroy,
+  OnModuleInit,
+} from '@nestjs/common';
+import { AmqpConnectionManager, ChannelWrapper } from 'amqp-connection-manager';
+import { CACHE_PORT, CachePort } from '../../application/ports/cache.port';
+
+export const RABBITMQ_CONNECTION = 'RABBITMQ_CONNECTION';
+
+import { ConfirmChannel } from 'amqplib';
+import { ConfigService } from '@nestjs/config';
+import { ConfigKeyPaths, IRabbitMQConfig, rabbitmqConfigKey } from '@/config';
+import { BusinessException } from '@/common/http/business-exception';
+import { LogExecutionTime } from '@/common/decorators/log-execution.decorator';
+import { RABBITMQ_EXCHANGE, RABBITMQ_QUEUE } from '@/common/constant';
+
+@Injectable()
+export class RabbitMQService implements OnModuleInit, OnModuleDestroy {
+  private channelWrapper: ChannelWrapper;
+  private configs: IRabbitMQConfig;
+  private consumerTags: Map<string, string> = new Map();
+  private readonly exchangeNames: { exchange: string; queue: string }[] = [
+    {
+      exchange: RABBITMQ_EXCHANGE.NOTIFICATIONS,
+      queue: RABBITMQ_QUEUE.NOTIFICATIONS,
+    },
+    {
+      exchange: RABBITMQ_EXCHANGE.IAM,
+      queue: RABBITMQ_QUEUE.IAM,
+    },
+  ];
+
+  constructor(
+    @Inject(RABBITMQ_CONNECTION)
+    private readonly connection: AmqpConnectionManager,
+    @Inject(CACHE_PORT) private readonly cache: CachePort,
+    private readonly configService: ConfigService<ConfigKeyPaths>,
+  ) {
+    const rbmqConfigs = this.configService.get<IRabbitMQConfig>(rabbitmqConfigKey);
+    if (!rbmqConfigs) {
+      throw new BusinessException('400|RabbitMQ config not found');
+    }
+    this.configs = rbmqConfigs;
+    this.connection.on('connect', () => console.log('RabbitMQ Connected'));
+    this.connection.on('disconnect', (err) =>
+      console.error('RabbitMQ Disconnected:', err),
+    );
+
+    this.channelWrapper = this.connection.createChannel();
+    this.channelWrapper.on('error', (err) =>
+      console.error('RabbitMQ Channel Error:', err),
+    );
+
+    this.channelWrapper.on('close', () => {
+      console.log('RabbitMQ Channel Closed');
+      this.consumerTags.clear();
+    });
+  }
+
+  @LogExecutionTime()
+  async initialize() {
+    for (const { exchange, queue } of this.exchangeNames) {
+      const [queueName, queuePriority] = queue.split(':');
+      const limitQueue = queuePriority ? parseInt(queuePriority) : 1;
+      const tagQueues: Promise<boolean>[] = [];
+
+      for (let i = 0; i < limitQueue; i++) {
+        const tagQueueName = queuePriority ? `${queueName}_${i}` : queueName;
+        // await this.setConsumer(exchange, tagQueueName);
+        tagQueues.push(this.setConsumer(exchange, tagQueueName));
+      }
+      await Promise.all(tagQueues);
+    }
+  }
+
+  async onModuleInit() {
+    if (!this.connection.isConnected()) {
+      await new Promise((resolve) => this.connection.once('connect', resolve));
+    }
+    await this.clearQueueBeforeInitialize()
+    await this.initialize();
+  }
+
+  async onModuleDestroy() {
+    await this.connection.close();
+  }
+
+  async publish(
+    exchange: string,
+    routingKey: string,
+    content: any,
+    options?: any,
+  ) {
+    return await this.channelWrapper.publish(
+      exchange,
+      routingKey,
+      Buffer.from(JSON.stringify(content)),
+      options,
+    );
+  }
+
+  async sendToQueue(queue: string, content: any, options?: any) {
+    await this.channelWrapper.sendToQueue(
+      queue,
+      Buffer.from(JSON.stringify(content)),
+      options,
+    );
+  }
+
+  async createConsumerChannel(
+    setup: (channel: ConfirmChannel) => Promise<void>,
+  ): Promise<any> {
+    return this.connection.createChannel({
+      setup,
+    });
+  }
+
+  async ableToConsume(queueName: string): Promise<boolean> {
+    try {
+      const url = `https://${this.configs.host}/api/queues`;
+
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          Authorization: `Basic ${Buffer.from(`${this.configs.user}:${this.configs.pass}`).toString('base64')}`,
+        },
+      });
+
+      const data = await response.json();
+      const queueInfo = data.find((queue: any) => {
+        return queue.name === queueName;
+      });
+      return (queueInfo?.consumers || 0) < 1;
+    } catch (error) {
+      return true;
+    }
+  }
+
+  async setConsumer(exchange: string, queue: string, forceRecreate: boolean = false) {
+    let isSuccess = false;
+
+    await this.channelWrapper.addSetup(async (channel: ConfirmChannel) => {
+      try {
+        await channel.prefetch(1); // Consume one message at a time
+        const deadLetterExchange = `${exchange}.dlx`;
+        const deadLetterQueue = `${queue}.dlq`;
+
+        // Add dead letter exchange and queue
+        await channel.assertExchange(deadLetterExchange, 'direct', { durable: true });
+        await channel.assertQueue(deadLetterQueue, { durable: true });
+        await channel.bindQueue(deadLetterQueue, deadLetterExchange, 'dead');
+
+        // Add consistent hash exchange
+        await channel.assertExchange(exchange, 'x-consistent-hash', { durable: true });
+        await channel.assertQueue(queue, {
+          durable: true,
+          arguments: {
+            'x-dead-letter-exchange': deadLetterExchange,
+            'x-dead-letter-routing-key': 'dead',
+          },
+        });
+        await channel.bindQueue(queue, exchange, '1', {
+          'x-bind-weight': 1,
+        });
+        isSuccess = true;
+      } catch (error) {
+        console.error('Error setting up consumer:', error);
+      }
+    })
+
+    return isSuccess;
+  }
+
+  async consume(
+    queue: string,
+    onMessage: (msg: any) => Promise<void>,
+    options?: any,
+  ): Promise<any> {
+    const [queueName, queuePriority] = queue.split(':');
+    const replica = Number(this.configs.replica || 1);
+    const queuePriorityNum = queuePriority
+      ? Math.ceil(parseInt(queuePriority) / replica)
+      : 1;
+    const limitQueue = queuePriority ? parseInt(queuePriority) : 1;
+
+    const statsKey = `queue:stats:${queueName}`;
+    const pauseKey = `queue:pause:${queueName}`;
+
+    return this.connection.createChannel({
+      setup: async (channel: ConfirmChannel) => {
+        await channel.prefetch(options?.prefetch || 1);
+
+        let consumerCount = 0;
+        let tagQueueIndex = 0;
+
+        while (consumerCount < queuePriorityNum && tagQueueIndex < limitQueue) {
+          const tagQueueName = queuePriority
+            ? `${queueName}_${tagQueueIndex}`
+            : queueName;
+
+          tagQueueIndex++;
+          const isAble = await this.ableToConsume(tagQueueName);
+
+          if (isAble) {
+            const mapping = this.exchangeNames.find(
+              ({ queue }) => queue.split(':')[0] === queueName,
+            );
+            const exchange = mapping?.exchange;
+            const deadLetterExchange = `${exchange}.dlx`;
+
+            await channel.assertQueue(tagQueueName, {
+              durable: true,
+              arguments: {
+                'x-dead-letter-exchange': deadLetterExchange,
+                'x-dead-letter-routing-key': 'dead',
+              },
+            });
+
+            const consumerResult = await channel.consume(tagQueueName, async (msg) => {
+              if (!msg) return;
+
+              const isPaused = await this.cache.exists(pauseKey);
+              if (isPaused) {
+                channel.nack(msg, false, true);
+                return;
+              }
+
+              try {
+                await this.cache.hset(
+                  statsKey,
+                  'processing',
+                  await this.cache.incr(`${statsKey}:processing`),
+                );
+
+                const content = JSON.parse(msg.content.toString());
+                await onMessage(content);
+
+                channel.ack(msg);
+                await this.cache.hset(
+                  statsKey,
+                  'success',
+                  await this.cache.incr(`${statsKey}:success`),
+                );
+                await this.cache.hset(
+                  statsKey,
+                  'completed',
+                  await this.cache.incr(`${statsKey}:completed`),
+                );
+              } catch (error) {
+                console.error(
+                  `Error processing message from queue ${tagQueueName}:`,
+                  error,
+                );
+                channel.nack(msg, false, false);
+                await this.cache.hset(
+                  statsKey,
+                  'failed',
+                  await this.cache.incr(`${statsKey}:failed`),
+                );
+              } finally {
+                await this.cache.hset(
+                  statsKey,
+                  'processing',
+                  await this.cache.decr(`${statsKey}:processing`),
+                );
+              }
+            });
+            if (consumerResult?.consumerTag) {
+              this.consumerTags.set(queueName, consumerResult.consumerTag);
+            }
+            consumerCount++;
+          }
+        }
+      },
+    });
+  }
+
+  processAndGroupQueues(data: any[]): Record<string, { queue: number; messages: number }> {
+    const groupedData: Record<string, { queue: number; messages: number }> = {};
+
+    data.forEach((queue) => {
+      if (queue.name.includes('dead_letter')) return;
+
+      const parts = queue.name.split('_');
+      const groupName = parts.slice(0, -1).join('_');
+
+      if (!groupedData[groupName]) {
+        groupedData[groupName] = { queue: 0, messages: 0 };
+      }
+
+      groupedData[groupName].queue += 1;
+      groupedData[groupName].messages += queue.messages;
+    });
+    return groupedData;
+  }
+
+  async getCurrentQueueNumber(queueName?: string) {
+    try {
+      const request = await fetch(`https://${this.configs.host}/api/queues`, {
+        method: 'GET',
+        headers: {
+          Authorization: `Basic ${Buffer.from(
+            `${this.configs.user}:${this.configs.pass}`,
+          ).toString('base64')}`,
+        },
+      });
+      const queues = await request.json();
+
+      const activeQueues = queues.filter(
+        (queue: { name: string }) => !queue.name.endsWith('.dlq'),
+      );
+      return this.processAndGroupQueues(activeQueues);
+    } catch (error) {
+      console.error('Failed to get current queue number.', error);
+      return {};
+    }
+  }
+
+  async removeQueue(queueName: string) {
+    try {
+      await this.channelWrapper.addSetup((channel: ConfirmChannel) => channel.deleteQueue(queueName));
+    } catch (error) {
+      console.error('Failed to remove queue.', error);
+    }
+  }
+
+  @LogExecutionTime()
+  async clearQueueBeforeInitialize() {
+    console.log('Clearing queues before initialize...');
+    const queues = await this.getCurrentQueueNumber();
+    let clearInfo: Record<string, { queue: number; limit: number }> = {};
+    for (const { queue } of this.exchangeNames) {
+      const [queueName, queuePriority] = queue.split(':');
+      const limitQueue = queuePriority ? parseInt(queuePriority) : 1;
+      if (queues[queueName] && queues[queueName].queue > limitQueue) {
+        clearInfo[queueName] = {
+          queue: queues[queueName].queue,
+          limit: limitQueue,
+        };
+      }
+    }
+    const deletedQueueNames: string[] = [];
+    for (const queueName of Object.keys(clearInfo)) {
+      const { queue, limit } = clearInfo[queueName];
+      for (let i = limit; i <= queue; i++) {
+        deletedQueueNames.push(`${queueName}_${i}`);
+        deletedQueueNames.push(`${queueName}_${i}.dlq`);
+      }
+    }
+    console.log('Deleted queue names:', deletedQueueNames);
+    await Promise.all(deletedQueueNames.map(queueName => this.removeQueue(queueName)));
+  }
+}

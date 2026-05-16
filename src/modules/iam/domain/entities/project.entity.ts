@@ -17,7 +17,7 @@ export interface IProjectProps {
   department?: Department;
 }
 
-export interface ICreateProject extends IProjectProps { }
+export interface ICreateProject extends IProjectProps {}
 
 export interface IUpdateProject extends Pick<IProjectProps, 'updated_by'> {
   name?: string;
@@ -116,7 +116,7 @@ export class ProjectEntity extends AggregateRoot<ProjectEntity, string> {
   get attributes(): Attributes {
     return this._attributes;
   }
-  
+
   get departmentID(): string | null {
     return this._department_id || null;
   }

@@ -21,7 +21,12 @@ export class SubscriptionResponseDto {
   @IsOptional()
   description?: string;
 
-  constructor(id: string, name: string, slug: string, description?: string | null) {
+  constructor(
+    id: string,
+    name: string,
+    slug: string,
+    description?: string | null,
+  ) {
     this.id = id;
     this.name = name;
     this.slug = slug;

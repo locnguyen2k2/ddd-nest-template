@@ -8,7 +8,10 @@ import { ConfigKeyPaths } from '@/config';
 import { CACHE_PORT, CachePort } from '@/shared/application/ports/cache.port';
 import { ConfigService } from '@nestjs/config';
 import { StaffMapper } from '../mappers/staff.mapper';
-import { IStaffRepository, STAFF_REPO } from '@/modules/iam/domain/repositories/staff.repository';
+import {
+  IStaffRepository,
+  STAFF_REPO,
+} from '@/modules/iam/domain/repositories/staff.repository';
 
 @Injectable()
 export class UserRepository extends CacheRepository implements IUserRepository {
@@ -21,7 +24,8 @@ export class UserRepository extends CacheRepository implements IUserRepository {
     private readonly rbacDBService: PrismaAdapter,
     @Inject(STAFF_REPO) private readonly staffRepo: IStaffRepository,
     redisConfig: ConfigService<ConfigKeyPaths>,
-    @Inject(CACHE_PORT) cachePort: CachePort,) {
+    @Inject(CACHE_PORT) cachePort: CachePort,
+  ) {
     super(redisConfig, cachePort);
   }
 
@@ -50,7 +54,7 @@ export class UserRepository extends CacheRepository implements IUserRepository {
     try {
       const [user, staffs] = await Promise.all([
         this.findById(userId),
-        this.staffRepo.findByUserId(userId)
+        this.staffRepo.findByUserId(userId),
       ]);
 
       if (!user) return null;
@@ -59,7 +63,7 @@ export class UserRepository extends CacheRepository implements IUserRepository {
 
       const item = UserMapper.toDomain({
         ...prismaUser,
-        organizations: prismaOrgs
+        organizations: prismaOrgs,
       });
       return item;
     } catch (error) {
@@ -68,11 +72,14 @@ export class UserRepository extends CacheRepository implements IUserRepository {
     }
   }
 
-  async findByIdWithOrganization(userId: string, orgId: string): Promise<UserEntity | null> {
+  async findByIdWithOrganization(
+    userId: string,
+    orgId: string,
+  ): Promise<UserEntity | null> {
     try {
       const [user, staffs] = await Promise.all([
         this.findById(userId),
-        this.staffRepo.findByUserIdAndOrgId(userId, orgId)
+        this.staffRepo.findByUserIdAndOrgId(userId, orgId),
       ]);
 
       if (!user || !staffs) return null;
@@ -81,7 +88,7 @@ export class UserRepository extends CacheRepository implements IUserRepository {
 
       const item = UserMapper.toDomain({
         ...prismaUser,
-        organizations: [prismaOrgs]
+        organizations: [prismaOrgs],
       });
       return item;
     } catch (error) {
@@ -91,23 +98,35 @@ export class UserRepository extends CacheRepository implements IUserRepository {
   }
 
   async findById(id: string): Promise<UserEntity | null> {
-    const item = await this.getWithCache(id, async () => await this.rbacDBService.user.findUnique({
-      where: {
-        id: id,
-      },
-    }));
+    const item = await this.getWithCache(
+      id,
+      async () =>
+        await this.rbacDBService.user.findUnique({
+          where: {
+            id: id,
+          },
+        }),
+    );
     if (!item) return null;
     return UserMapper.toDomain(item);
   }
 
   async findByEmail(email: string): Promise<UserEntity | null> {
-    const item = await this.getWithCache(email, async () => await this.rbacDBService.user.findUnique({ where: { email } }));
+    const item = await this.getWithCache(
+      email,
+      async () =>
+        await this.rbacDBService.user.findUnique({ where: { email } }),
+    );
     if (!item) return null;
     return UserMapper.toDomain(item);
   }
 
   async findByUsername(username: string): Promise<UserEntity | null> {
-    const item = await this.getWithCache(username, async () => await this.rbacDBService.user.findUnique({ where: { username } }));
+    const item = await this.getWithCache(
+      username,
+      async () =>
+        await this.rbacDBService.user.findUnique({ where: { username } }),
+    );
     if (!item) return null;
     return UserMapper.toDomain(item);
   }

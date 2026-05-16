@@ -43,10 +43,14 @@ import { JwtAuthGuard } from '../guards/jwt-auth.guard';
 import { TenantContextGuard } from '../guards/tenant-context.guard';
 import { AbacGuard } from '../guards/abac.guard';
 import { CheckAbac } from '../../../../common/decorators/check-abac.decorator';
-import { GetHeaderKey, HeaderKey, User } from '@/common/decorators'
+import { GetHeaderKey, HeaderKey, User } from '@/common/decorators';
 import { ClsService } from 'nestjs-cls';
 import { MyClsStore } from '@/common/interfaces/cls-store.interface';
-import { CreateProjectArgs, UpdateProjectArgs, DeleteProjectArgs } from '../../application/dtos/commands/project-cmd.dto';
+import {
+  CreateProjectArgs,
+  UpdateProjectArgs,
+  DeleteProjectArgs,
+} from '../../application/dtos/commands/project-cmd.dto';
 import { HeadersAuthGuard } from '../guards/headers-auth.guard';
 import { IPayload } from '../../domain/services/auth.service';
 
@@ -59,7 +63,7 @@ export class ProjectController {
     private readonly projectCmdHandler: ProjectCmdHandler,
     private readonly prjectQueryHandler: ProjectQueryHandler,
     private readonly cls: ClsService<MyClsStore>,
-  ) { }
+  ) {}
 
   @Get('percent-growth')
   @ApiOperation({ summary: 'Get project percent growth' })
@@ -75,7 +79,10 @@ export class ProjectController {
   @ApiResponse({ status: 500, description: 'Internal Server Error' })
   @HeaderKey(HeaderKeys.ORG_ID)
   @UseGuards(JwtAuthGuard, HeadersAuthGuard)
-  async percentGrowth(@Query('period') period: string, @GetHeaderKey(HeaderKeys.ORG_ID) orgId: string) {
+  async percentGrowth(
+    @Query('period') period: string,
+    @GetHeaderKey(HeaderKeys.ORG_ID) orgId: string,
+  ) {
     return await this.prjectQueryHandler.percentGrowth(orgId, period);
   }
 
@@ -96,7 +103,10 @@ export class ProjectController {
   @HeaderKey(HeaderKeys.ORG_ID)
   @CheckAbac(PermissionAction.CREATE, 'project')
   @UseGuards(JwtAuthGuard, HeadersAuthGuard, TenantContextGuard, AbacGuard)
-  async create(@Body() createProjectDto: CreateProjectDto, @User() user: IPayload): Promise<ProjectResponseDto> {
+  async create(
+    @Body() createProjectDto: CreateProjectDto,
+    @User() user: IPayload,
+  ): Promise<ProjectResponseDto> {
     const orgId = this.cls.get(StorageKeys.ORG_ID);
     const command: CreateProjectArgs = {
       ...createProjectDto,
@@ -156,12 +166,11 @@ export class ProjectController {
   @HeaderKey(HeaderKeys.ORG_ID)
   @CheckAbac(PermissionAction.READ, 'project')
   @UseGuards(JwtAuthGuard, HeadersAuthGuard, TenantContextGuard, AbacGuard)
-  async getBySlug(
-    @Param('slug') slug: string,
-  ): Promise<ProjectResponseDto> {
+  async getBySlug(@Param('slug') slug: string): Promise<ProjectResponseDto> {
     const orgId = this.cls.get(StorageKeys.ORG_ID);
     const query: GetProjectBySlugQuery = { slug, organization_id: orgId };
-    const project = await this.prjectQueryHandler.handlerGetProjectBySlug(query);
+    const project =
+      await this.prjectQueryHandler.handlerGetProjectBySlug(query);
 
     if (!project) {
       throw new Error('Project not found');
@@ -275,9 +284,7 @@ export class ProjectController {
   @HeaderKey(HeaderKeys.ORG_ID)
   @CheckAbac(PermissionAction.DELETE, 'project')
   @UseGuards(JwtAuthGuard, HeadersAuthGuard, TenantContextGuard, AbacGuard)
-  async delete(
-    @Param('id') id: string,
-  ): Promise<void> {
+  async delete(@Param('id') id: string): Promise<void> {
     const orgId = this.cls.get(StorageKeys.ORG_ID);
     const command: DeleteProjectArgs = {
       id,

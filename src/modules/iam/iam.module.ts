@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { FeatureController } from './presentation/controllers/feature.controller';
+import { RabbitMQModule } from '@/shared/infrastructure/rabbitmq/rabbitmq.module';
 import { OrganizationController } from './presentation/controllers/organization.controller';
 import { UserController } from './presentation/controllers/user.controller';
 import { FeatureQueryHandler } from '@/modules/iam/application/services/feature/query.handler';
@@ -34,12 +35,16 @@ import { UserService } from './domain/services/user.service';
 import { UserCmdHandler } from './application/services/user/command.handler';
 import { USER_REPO } from './domain/repositories/user.repository';
 import { UserQueryHandler } from './application/services/user/query.handler';
+import { UserEventPublisher } from './infrastructure/events/user.event-publisher';
 import { OrgSerevice } from './domain/services/organization.service';
 import { POLICY_REPO } from './domain/repositories/policy.repository';
 import { PrismaPolicyRepository } from './infrastructure/persistence/repositories/policy.repository';
 import { AbacGuard } from './presentation/guards/abac.guard';
 import { TenantContextGuard } from './presentation/guards/tenant-context.guard';
-import { AUTH_WRAPPER_CMD_HANDLER, AuthWrapperCmdHandler } from './application/services/auth/wrapper.command.handler';
+import {
+  AUTH_WRAPPER_CMD_HANDLER,
+  AuthWrapperCmdHandler,
+} from './application/services/auth/wrapper.command.handler';
 import { PolicyQueryService } from './application/services/policy/policy-query.service';
 import { PolicyEvaluationService } from './application/services/policy/policy-evaluation.service';
 
@@ -85,6 +90,10 @@ import { RoleRepository } from './infrastructure/persistence/repositories/role.r
 import { RoleController } from './presentation/controllers/role.controller';
 import { StaffQueryHandler } from './application/services/staffs/query.handler';
 import { StaffController } from './presentation/controllers/staff.controller';
+import { RabbitNotificationModule } from '../notification/infrastructure/rabbit/rabbit-notification.module';
+import { NotificationModule } from '../notification/notification.module';
+import { MailerModule } from '@nestjs-modules/mailer';
+import { ThrottleModule } from '@/shared/infrastructure/throttle.module';
 
 const abacProviders = [
   PrismaPolicyRepository,
@@ -131,6 +140,7 @@ const userProviders = [
   UserService,
   UserCmdHandler,
   UserQueryHandler,
+  UserEventPublisher,
   {
     provide: USER_REPO,
     useClass: UserRepository,
@@ -167,7 +177,7 @@ const authProviders = [
   {
     provide: CAPTCHA_REPO,
     useClass: CaptchaCacheRepository,
-  }, 
+  },
   {
     provide: TOKEN_BLACKLIST_REPO,
     useClass: TokenBlacklistCacheRepository,
@@ -209,22 +219,63 @@ const roleProviders = [
 ];
 
 const featureExports = [FeatureRepository];
-const organizationExports = [OrganizationRepository, OrgSerevice, TenantContextGuard];
-const projectExports = [ProjectRepository, ProjectCmdHandler, ProjectQueryHandler];
-const userExports = [UserRepository, UserService, UserCmdHandler, UserQueryHandler];
+const organizationExports = [
+  OrganizationRepository,
+  OrgSerevice,
+  TenantContextGuard,
+];
+const projectExports = [
+  ProjectRepository,
+  ProjectCmdHandler,
+  ProjectQueryHandler,
+];
+const userExports = [
+  UserRepository,
+  UserService,
+  UserCmdHandler,
+  UserQueryHandler,
+];
 const authExports = [AuthCmdHandler, AuthDomainService, AuthWrapperCmdHandler];
-const abacExports = [PrismaPolicyRepository, PolicyEvaluationService, AbacGuard];
+const abacExports = [
+  PrismaPolicyRepository,
+  PolicyEvaluationService,
+  AbacGuard,
+];
 const staffExports = [StaffRepository];
-const departmentExports = [DepartmentRepository, DepartmentCommandHandler, DepartmentQueryHandler];
-const memberExports = [MemberRepository, MemberCommandHandler, MemberQueryHandler];
-const attributeExports = [AttributeRepository, AttributeCommandHandler, AttributeQueryHandler];
-const clearanceExports = [ClearanceRepository, ClearanceCommandHandler, ClearanceQueryHandler];
-const subscriptionExports = [SubscriptionRepository, SubscriptionCommandHandler, SubscriptionQueryHandler];
-const environmentExports = [EnvironmentRepository, EnvironmentCommandHandler, EnvironmentQueryHandler];
+const departmentExports = [
+  DepartmentRepository,
+  DepartmentCommandHandler,
+  DepartmentQueryHandler,
+];
+const memberExports = [
+  MemberRepository,
+  MemberCommandHandler,
+  MemberQueryHandler,
+];
+const attributeExports = [
+  AttributeRepository,
+  AttributeCommandHandler,
+  AttributeQueryHandler,
+];
+const clearanceExports = [
+  ClearanceRepository,
+  ClearanceCommandHandler,
+  ClearanceQueryHandler,
+];
+const subscriptionExports = [
+  SubscriptionRepository,
+  SubscriptionCommandHandler,
+  SubscriptionQueryHandler,
+];
+const environmentExports = [
+  EnvironmentRepository,
+  EnvironmentCommandHandler,
+  EnvironmentQueryHandler,
+];
 const roleExports = [RoleRepository, RoleCommandHandler, RoleQueryHandler];
 
 @Module({
-  imports: [],
+  imports: [NotificationModule, MailerModule],
   controllers: [
     AttributeController,
     ClearanceController,

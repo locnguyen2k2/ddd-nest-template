@@ -22,14 +22,11 @@ export class RoleCommandHandler {
     private readonly roleRepository: IRoleRepository,
     @Inject(ORGANIZATION_REPO)
     private readonly organizationRepository: IOrganizationRepository,
-  ) { }
+  ) {}
 
   async handleCreateRole(command: CreateRoleArgs): Promise<Role> {
     const [existingRole, existingOrganization] = await Promise.all([
-      this.roleRepository.findOneBySlug(
-        command.slug,
-        command.organization_id,
-      ),
+      this.roleRepository.findOneBySlug(command.slug, command.organization_id),
       this.organizationRepository.findById(command.organization_id),
     ]);
 
@@ -55,7 +52,7 @@ export class RoleCommandHandler {
       slug: slug,
       description: command.description,
       organization_id: command.organization_id,
-      attributes: Attributes.create(command.attributes)  || {},
+      attributes: Attributes.create(command.attributes) || {},
       created_by: undefined,
       updated_by: undefined,
     });

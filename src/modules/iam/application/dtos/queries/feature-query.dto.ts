@@ -11,7 +11,6 @@ export interface GetFeatureBySlugQuery {
   slug: string;
 
   organization_id: string;
-
 }
 
 export interface ListFeaturesQuery {

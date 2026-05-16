@@ -10,16 +10,25 @@ import { CacheRepository } from '@/shared/infrastructure/presistence/cache.repos
 import { ConfigKeyPaths } from '@/config';
 import { CACHE_PORT, CachePort } from '@/shared/application/ports/cache.port';
 import { ConfigService } from '@nestjs/config';
-import { cursorHelper, paginateHelper, SortableFieldEnum, SortedEnum } from '@/common/pagination';
-import { CursorOrganizationsQuery, PaginateOrganizationsQuery } from '@/modules/iam/presentation/dtos/req/organization.dto';
-import { Prisma } from "@internal/rbac/client"
+import {
+  cursorHelper,
+  paginateHelper,
+  SortableFieldEnum,
+  SortedEnum,
+} from '@/common/pagination';
+import {
+  CursorOrganizationsQuery,
+  PaginateOrganizationsQuery,
+} from '@/modules/iam/presentation/dtos/req/organization.dto';
+import { Prisma } from '@internal/rbac/client';
 import { Period } from '@/common/enum';
 import { StatsGrowInfo } from '@/common/interfaces/stats.interface';
 
 @Injectable()
 export class OrganizationRepository
   extends CacheRepository
-  implements IOrganizationRepository {
+  implements IOrganizationRepository
+{
   protected readonly boundedContext: string = 'iam';
   protected readonly aggregateType: string = 'organization';
   protected readonly ttlConfig: { [key: string]: number } = {
@@ -66,10 +75,10 @@ export class OrganizationRepository
       SELECT COUNT(*)::int
       FROM "Organization"
       WHERE created_at < CURRENT_DATE - (SELECT days_in_month - 1 FROM month_days) * INTERVAL '1 day' AND created_by = ${user_id};
-      `
+      `;
       return result[0].count;
     } catch (e: any) {
-      throw new BusinessException(ErrorEnum.REQUEST_FAILED_TO_QUERY)
+      throw new BusinessException(ErrorEnum.REQUEST_FAILED_TO_QUERY);
     }
   }
 
@@ -98,7 +107,10 @@ export class OrganizationRepository
               `;
       return result[0].count;
     } catch (e: any) {
-      throw new BusinessException(ErrorEnum.REQUEST_FAILED_TO_EXECUTE, e.message);
+      throw new BusinessException(
+        ErrorEnum.REQUEST_FAILED_TO_EXECUTE,
+        e.message,
+      );
     }
   }
 
@@ -113,23 +125,24 @@ export class OrganizationRepository
             user_id: pageOptions.userId,
           },
         },
-      })
+      });
     }
-    const { data = [], paginated } =
-      await paginateHelper<Prisma.OrganizationGetPayload<{}>>({
-        query: this.rbacDBService.organization,
-        pageOptions,
-        ...filterOptions.length > 0 && {
-          filterOptions,
-          include: {
-            staffs: {
-              select: {
-                user_id: true
-              }
-            }
+    const { data = [], paginated } = await paginateHelper<
+      Prisma.OrganizationGetPayload<{}>
+    >({
+      query: this.rbacDBService.organization,
+      pageOptions,
+      ...(filterOptions.length > 0 && {
+        filterOptions,
+        include: {
+          staffs: {
+            select: {
+              user_id: true,
+            },
           },
         },
-      });
+      }),
+    });
 
     return {
       data: data.map((item) => OrganizationMapper.toDomain(item)),
@@ -148,26 +161,27 @@ export class OrganizationRepository
             user_id: pageOptions.userId,
           },
         },
-      })
+      });
     }
 
-    const { data = [], paginated } =
-      await cursorHelper<Prisma.OrganizationGetPayload<{}>>({
-        query: this.rbacDBService.organization,
-        pageOptions,
-        cursorField: SortableFieldEnum.CREATED_AT,
-        orderDirection: SortedEnum.DESC,
-        ...filterOptions.length > 0 && {
-          filterOptions,
-          include: {
-            staffs: {
-              select: {
-                user_id: true
-              }
-            }
+    const { data = [], paginated } = await cursorHelper<
+      Prisma.OrganizationGetPayload<{}>
+    >({
+      query: this.rbacDBService.organization,
+      pageOptions,
+      cursorField: SortableFieldEnum.CREATED_AT,
+      orderDirection: SortedEnum.DESC,
+      ...(filterOptions.length > 0 && {
+        filterOptions,
+        include: {
+          staffs: {
+            select: {
+              user_id: true,
+            },
           },
         },
-      });
+      }),
+    });
 
     return {
       data: data.map((item) => OrganizationMapper.toDomain(item)),
@@ -176,24 +190,28 @@ export class OrganizationRepository
   }
 
   @LogExecutionTime()
-  async cursorPaginationByJoiner(query: CursorOrganizationsQuery, joinerId: string) {
+  async cursorPaginationByJoiner(
+    query: CursorOrganizationsQuery,
+    joinerId: string,
+  ) {
     try {
-      const { data = [], paginated } =
-        await cursorHelper<Prisma.OrganizationGetPayload<{}>>({
-          query: this.rbacDBService.organization,
-          pageOptions: query,
-          cursorField: SortableFieldEnum.CREATED_AT,
-          orderDirection: SortedEnum.DESC,
-          filterOptions: [
-            {
-              users: {
-                some: {
-                  user_id: joinerId,
-                },
+      const { data = [], paginated } = await cursorHelper<
+        Prisma.OrganizationGetPayload<{}>
+      >({
+        query: this.rbacDBService.organization,
+        pageOptions: query,
+        cursorField: SortableFieldEnum.CREATED_AT,
+        orderDirection: SortedEnum.DESC,
+        filterOptions: [
+          {
+            users: {
+              some: {
+                user_id: joinerId,
               },
             },
-          ],
-        });
+          },
+        ],
+      });
 
       return {
         data: data.map((item) => OrganizationMapper.toDomain(item)),
@@ -205,7 +223,10 @@ export class OrganizationRepository
   }
 
   @LogExecutionTime()
-  async handleListOrganizationsByJoiner(query: PaginateOrganizationsQuery, joinerId: string) {
+  async handleListOrganizationsByJoiner(
+    query: PaginateOrganizationsQuery,
+    joinerId: string,
+  ) {
     try {
       const filterOptions: any[] = [];
 
@@ -216,20 +237,21 @@ export class OrganizationRepository
               user_id: query.userId,
             },
           },
-        })
+        });
       }
 
-      const { data = [], paginated } =
-        await paginateHelper<Prisma.OrganizationGetPayload<{}>>({
-          query: this.rbacDBService.organization,
-          pageOptions: query,
-          filterOptions: [
-            ...filterOptions,
-            {
-              staffs: { some: { user_id: joinerId } }
-            }
-          ],
-        });
+      const { data = [], paginated } = await paginateHelper<
+        Prisma.OrganizationGetPayload<{}>
+      >({
+        query: this.rbacDBService.organization,
+        pageOptions: query,
+        filterOptions: [
+          ...filterOptions,
+          {
+            staffs: { some: { user_id: joinerId } },
+          },
+        ],
+      });
 
       return {
         data: data.map((item) => OrganizationMapper.toDomain(item)),
@@ -244,14 +266,13 @@ export class OrganizationRepository
   @LogExecutionTime()
   async findStaffs(userId: string): Promise<Organization[]> {
     try {
-      const items = await this.getWithCache<Prisma.OrganizationGetPayload<{}>[]>(
-        `user:${userId}:organizations`,
-        async () => {
-          return await this.rbacDBService.organization.findMany({
-            where: { staffs: { some: { user_id: userId } } },
-          });
-        },
-      );
+      const items = await this.getWithCache<
+        Prisma.OrganizationGetPayload<{}>[]
+      >(`user:${userId}:organizations`, async () => {
+        return await this.rbacDBService.organization.findMany({
+          where: { staffs: { some: { user_id: userId } } },
+        });
+      });
       if (!items) {
         return [];
       }
@@ -290,14 +311,11 @@ export class OrganizationRepository
   async userJoinedAnyOrganization(userId: string): Promise<boolean> {
     try {
       const count =
-        (await this.getWithCache<number>(
-          `user:${userId}:joined`,
-          async () => {
-            return await this.rbacDBService.staff.count({
-              where: { user_id: userId },
-            });
-          },
-        )) || 0;
+        (await this.getWithCache<number>(`user:${userId}:joined`, async () => {
+          return await this.rbacDBService.staff.count({
+            where: { user_id: userId },
+          });
+        })) || 0;
       return count > 0;
     } catch (e: any) {
       throw new BusinessException(ErrorEnum.REQUEST_FAILED_TO_QUERY);
@@ -341,7 +359,11 @@ export class OrganizationRepository
   }
 
   @LogExecutionTime()
-  async updateUserAttributes(organization_id: string, user_id: string, attributes: any): Promise<void> {
+  async updateUserAttributes(
+    organization_id: string,
+    user_id: string,
+    attributes: any,
+  ): Promise<void> {
     try {
       await this.rbacDBService.staff.update({
         where: {
@@ -395,7 +417,8 @@ export class OrganizationRepository
           },
         });
       },
-      (org) => org.id);
+      (org) => org.id,
+    );
     return items.map((org) => OrganizationMapper.toDomain(org));
   }
 

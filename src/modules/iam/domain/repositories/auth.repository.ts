@@ -14,6 +14,6 @@ export interface ITokenBlacklistRepository {
 }
 
 export interface ICaptchaRepository {
-  getCaptcha(): Promise<{ captchaId: string, captcha: string }>;
-  confirmedCaptcha(data: { captchaId: string, captcha: string }): Promise<void>;
+  getCaptcha(): Promise<{ captchaId: string; captcha: string }>;
+  confirmedCaptcha(data: { captchaId: string; captcha: string }): Promise<void>;
 }
