@@ -55,8 +55,7 @@ export class AuthWrapperCmdHandler {
   }
 
   async verifyCaptcha(captchaId: string, captcha: string): Promise<boolean> {
-    await this.domainService.validateCaptcha(captchaId, captcha);
-    return true;
+    return await this.domainService.validateCaptcha(captchaId, captcha);
   }
 
   async validateUser(username: string, password: string): Promise<UserEntity> {

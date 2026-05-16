@@ -26,6 +26,7 @@ export class UserMapper {
 
     return UserEntity.create({
       id: id,
+      status: props.status as AccessControlStatus,
       email: props.email,
       username: props.username,
       password: Password.create(props.password),
@@ -57,6 +58,7 @@ export class UserMapper {
 
     return UserEntity.create({
       id: id,
+      status: props.status as AccessControlStatus,
       email: props.email,
       username: props.username,
       password: Password.create(props.password),

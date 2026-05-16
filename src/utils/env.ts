@@ -1,5 +1,3 @@
-import * as process from 'node:process';
-
 export type BaseType = number | string | boolean | undefined | null;
 export const cwd = process.cwd();
 

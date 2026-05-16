@@ -21,6 +21,7 @@ import { IOrganizationRepository } from '@/modules/iam/domain/repositories/organ
 import { OrganizationMapper } from '@/modules/iam/infrastructure/persistence/mappers/organization.mapper';
 import { AuthWrapperCmdHandler } from '../auth/wrapper.command.handler';
 import { UserEventPublisher } from '@/modules/iam/infrastructure/events/user.event-publisher';
+import { AccessControlStatus } from '@/common/enum';
 
 @Injectable()
 export class UserCmdHandler {
@@ -31,7 +32,7 @@ export class UserCmdHandler {
     @Inject(ORGANIZATION_REPO)
     private readonly orgRepo: IOrganizationRepository,
     private readonly userEventPublisher: UserEventPublisher,
-  ) {}
+  ) { }
 
   async register(args: RegisterUserArgs): Promise<AuthResponseDto> {
     const _id = uuidv7();
@@ -53,7 +54,7 @@ export class UserCmdHandler {
       throw new BusinessException('400|Invalid email');
     }
 
-    const [isUsernameExisted, isEmailExisted] = await Promise.all([
+    const [isUsernameExisted, isEmailExisted, isCaptchaValid] = await Promise.all([
       this.userRepo.findByUsername(args.username),
       this.userRepo.findByEmail(args.email),
       this.authService.verifyCaptcha(args.captchaId, args.captcha),
@@ -65,6 +66,9 @@ export class UserCmdHandler {
     if (isEmailExisted !== null) {
       throw new BusinessException('400|Email is already taken');
     }
+    if (!isCaptchaValid) {
+      throw new BusinessException('400|Captcha invalid');
+    }
 
     const userDomain = UserEntity.create({
       id,
@@ -73,22 +77,23 @@ export class UserCmdHandler {
       first_name: args.first_name,
       last_name: args.last_name,
       username: args.username,
+      status: AccessControlStatus.INACTIVE,
       organizations: [],
     });
 
-    await this.userRepo.create(userDomain);
-    await this.userEventPublisher.publishEvents([...userDomain.getEvents()]);
-    userDomain.clearEvents();
+    const user = await this.userRepo.create(userDomain);
+    await this.userEventPublisher.publishEvents([...user.getEvents()]);
+    user.clearEvents();
 
     const [tokensInfo, orgs] = await Promise.all([
-      this.authService.prepareTokens(userDomain),
+      this.authService.prepareTokens(user),
       this.orgRepo.findByIds(
-        userDomain.organizations.map((org) => org.organization_id),
+        user.organizations.map((org) => org.organization_id),
       ),
     ]);
 
     const orgsPrisma = orgs.map((org) => OrganizationMapper.toPrisma(org));
-    return AuthMapper.toResponseDto(tokensInfo, userDomain, orgsPrisma);
+    return AuthMapper.toResponseDto(tokensInfo, user, orgsPrisma);
   }
 
   async updateProfile(args: UpdateProfileArgs): Promise<UserResponseDto> {

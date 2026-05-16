@@ -1,8 +1,14 @@
 import { REGEX } from '@/common/constant';
-import { UserRepository } from '../../infrastructure/persistence/repositories/user.repository';
+import { CacheAdapter } from '@/shared/infrastructure/adapters/cache.adapter';
+
+export interface IConfirmationCode {
+  code: string;
+  expires_at: Date;
+  user_id: string;
+}
 
 export class UserService {
-  constructor(private readonly userRepository: UserRepository) {}
+  constructor(private readonly cache: CacheAdapter) { }
 
   public isEmail(value: string): boolean {
     return typeof value === 'string' && REGEX.regValidEmail.test(value);

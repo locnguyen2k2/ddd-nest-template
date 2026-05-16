@@ -8,9 +8,10 @@ export enum UserEventType {
 
 export interface ICreateUserEvent {
   id: string;
-  name: string;
   email: string;
-  password: string;
+  first_name: string;
+  last_name: string;
+  username: string;
   organizationId: string;
 }
 
@@ -26,9 +27,10 @@ export class UserCreatedEvent extends BaseDomainEvent<string> {
   get eventData(): Record<string, unknown> {
     return {
       id: this.props.id,
-      name: this.props.name,
+      first_name: this.props.first_name,
+      last_name: this.props.last_name,
+      username: this.props.username,
       email: this.props.email,
-      password: this.props.password,
       organizationId: this.props.organizationId,
     };
   }

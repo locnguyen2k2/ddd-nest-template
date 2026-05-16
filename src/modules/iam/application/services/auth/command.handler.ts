@@ -36,10 +36,16 @@ export class AuthCmdHandler {
   @LogExecutionTime()
   async login(args: LoginArgs): Promise<AuthResponseDto> {
     try {
-      const [validUser] = await Promise.all([
+      const [validUser, isCaptchaValid] = await Promise.all([
         this.authWrapperCmdHandler.validateUser(args.username, args.password),
         this.authWrapperCmdHandler.verifyCaptcha(args.captchaId, args.captcha),
       ]);
+      if (!isCaptchaValid) {
+        throw new BusinessException(
+          ErrorEnum.REQUEST_VALIDATION_ERROR,
+          'Captcha invalid',
+        );
+      }
       const [tokenInfo, orgs] = await Promise.all([
         this.authWrapperCmdHandler.prepareTokens(validUser),
         this.orgRepo.findByIds(

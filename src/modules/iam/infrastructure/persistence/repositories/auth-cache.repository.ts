@@ -9,15 +9,13 @@ import {
   ITokenBlacklistRepository,
 } from '@/modules/iam/domain/repositories/auth.repository';
 import { LogExecutionTime } from '@/common/decorators/log-execution.decorator';
-import { BusinessException } from '@/common/http/business-exception';
 import { uuidv7 } from 'uuidv7';
 import * as svgCaptchaService from 'svg-captcha';
 
 @Injectable()
 export class SessionCacheRepository
   extends CacheRepository
-  implements ISessionRepository
-{
+  implements ISessionRepository {
   protected readonly boundedContext: string = 'iam';
   protected readonly aggregateType: string = 'session';
   protected readonly ttlConfig: { [key: string]: number } = {
@@ -49,8 +47,7 @@ export class SessionCacheRepository
 @Injectable()
 export class TokenBlacklistCacheRepository
   extends CacheRepository
-  implements ITokenBlacklistRepository
-{
+  implements ITokenBlacklistRepository {
   protected readonly boundedContext: string = 'iam';
   protected readonly aggregateType: string = 'blacklist';
   protected readonly ttlConfig: { [key: string]: number } = {
@@ -84,8 +81,7 @@ const alphaNumeric =
 @Injectable()
 export class CaptchaCacheRepository
   extends CacheRepository
-  implements ICaptchaRepository
-{
+  implements ICaptchaRepository {
   protected readonly boundedContext: string = 'iam';
   protected readonly aggregateType: string = 'captcha';
   protected readonly ttlConfig: { [key: string]: number } = {
@@ -118,10 +114,15 @@ export class CaptchaCacheRepository
     return result;
   }
 
-  async confirmedCaptcha(data: { captchaId: string; captcha: string }) {
-    const captcha = await this.port.get(this.buildKey(data.captchaId));
-    const inValid = !captcha || captcha !== data.captcha;
-    if (inValid) throw new BusinessException('400|Captcha invalid!');
-    await this.port.delete(this.buildKey(data.captchaId));
+  async confirmedCaptcha(data: { captchaId: string; captcha: string }): Promise<boolean> {
+    try {
+      const captcha = await this.port.get(this.buildKey(data.captchaId));
+      const inValid = !captcha || captcha !== data.captcha;
+      if (inValid) return false;
+      await this.port.delete(this.buildKey(data.captchaId));
+      return true;
+    } catch (e: any) {
+      return false;
+    }
   }
 }

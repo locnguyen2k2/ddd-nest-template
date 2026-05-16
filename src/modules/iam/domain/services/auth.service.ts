@@ -40,7 +40,7 @@ export class AuthDomainService {
     return await this.captchaRepo.getCaptcha();
   }
 
-  async validateCaptcha(captchaId: string, captcha: string): Promise<void> {
+  async validateCaptcha(captchaId: string, captcha: string): Promise<boolean> {
     return await this.captchaRepo.confirmedCaptcha({ captchaId, captcha });
   }
 

@@ -12,6 +12,13 @@ import {
   IStaffRepository,
   STAFF_REPO,
 } from '@/modules/iam/domain/repositories/staff.repository';
+import { IConfirmationCode } from '@/modules/iam/domain/services/user.service';
+import { countdown } from '@/utils/date';
+import { IAttemptPolicy, SETTINGS, SETTING_KEYS } from '@/common/constant';
+import { BusinessException } from '@/common/http/business-exception';
+import { MailType } from '@/shared/application/ports/mailer.port';
+import { uuidv7 } from 'uuidv7';
+import { MailerAdapter } from '@/shared/infrastructure/adapters/mailer.adapter';
 
 @Injectable()
 export class UserRepository extends CacheRepository implements IUserRepository {
@@ -24,9 +31,10 @@ export class UserRepository extends CacheRepository implements IUserRepository {
     private readonly rbacDBService: PrismaAdapter,
     @Inject(STAFF_REPO) private readonly staffRepo: IStaffRepository,
     redisConfig: ConfigService<ConfigKeyPaths>,
-    @Inject(CACHE_PORT) cachePort: CachePort,
+    @Inject(CACHE_PORT) private readonly cache: CachePort,
+    private readonly mailer: MailerAdapter,
   ) {
-    super(redisConfig, cachePort);
+    super(redisConfig, cache);
   }
 
   async create(props: UserEntity): Promise<UserEntity> {
@@ -129,5 +137,48 @@ export class UserRepository extends CacheRepository implements IUserRepository {
     );
     if (!item) return null;
     return UserMapper.toDomain(item);
+  }
+
+  public async warningPasswordSecurity(user: UserEntity, policy: IAttemptPolicy): Promise<void> {
+    await this.mailer.sendEmail({
+      to: user.email,
+      subject: 'Password Security Warning',
+      template: './password-warning',
+      context: {
+        attempts: `${policy.failed_attempts}`,
+        time: `${policy.lock_duration}`,
+        ipAddress: "",
+      },
+    });
+  }
+
+  public async requestConfirmationCode(user: UserEntity): Promise<IConfirmationCode> {
+    try {
+      const existingCode: IConfirmationCode | null = await this.cache.get(`user_${user.username}_${user.email}`);
+      if (existingCode) {
+        const timeLeft = countdown(1, existingCode.expires_at);
+        if (timeLeft > 0) {
+          return existingCode;
+        }
+      }
+      const code = await this.generateConfirmationCode(user);
+      await this.cache.set(
+        `user_${user.username}_${user.email}`,
+        code,
+        SETTINGS[SETTING_KEYS.CODE_EXPIRE].mail_confirmation,
+      );
+      await this.mailer.sendSecretCode(user.email, code.code, MailType.CONFIRMED);
+      return code;
+    } catch (e: any) {
+      throw new BusinessException(e?.message);
+    }
+  }
+
+  private async generateConfirmationCode(user: UserEntity): Promise<IConfirmationCode> {
+    return {
+      code: uuidv7().slice(0, 6).toUpperCase(),
+      expires_at: new Date(Date.now() + SETTINGS[SETTING_KEYS.CODE_EXPIRE].mail_confirmation),
+      user_id: user.id.value,
+    };
   }
 }

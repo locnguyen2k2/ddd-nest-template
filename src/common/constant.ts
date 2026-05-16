@@ -1,3 +1,5 @@
+import { env } from "@/utils/env";
+
 export const providers = {
   REDIS: 'REDIS_CLIENT',
 };
@@ -35,12 +37,12 @@ export const REGEX = {
 
 export const RABBITMQ = {
   EXCHANGE_BASE_NAME: {
-    NOTIFICATION_MODULE: 'cjool_exchange_notification',
-    IAM_MODULE: 'cjool_exchange_iam',
+    NOTIFICATION_MODULE: `${env.str('NODE_ENV')}_cjool_exchange_notification`,
+    IAM_MODULE: `${env.str('NODE_ENV')}_cjool_exchange_iam`,
   },
   QUEUE_BASE_NAME: {
-    NOTIFICATION_MODULE: 'cjool_queue_notification',
-    IAM_MODULE: 'cjool_queue_iam',
+    NOTIFICATION_MODULE: `${env.str('NODE_ENV')}_cjool_queue_notification`,
+    IAM_MODULE: `${env.str('NODE_ENV')}_cjool_queue_iam`,
   },
 };
 
@@ -60,6 +62,7 @@ export const RABBITMQ_ROUTING_KEY = {
 
 export const SETTING_KEYS = {
   PASSWORD_SECURITY: 'password_attempts_policy',
+  CODE_EXPIRE: 'code_expire',
 } as const;
 
 export interface IAttemptPolicy {
@@ -80,5 +83,8 @@ export const SETTINGS = {
         lock_duration: 120, // Lockout duration in seconds (10 minutes)
       },
     ] as IAttemptPolicy[],
+  },
+  [SETTING_KEYS.CODE_EXPIRE]: {
+    mail_confirmation: 5 * 60, // 5 minutes
   },
 } as const;

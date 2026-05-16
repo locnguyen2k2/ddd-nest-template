@@ -12,7 +12,6 @@ import {
 import { UserMapper } from '@/modules/iam/infrastructure/persistence/mappers/user.mapper';
 import { OrganizationMapper } from '@/modules/iam/infrastructure/persistence/mappers/organization.mapper';
 import { LogExecutionTime } from '@/common/decorators/log-execution.decorator';
-import { UserEventPublisher } from '@/modules/iam/infrastructure/events/user.event-publisher';
 
 @Injectable()
 export class UserQueryHandler {
@@ -20,8 +19,7 @@ export class UserQueryHandler {
     @Inject(USER_REPO) private readonly userRepository: IUserRepository,
     @Inject(ORGANIZATION_REPO)
     private readonly organizationRepository: IOrganizationRepository,
-    private readonly userEventPublisher: UserEventPublisher,
-  ) {}
+  ) { }
 
   @LogExecutionTime()
   async profile(userId: string) {
@@ -29,9 +27,6 @@ export class UserQueryHandler {
     if (!user) {
       throw new BusinessException(ErrorEnum.RECORD_NOT_FOUND);
     }
-
-    await this.userEventPublisher.publishEvents([...user.getEvents()]);
-    user.clearEvents();
 
     const orgsEntity = await this.organizationRepository.findByIds(
       user.organizations.map((org) => org.organization_id),

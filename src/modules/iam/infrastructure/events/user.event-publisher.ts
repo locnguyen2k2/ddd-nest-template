@@ -1,13 +1,14 @@
-import { Injectable, OnModuleInit } from '@nestjs/common';
+import { Inject, Injectable, OnModuleInit } from '@nestjs/common';
 import { IDomainEvent } from '@/shared/domain/events/base.domain-event';
 import { RABBITMQ_QUEUE, RABBITMQ_ROUTING_KEY } from '@/common/constant';
 import { LogExecutionTime } from '@/common/decorators/log-execution.decorator';
 import { RabbitNotificationPublisher } from '@/modules/notification/infrastructure/rabbit/rabbit-notification.publisher';
 import { MailerAdapter } from '@/shared/infrastructure/adapters/mailer.adapter';
+import { IUserRepository, USER_REPO } from '../../domain/repositories/user.repository';
 
 @Injectable()
 export class UserEventPublisher implements OnModuleInit {
-  constructor(private readonly rabbitMqService: RabbitNotificationPublisher, private readonly mailerService: MailerAdapter) { }
+  constructor(private readonly rabbitMqService: RabbitNotificationPublisher, @Inject(USER_REPO) private readonly userService: IUserRepository) { }
 
   private eventHandlers: Map<
     string,
@@ -20,17 +21,8 @@ export class UserEventPublisher implements OnModuleInit {
       await this.rabbitMqService.consume(
         RABBITMQ_QUEUE.NOTIFICATIONS,
         async (message: any) => {
-          const payload: any = JSON.parse(message);
-
-          await this.mailerService.sendEmail({
-            to: payload?.email,
-            subject: 'Welcome to our platform!',
-            template: './confirmation',
-            context: {
-              name: `${payload?.firstName} ${payload?.lastName}`,
-              token: payload?.token,
-            },
-          });
+          const payload: any = message
+          await this.userService.requestConfirmationCode(payload);
         },
       );
     } catch (error) {

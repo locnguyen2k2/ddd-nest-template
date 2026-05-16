@@ -26,6 +26,7 @@ export interface IUserBaseInfo {
   password: Password;
   email: string;
   id: IEntityID<string>;
+  status?: AccessControlStatus;
   created_at?: Date;
   updated_at?: Date;
   organizations?: IStaff[];
@@ -62,7 +63,7 @@ export class UserEntity extends AggregateRoot<UserEntity, string> {
     this._first_name = props.first_name;
     this._created_at = props.created_at ?? new Date();
     this._updated_at = props.updated_at ?? new Date();
-    this._status = AccessControlStatus.ACTIVE;
+    this._status = props.status ?? AccessControlStatus.INACTIVE;
     this._organizations = props.organizations ?? [];
     this._attributes = props.attributes ?? Attributes.create({});
     this._members = props.members ?? [];
@@ -79,8 +80,9 @@ export class UserEntity extends AggregateRoot<UserEntity, string> {
       new UserCreatedEvent({
         id: user.id.value,
         email: user.email,
-        name: `${user.first_name} ${user.last_name}`,
-        password: user.password.value,
+        first_name: user.first_name,
+        last_name: user.last_name,
+        username: user.username,
         organizationId: '',
       }),
     );

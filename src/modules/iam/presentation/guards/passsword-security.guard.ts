@@ -16,6 +16,7 @@ export interface IPasswordSecurityInfo {
     expired?: number;
     nextPolicy?: IAttemptPolicy;
     is_last_one?: boolean;
+    is_warning?: boolean;
 }
 @Injectable()
 export class PasswordSecurityGuard extends ThrottlerGuard {
@@ -130,7 +131,15 @@ export class PasswordSecurityGuard extends ThrottlerGuard {
                 lock_duration: currentPolicy.lock_duration,
                 failed_attempts: currentPolicy.failed_attempts,
                 expired: expirationTime,
+                is_warning: true,
             };
+
+            if (!info?.is_warning) {
+                const user = await this.userRepo.findById(uid);
+                if (user) {
+                    await this.userRepo.warningPasswordSecurity(user, policedPasscode);
+                }
+            }
 
             await this.cache.set(
                 key,

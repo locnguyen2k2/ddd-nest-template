@@ -1,3 +1,4 @@
+import { IAttemptPolicy } from '@/common/constant';
 import { UserEntity } from '../entities/user.entity';
 
 export const USER_REPO = 'USER_REPOSITORY';
@@ -13,4 +14,6 @@ export interface IUserRepository {
     userId: string,
     orgId: string,
   ): Promise<UserEntity | null>;
+  requestConfirmationCode(user: UserEntity): Promise<any>;
+  warningPasswordSecurity(user: UserEntity, policy: IAttemptPolicy): Promise<void>;
 }
