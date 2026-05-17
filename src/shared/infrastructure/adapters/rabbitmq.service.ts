@@ -16,6 +16,7 @@ import { BusinessException } from '@/common/http/business-exception';
 import { LogExecutionTime } from '@/common/decorators/log-execution.decorator';
 import { RABBITMQ_EXCHANGE, RABBITMQ_QUEUE } from '@/common/constant';
 import { Cron } from '@nestjs/schedule';
+import { env } from '@/utils/env';
 
 @Injectable()
 export class RabbitMQAdapter implements OnModuleInit, OnModuleDestroy {
@@ -62,6 +63,7 @@ export class RabbitMQAdapter implements OnModuleInit, OnModuleDestroy {
 
   @LogExecutionTime()
   async initialize() {
+    console.log(env.str('NODE_ENV'), 'NODE_ENV');
     for (const { exchange, queue } of this.exchangeNames) {
       const [queueName, queuePriority] = queue.split(':');
       const limitQueue = queuePriority ? parseInt(queuePriority) : 1;
