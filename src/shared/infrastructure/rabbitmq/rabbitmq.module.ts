@@ -1,12 +1,12 @@
 import { Global, Module } from '@nestjs/common';
-import { RabbitMQService } from './rabbitmq.service';
+import { RabbitMQAdapter } from '../adapters/rabbitmq.service';
 import { ConfigService } from '@nestjs/config';
 import { IRabbitMQConfig, rabbitmqConfigKey } from '@/config/rabbitmq.config';
 import * as amqp from 'amqp-connection-manager';
 import { RabbitMQManagementService } from './rabbitmq-management.service';
 import { QUEUE_MANAGER_PORT } from '../../application/ports/queue-manager.port';
 import { CacheModule } from '../cache.module';
-import { RABBITMQ_CONNECTION } from './rabbitmq.service';
+import { RABBITMQ_CONNECTION } from '../adapters/rabbitmq.service';
 import { ConfigKeyPaths } from '@/config';
 import { BusinessException } from '@/common/http/business-exception';
 
@@ -29,12 +29,12 @@ import { BusinessException } from '@/common/http/business-exception';
       },
       inject: [ConfigService],
     },
-    RabbitMQService,
+    RabbitMQAdapter,
     {
       provide: QUEUE_MANAGER_PORT,
       useClass: RabbitMQManagementService,
     },
   ],
-  exports: [RABBITMQ_CONNECTION, RabbitMQService, QUEUE_MANAGER_PORT],
+  exports: [RABBITMQ_CONNECTION, RabbitMQAdapter, QUEUE_MANAGER_PORT],
 })
 export class RabbitMQModule { }

@@ -6,7 +6,7 @@ import {
 } from '../../application/ports/queue-manager.port';
 import { CACHE_PORT, CachePort } from '../../application/ports/cache.port';
 import { AmqpConnectionManager } from 'amqp-connection-manager';
-import { RABBITMQ_CONNECTION } from './rabbitmq.service';
+import { RABBITMQ_CONNECTION } from '../adapters/rabbitmq.service';
 import { ConfirmChannel } from 'amqplib';
 
 export const RABBITMQ_STATS = {

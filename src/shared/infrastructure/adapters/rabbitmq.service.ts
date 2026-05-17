@@ -15,9 +15,10 @@ import { ConfigKeyPaths, IRabbitMQConfig, rabbitmqConfigKey } from '@/config';
 import { BusinessException } from '@/common/http/business-exception';
 import { LogExecutionTime } from '@/common/decorators/log-execution.decorator';
 import { RABBITMQ_EXCHANGE, RABBITMQ_QUEUE } from '@/common/constant';
+import { Cron } from '@nestjs/schedule';
 
 @Injectable()
-export class RabbitMQService implements OnModuleInit, OnModuleDestroy {
+export class RabbitMQAdapter implements OnModuleInit, OnModuleDestroy {
   private channelWrapper: ChannelWrapper;
   private configs: IRabbitMQConfig;
   private consumerTags: Map<string, string> = new Map();
@@ -68,8 +69,7 @@ export class RabbitMQService implements OnModuleInit, OnModuleDestroy {
 
       for (let i = 0; i < limitQueue; i++) {
         const tagQueueName = queuePriority ? `${queueName}_${i}` : queueName;
-        // await this.setConsumer(exchange, tagQueueName);
-        tagQueues.push(this.setConsumer(exchange, tagQueueName));
+        tagQueues.push(this.setConsumer(exchange.trim(), tagQueueName.trim()));
       }
       await Promise.all(tagQueues);
     }
@@ -351,5 +351,78 @@ export class RabbitMQService implements OnModuleInit, OnModuleDestroy {
     }
     console.log('Deleted queue names:', deletedQueueNames);
     await Promise.all(deletedQueueNames.map(queueName => this.removeQueue(queueName)));
+  }
+
+  @LogExecutionTime()
+  async restartConsumer(queue: string) {
+    const queueConsumers = this.consumerTags.get(queue);
+    try {
+      if (queueConsumers) {
+        await this.channelWrapper.addSetup((channel: ConfirmChannel) => channel.cancel(queueConsumers));
+        this.consumerTags.delete(queue);
+      }
+      const queueName = this.exchangeNames.find(exchange => exchange.queue.startsWith(queue));
+      if (queueName) {
+        const success = await this.setConsumer(queueName.queue, queueName.exchange, true);
+        if (success) {
+          console.log(`Successfully restarted consumer for queue: ${queueName.queue}`);
+          return true;
+        }
+      }
+    } catch (error) {
+      console.error('Failed to restart consumer.', error);
+    }
+    return false;
+  }
+
+  @Cron('*/30 * * * * *') // Every 10 seconds
+  async handleCron() {
+    await this.performHealthCheckAndRecover();
+  }
+
+  private async checkConsumerHealth() {
+    const health: { [queueName: string]: boolean } = {};
+
+    try {
+      for (const [queueName, _] of this.consumerTags.entries()) {
+        try {
+          const ableToConsume =
+            await this.ableToConsume(queueName);
+          health[queueName] = ableToConsume;
+        } catch (error) {
+          health[queueName] = false;
+        }
+      }
+    } catch (error) {
+      console.error('Error checking consumer health:', error);
+    }
+
+    return health;
+  }
+
+  private async performHealthCheckAndRecover() {
+    const health = await this.checkConsumerHealth();
+    const unhealthyQueues: string[] = [];
+    const staleConsumers: string[] = [];
+
+    for (const [queueName, isHealthy] of Object.entries(health)) {
+      if (!this.consumerTags.has(queueName)) {
+        unhealthyQueues.push(queueName);
+        continue;
+      }
+      const canConsume = health[queueName];
+      if (canConsume === true) {
+        unhealthyQueues.push(queueName);
+      }
+    }
+    const allUnhealthyQueues = [
+      ...new Set([...unhealthyQueues, ...staleConsumers]),
+    ];
+    if (allUnhealthyQueues.length > 0) {
+      for (const queueName of allUnhealthyQueues) {
+        const success = await this.restartConsumer(queueName);
+        console.log(`Auto-recovery for queue ${queueName}: ${success}`);
+      }
+    }
   }
 }
