@@ -16,7 +16,6 @@ import { IConfirmationCode } from '@/modules/iam/domain/services/user.service';
 import { countdown } from '@/utils/date';
 import { IAttemptPolicy, SETTINGS, SETTING_KEYS } from '@/common/constant';
 import { BusinessException } from '@/common/http/business-exception';
-import { MailType } from '@/shared/application/ports/mailer.port';
 import { uuidv7 } from 'uuidv7';
 import { MailerAdapter } from '@/shared/infrastructure/adapters/mailer.adapter';
 
@@ -167,7 +166,6 @@ export class UserRepository extends CacheRepository implements IUserRepository {
         code,
         SETTINGS[SETTING_KEYS.CODE_EXPIRE].mail_confirmation,
       );
-      await this.mailer.sendSecretCode(user.email, code.code, MailType.CONFIRMED);
       return code;
     } catch (e: any) {
       throw new BusinessException(e?.message);

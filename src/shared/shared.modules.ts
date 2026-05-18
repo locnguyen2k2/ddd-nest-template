@@ -13,6 +13,8 @@ import { MailerModule } from './infrastructure/mailer.module';
 import { MAILER_PORT } from './application/ports/mailer.port';
 import { MailerAdapter } from './infrastructure/adapters/mailer.adapter';
 import { ThrottleModule } from './infrastructure/throttle.module';
+import { RequestAdapter } from './infrastructure/adapters/http.adapter';
+import { REQUEST_PORT } from './application/ports/http.port';
 
 @Global()
 @Module({
@@ -31,6 +33,7 @@ import { ThrottleModule } from './infrastructure/throttle.module';
     BcryptAdapter,
     MailerAdapter,
     JsonLogicEngineAdapter,
+    RequestAdapter,
     {
       provide: BCRYPT_PORT,
       useClass: BcryptAdapter,
@@ -42,6 +45,10 @@ import { ThrottleModule } from './infrastructure/throttle.module';
     {
       provide: MAILER_PORT,
       useClass: MailerAdapter,
+    },
+    {
+      provide: REQUEST_PORT,
+      useClass: RequestAdapter,
     }
   ],
   exports: [
@@ -55,6 +62,7 @@ import { ThrottleModule } from './infrastructure/throttle.module';
     PrismaAdapter,
     BcryptAdapter,
     JsonLogicEngineAdapter,
+    RequestAdapter,
     MailerAdapter,
   ],
 })

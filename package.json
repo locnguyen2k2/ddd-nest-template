@@ -18,8 +18,8 @@
     "prisma:generate": "npx prisma generate --schema=prisma/pg-rbac/schema.prisma",
     "build": "npm run prisma:generate && nest build",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
-    "start": "set NODE_ENV=production&&node dist/src/main.js",
-    "start:dev": "set NODE_ENV=development&&nest start --watch",
+    "start": "set NODE_ENV=development&&node dist/src/main.js",
+    "start:dev": "set NODE_ENV=local&&nest start --watch",
     "start:debug": "nest start --debug --watch",
     "start:prod": "node dist/src/main.js",
     "prisma:seed": "ts-node prisma/seed.ts"
@@ -37,6 +37,7 @@
     "@nestjs/common": "^11.0.1",
     "@nestjs/config": "^4.0.3",
     "@nestjs/core": "^11.0.1",
+    "@nestjs/cqrs": "^11.0.3",
     "@nestjs/platform-fastify": "^11.1.16",
     "@nestjs/schedule": "^6.1.1",
     "@nestjs/swagger": "^11.2.6",

@@ -4,12 +4,12 @@ import configs from '@/config';
 import { SharedModules } from '@/shared/shared.modules';
 import { ScheduleModule } from '@nestjs/schedule';
 import { IamModule } from '@/modules/iam/iam.module';
-import { NotificationModule } from '@/modules/notification/notification.module';
 import { ClsModule } from 'nestjs-cls';
 import { AppController } from './app.controller';
 import { PasswordSecurityGuard } from './modules/iam/presentation/guards/passsword-security.guard';
 import { APP_GUARD } from '@nestjs/core';
 import { ThrottlerGuard } from '@nestjs/throttler';
+import { NotificationModule } from './modules/notification/notification.module';
 
 const modules = [IamModule, NotificationModule];
 
@@ -18,7 +18,7 @@ const modules = [IamModule, NotificationModule];
     ConfigModule.forRoot({
       isGlobal: true,
       expandVariables: true,
-      envFilePath: [`.env.local`, `.env.${process.env.NODE_ENV}`, '.env'], // Load more env files
+      envFilePath: [`.env.${process.env.NODE_ENV}`, '.env'], // Load more env files
       load: [...Object.values(configs)], // Loading configure objects
     }),
 

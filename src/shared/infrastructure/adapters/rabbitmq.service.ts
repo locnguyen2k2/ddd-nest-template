@@ -167,6 +167,7 @@ export class RabbitMQAdapter implements OnModuleInit, OnModuleDestroy {
           'x-bind-weight': 1,
         });
         isSuccess = true;
+        console.log(`Successfully restarted consumer for queue: ${queue}`);
       } catch (error) {
         console.error('Error setting up consumer:', error);
       }
@@ -367,7 +368,6 @@ export class RabbitMQAdapter implements OnModuleInit, OnModuleDestroy {
       if (queueName) {
         const success = await this.setConsumer(queueName.queue, queueName.exchange, true);
         if (success) {
-          console.log(`Successfully restarted consumer for queue: ${queueName.queue}`);
           return true;
         }
       }

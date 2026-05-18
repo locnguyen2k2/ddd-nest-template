@@ -234,6 +234,20 @@ model Role {
     @@unique([organization_id, slug])
 }
 
+model Notification {
+    id            String             @id @default(uuid(7)) @db.Uuid
+    recipient     Json               // e.g. { email: "...", telegram_id: "..." }
+    channel       NotificationChannel
+    content       Json               // e.g. { subject: "...", body: "...", template: "..." }
+    status        NotificationStatus @default(PENDING)
+    error_message String?
+    created_at    DateTime           @default(now())
+    updated_at    DateTime           @updatedAt
+
+    @@index([status])
+    @@index([channel])
+}
+
 enum Effect {
     ALLOW
     DENY
@@ -249,4 +263,16 @@ enum AttributeCategory {
     RESOURCE
     SUBJECT
     ENVIRONMENT
+}
+
+enum NotificationChannel {
+    MAIL
+    TELEGRAM
+    SMS
+}
+
+enum NotificationStatus {
+    PENDING
+    SENT
+    FAILED
 }

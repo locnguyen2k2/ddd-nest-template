@@ -4,6 +4,8 @@ export enum MailType {
   PASSWORD = 'password',
 }
 
+export type MailTypeString = `${MailType}`;
+
 export interface MailerPort {
   sendEmail(options: {
     to: string;
@@ -14,6 +16,6 @@ export interface MailerPort {
   sendSecretCode(
     to: string,
     code: string,
-    type: MailType,
+    type: MailTypeString,
   ): Promise<any>;
 }

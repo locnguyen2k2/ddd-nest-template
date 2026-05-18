@@ -58,6 +58,7 @@ export const RABBITMQ_QUEUE = {
 
 export const RABBITMQ_ROUTING_KEY = {
   USER_CREATED: 'user.created',
+  USER_NOTIFIED: 'user.notified',
 } as const;
 
 export const SETTING_KEYS = {

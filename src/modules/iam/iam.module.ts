@@ -90,10 +90,7 @@ import { RoleRepository } from './infrastructure/persistence/repositories/role.r
 import { RoleController } from './presentation/controllers/role.controller';
 import { StaffQueryHandler } from './application/services/staffs/query.handler';
 import { StaffController } from './presentation/controllers/staff.controller';
-import { RabbitNotificationModule } from '../notification/infrastructure/rabbit/rabbit-notification.module';
-import { NotificationModule } from '../notification/notification.module';
 import { MailerModule } from '@nestjs-modules/mailer';
-import { ThrottleModule } from '@/shared/infrastructure/throttle.module';
 
 const abacProviders = [
   PrismaPolicyRepository,
@@ -275,7 +272,7 @@ const environmentExports = [
 const roleExports = [RoleRepository, RoleCommandHandler, RoleQueryHandler];
 
 @Module({
-  imports: [NotificationModule, MailerModule],
+  imports: [MailerModule],
   controllers: [
     AttributeController,
     ClearanceController,
