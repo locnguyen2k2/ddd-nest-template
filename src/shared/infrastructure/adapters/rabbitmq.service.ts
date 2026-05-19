@@ -135,8 +135,8 @@ export class RabbitMQAdapter implements OnModuleInit, OnModuleDestroy {
 
   private getManagementUrl(path: string): string {
     const protocol = this.configs.host.includes('localhost') ? 'http' : 'https';
-    const port = this.configs.host.includes(':') ? '' : ':15672';
-    return `${protocol}://${this.configs.host}${port}/api/${path}`;
+    console.log(`${protocol}://${this.configs.host}/api/${path}`)
+    return `${protocol}://${this.configs.host}/api/${path}`;
   }
 
   async ableToConsume(queueName: string): Promise<boolean> {
