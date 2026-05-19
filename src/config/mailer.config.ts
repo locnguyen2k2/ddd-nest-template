@@ -14,7 +14,6 @@ export const MailerConfig = registerAs(mailerConfigKey, () => ({
       user: env.str('MAILER_USER'),
       pass: env.str('MAILER_PASSWORD'),
     },
-    family: 4,
   },
   template: {
     dir: path.join(cwd, 'dist/public/templates/mailers'),
