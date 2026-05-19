@@ -42,17 +42,23 @@ export class MailerAdapter implements MailerPort {
         code: string,
         type: MailType,
     ): Promise<any> {
-        return await this.mailerStrategy[type](email, code);
+        try {
+            return await this.mailerStrategy[type](email, code);
+        } catch (e: any) {
+            console.log(e)
+        }
     }
 
     async sendEmail(options: { to: string; subject: string; template: string; context?: any }): Promise<void> {
         const { to, subject, template, context } = options;
 
-        return await this.mailService.sendMail({
-            to: to,
-            subject: subject,
-            template: template,
-            context,
-        });
+        try {
+            return await this.mailService.sendMail({
+                to: to,
+                subject: subject,
+                template: template,
+                context,
+            });
+        } catch (e: any) { console.log(e) }
     }
 }
