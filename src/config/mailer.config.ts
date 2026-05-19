@@ -9,7 +9,7 @@ export const mailerConfigKey = 'mailer';
 // Khởi tạo và đặt tên (registerAs) cho Mailer configuration object
 export const MailerConfig = registerAs(mailerConfigKey, () => ({
   transport: {
-    host: env.str('MAILER_HOST', 'smtp.gmail.com'),
+    host: env.str('MAILER_HOST', '74.125.130.108'), // Use IPv4 address for smtp.gmail.com directly
     port: env.numb('MAILER_PORT', 587),
     secure: env.bool('MAILER_SECURE', false),
     family: 4,
