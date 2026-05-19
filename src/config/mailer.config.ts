@@ -9,6 +9,9 @@ export const mailerConfigKey = 'mailer';
 // Khởi tạo và đặt tên (registerAs) cho Mailer configuration object
 export const MailerConfig = registerAs(mailerConfigKey, () => ({
   transport: {
+    port: 587,
+    secure: false,
+    family: 4,
     service: env.str('MAILER_SERVICE'),
     auth: {
       user: env.str('MAILER_USER'),
