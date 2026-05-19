@@ -9,11 +9,14 @@ export const mailerConfigKey = 'mailer';
 // Khởi tạo và đặt tên (registerAs) cho Mailer configuration object
 export const MailerConfig = registerAs(mailerConfigKey, () => ({
   transport: {
-    service: env.str('MAILER_SERVICE'),
+    host: env.str('MAILER_HOST', 'smtp.gmail.com'),
+    port: env.numb('MAILER_PORT', 465),
+    secure: env.bool('MAILER_SECURE', true),
     auth: {
       user: env.str('MAILER_USER'),
       pass: env.str('MAILER_PASSWORD'),
     },
+    family: 4,
   },
   template: {
     dir: path.join(cwd, 'dist/public/templates/mailers'),
