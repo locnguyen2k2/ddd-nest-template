@@ -22,7 +22,11 @@ import { env } from '@/utils/env';
 export class RabbitMQAdapter implements OnModuleInit, OnModuleDestroy {
   private channelWrapper: ChannelWrapper;
   private configs: IRabbitMQConfig;
-  private consumerTags: Map<string, string> = new Map();
+  private consumerTags: Map<string, {
+    tag: string, queue: string, callback: (message: any) => Promise<void>, channel: ChannelWrapper;
+    isActive: boolean;
+    lastHeartbeatAt?: number;
+  }> = new Map();
   private readonly exchangeNames: { exchange: string; queue: string }[] = [
     {
       exchange: RABBITMQ_EXCHANGE.NOTIFICATIONS,
@@ -121,7 +125,8 @@ export class RabbitMQAdapter implements OnModuleInit, OnModuleDestroy {
 
   async ableToConsume(queueName: string): Promise<boolean> {
     try {
-      const url = `https://${this.configs.host}/api/queues`;
+      const url = `https://${this.configs.host}/api/consumers`;
+
 
       const response = await fetch(url, {
         method: 'GET',
@@ -130,11 +135,13 @@ export class RabbitMQAdapter implements OnModuleInit, OnModuleDestroy {
         },
       });
 
-      const data = await response.json();
-      const queueInfo = data.find((queue: any) => {
-        return queue.name === queueName;
-      });
-      return (queueInfo?.consumers || 0) < 1;
+      const consumers = await response.json();
+
+      const queue = this.consumerTags.get(queueName)
+      if (!queue) return true;
+      const consumerDetails = consumers.find(({ queue }) => queue.name === queueName);
+      if (consumerDetails.length === 0 || !consumerDetails.consumer_tag || consumerDetails.consumer_tag !== queue.tag) return true;
+      return false;
     } catch (error) {
       return true;
     }
@@ -142,6 +149,13 @@ export class RabbitMQAdapter implements OnModuleInit, OnModuleDestroy {
 
   async setConsumer(exchange: string, queue: string, forceRecreate: boolean = false) {
     let isSuccess = false;
+    if (!forceRecreate) {
+      const ableToConsume = await this.ableToConsume(queue);
+      if (!ableToConsume) {
+        console.log(`Queue ${queue} is has consumer, skipping...`);
+        return true;
+      }
+    }
 
     await this.channelWrapper.addSetup(async (channel: ConfirmChannel) => {
       try {
@@ -190,94 +204,94 @@ export class RabbitMQAdapter implements OnModuleInit, OnModuleDestroy {
 
     const statsKey = `queue:stats:${queueName}`;
     const pauseKey = `queue:pause:${queueName}`;
+    const channel = this.channelWrapper;
 
-    return this.connection.createChannel({
-      setup: async (channel: ConfirmChannel) => {
-        await channel.prefetch(options?.prefetch || 1);
+    let consumerCount = 0;
+    let tagQueueIndex = 0;
 
-        let consumerCount = 0;
-        let tagQueueIndex = 0;
+    while (consumerCount < queuePriorityNum && tagQueueIndex < limitQueue) {
+      const tagQueueName = queuePriority
+        ? `${queueName}_${tagQueueIndex}`
+        : queueName;
 
-        while (consumerCount < queuePriorityNum && tagQueueIndex < limitQueue) {
-          const tagQueueName = queuePriority
-            ? `${queueName}_${tagQueueIndex}`
-            : queueName;
+      tagQueueIndex++;
+      const isAble = await this.ableToConsume(tagQueueName);
 
-          tagQueueIndex++;
-          const isAble = await this.ableToConsume(tagQueueName);
+      if (isAble) {
+        const mapping = this.exchangeNames.find(
+          ({ queue }) => queue.split(':')[0] === queueName,
+        );
+        const exchange = mapping?.exchange;
+        const deadLetterExchange = `${exchange}.dlx`;
 
-          if (isAble) {
-            const mapping = this.exchangeNames.find(
-              ({ queue }) => queue.split(':')[0] === queueName,
-            );
-            const exchange = mapping?.exchange;
-            const deadLetterExchange = `${exchange}.dlx`;
+        await channel.assertQueue(tagQueueName, {
+          durable: true,
+          arguments: {
+            'x-dead-letter-exchange': deadLetterExchange,
+            'x-dead-letter-routing-key': 'dead',
+          },
+        });
 
-            await channel.assertQueue(tagQueueName, {
-              durable: true,
-              arguments: {
-                'x-dead-letter-exchange': deadLetterExchange,
-                'x-dead-letter-routing-key': 'dead',
-              },
-            });
+        const consumerResult = await channel.consume(tagQueueName, async (msg) => {
+          if (!msg) return;
 
-            const consumerResult = await channel.consume(tagQueueName, async (msg) => {
-              if (!msg) return;
-
-              const isPaused = await this.cache.exists(pauseKey);
-              if (isPaused) {
-                channel.nack(msg, false, true);
-                return;
-              }
-
-              try {
-                await this.cache.hset(
-                  statsKey,
-                  'processing',
-                  await this.cache.incr(`${statsKey}:processing`),
-                );
-
-                const content = JSON.parse(msg.content.toString());
-                await onMessage(content);
-
-                channel.ack(msg);
-                await this.cache.hset(
-                  statsKey,
-                  'success',
-                  await this.cache.incr(`${statsKey}:success`),
-                );
-                await this.cache.hset(
-                  statsKey,
-                  'completed',
-                  await this.cache.incr(`${statsKey}:completed`),
-                );
-              } catch (error) {
-                console.error(
-                  `Error processing message from queue ${tagQueueName}:`,
-                  error,
-                );
-                channel.nack(msg, false, false);
-                await this.cache.hset(
-                  statsKey,
-                  'failed',
-                  await this.cache.incr(`${statsKey}:failed`),
-                );
-              } finally {
-                await this.cache.hset(
-                  statsKey,
-                  'processing',
-                  await this.cache.decr(`${statsKey}:processing`),
-                );
-              }
-            });
-            if (consumerResult?.consumerTag) {
-              this.consumerTags.set(queueName, consumerResult.consumerTag);
-            }
-            consumerCount++;
+          const isPaused = await this.cache.exists(pauseKey);
+          if (isPaused) {
+            channel.nack(msg, false, true);
+            return;
           }
+
+          try {
+            await this.cache.hset(
+              statsKey,
+              'processing',
+              await this.cache.incr(`${statsKey}:processing`),
+            );
+
+            const content = JSON.parse(msg.content.toString());
+            await onMessage(content);
+
+            channel.ack(msg);
+            await this.cache.hset(
+              statsKey,
+              'success',
+              await this.cache.incr(`${statsKey}:success`),
+            );
+            await this.cache.hset(
+              statsKey,
+              'completed',
+              await this.cache.incr(`${statsKey}:completed`),
+            );
+          } catch (error) {
+            console.error(
+              `Error processing message from queue ${tagQueueName}:`,
+              error,
+            );
+            channel.nack(msg, false, false);
+            await this.cache.hset(
+              statsKey,
+              'failed',
+              await this.cache.incr(`${statsKey}:failed`),
+            );
+          } finally {
+            await this.cache.hset(
+              statsKey,
+              'processing',
+              await this.cache.decr(`${statsKey}:processing`),
+            );
+          }
+        });
+        this.consumerTags.set(tagQueueName, { tag: consumerResult.consumerTag, queue: tagQueueName, callback: onMessage, channel, isActive: true, lastHeartbeatAt: Date.now(), });
+      }
+      channel.on('close', () => {
+        const consumer = this.consumerTags.get(tagQueueName);
+
+        if (consumer) {
+          consumer.isActive = false;
         }
-      },
-    });
+      });
+      consumerCount++;
+    }
   }
 
   processAndGroupQueues(data: any[]): Record<string, { queue: number; messages: number }> {
@@ -361,13 +375,14 @@ export class RabbitMQAdapter implements OnModuleInit, OnModuleDestroy {
     const queueConsumers = this.consumerTags.get(queue);
     try {
       if (queueConsumers) {
-        await this.channelWrapper.addSetup((channel: ConfirmChannel) => channel.cancel(queueConsumers));
+        await this.channelWrapper.addSetup((channel: ConfirmChannel) => channel.cancel(queueConsumers.tag));
         this.consumerTags.delete(queue);
       }
-      const queueName = this.exchangeNames.find(exchange => exchange.queue.startsWith(queue));
-      if (queueName) {
-        const success = await this.setConsumer(queueName.exchange, queueName.queue, true);
+      const queueName = this.exchangeNames.find(exchange => exchange.queue.startsWith(queue.split('_')[0]));
+      if (queueName && queueConsumers?.queue) {
+        const success = await this.setConsumer(queueName.exchange, queueConsumers.queue, true);
         if (success) {
+          await this.consume(queueName.queue, queueConsumers.callback);
           return true;
         }
       }
