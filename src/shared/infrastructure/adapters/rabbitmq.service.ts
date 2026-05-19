@@ -22,6 +22,8 @@ import { env } from '@/utils/env';
 export class RabbitMQAdapter implements OnModuleInit, OnModuleDestroy {
   private channelWrapper: ChannelWrapper;
   private configs: IRabbitMQConfig;
+  private activeChannel: ConfirmChannel | null = null;
+  private readonly setupRegistry = new Map<string, (channel: ConfirmChannel) => Promise<void>>();
   private consumerTags: Map<string, {
     tag: string, queue: string, callback: (message: any) => Promise<void>, channel: ChannelWrapper;
     isActive: boolean;
@@ -54,13 +56,21 @@ export class RabbitMQAdapter implements OnModuleInit, OnModuleDestroy {
       console.error('RabbitMQ Disconnected:', err),
     );
 
-    this.channelWrapper = this.connection.createChannel();
+    this.channelWrapper = this.connection.createChannel({
+      setup: async (channel: ConfirmChannel) => {
+        this.activeChannel = channel;
+        for (const setupFn of this.setupRegistry.values()) {
+          await setupFn(channel);
+        }
+      }
+    });
     this.channelWrapper.on('error', (err) =>
       console.error('RabbitMQ Channel Error:', err),
     );
 
     this.channelWrapper.on('close', () => {
       console.log('RabbitMQ Channel Closed');
+      this.activeChannel = null;
       this.consumerTags.clear();
     });
   }
@@ -123,10 +133,15 @@ export class RabbitMQAdapter implements OnModuleInit, OnModuleDestroy {
     });
   }
 
+  private getManagementUrl(path: string): string {
+    const protocol = this.configs.host.includes('localhost') ? 'http' : 'https';
+    const port = this.configs.host.includes(':') ? '' : ':15672';
+    return `${protocol}://${this.configs.host}${port}/api/${path}`;
+  }
+
   async ableToConsume(queueName: string): Promise<boolean> {
     try {
-      const url = `https://${this.configs.host}/api/consumers`;
-
+      const url = this.getManagementUrl('consumers');
 
       const response = await fetch(url, {
         method: 'GET',
@@ -135,20 +150,23 @@ export class RabbitMQAdapter implements OnModuleInit, OnModuleDestroy {
         },
       });
 
-      const consumers = await response.json();
+      if (!response.ok) {
+        return true;
+      }
 
-      const queue = this.consumerTags.get(queueName)
+      const consumers = await response.json() as any[];
+
+      const queue = this.consumerTags.get(queueName);
       if (!queue) return true;
-      const consumerDetails = consumers.find(({ queue }) => queue.name === queueName);
-      if (consumerDetails.length === 0 || !consumerDetails.consumer_tag || consumerDetails.consumer_tag !== queue.tag) return true;
-      return false;
+
+      const consumerDetails = consumers.find((c) => c.queue && c.queue.name === queueName && c.consumer_tag === queue.tag);
+      return !consumerDetails;
     } catch (error) {
       return true;
     }
   }
 
   async setConsumer(exchange: string, queue: string, forceRecreate: boolean = false) {
-    let isSuccess = false;
     if (!forceRecreate) {
       const ableToConsume = await this.ableToConsume(queue);
       if (!ableToConsume) {
@@ -157,7 +175,8 @@ export class RabbitMQAdapter implements OnModuleInit, OnModuleDestroy {
       }
     }
 
-    await this.channelWrapper.addSetup(async (channel: ConfirmChannel) => {
+    const setupKey = `infra:${queue}`;
+    const setupFn = async (channel: ConfirmChannel) => {
       try {
         await channel.prefetch(1); // Consume one message at a time
         const deadLetterExchange = `${exchange}.dlx`;
@@ -180,20 +199,25 @@ export class RabbitMQAdapter implements OnModuleInit, OnModuleDestroy {
         await channel.bindQueue(queue, exchange, '1', {
           'x-bind-weight': 1,
         });
-        isSuccess = true;
-        console.log(`Successfully restarted consumer for queue: ${queue}`);
+        console.log(`Successfully registered infrastructure for queue: ${queue}`);
       } catch (error) {
-        console.error('Error setting up consumer:', error);
+        console.error('Error setting up consumer infrastructure:', error);
       }
-    })
+    };
 
-    return isSuccess;
+    this.setupRegistry.set(setupKey, setupFn);
+
+    if (this.activeChannel) {
+      await setupFn(this.activeChannel);
+    }
+
+    return true;
   }
 
   async consume(
     queue: string,
     onMessage: (msg: any) => Promise<void>,
-    options?: any,
+    specificTagQueueName?: string,
   ): Promise<any> {
     const [queueName, queuePriority] = queue.split(':');
     const replica = Number(this.configs.replica || 1);
@@ -215,6 +239,11 @@ export class RabbitMQAdapter implements OnModuleInit, OnModuleDestroy {
         : queueName;
 
       tagQueueIndex++;
+
+      if (specificTagQueueName && tagQueueName !== specificTagQueueName) {
+        continue;
+      }
+
       const isAble = await this.ableToConsume(tagQueueName);
 
       if (isAble) {
@@ -224,64 +253,79 @@ export class RabbitMQAdapter implements OnModuleInit, OnModuleDestroy {
         const exchange = mapping?.exchange;
         const deadLetterExchange = `${exchange}.dlx`;
 
-        await channel.assertQueue(tagQueueName, {
-          durable: true,
-          arguments: {
-            'x-dead-letter-exchange': deadLetterExchange,
-            'x-dead-letter-routing-key': 'dead',
-          },
-        });
+        const setupKey = `consumer:${tagQueueName}`;
+        const setupFn = async (channel: ConfirmChannel) => {
+          await channel.assertQueue(tagQueueName, {
+            durable: true,
+            arguments: {
+              'x-dead-letter-exchange': deadLetterExchange,
+              'x-dead-letter-routing-key': 'dead',
+            },
+          });
 
-        const consumerResult = await channel.consume(tagQueueName, async (msg) => {
-          if (!msg) return;
+          const heartbeatKey = `queue:heartbeat:${tagQueueName}`;
+          const updateHeartbeat = async () => {
+            await this.cache.set(heartbeatKey, Date.now().toString(), 60); // 60s TTL
+          };
 
-          const isPaused = await this.cache.exists(pauseKey);
-          if (isPaused) {
-            channel.nack(msg, false, true);
-            return;
-          }
+          const consumerResult = await channel.consume(tagQueueName, async (msg) => {
+            if (msg === null) {
+              console.warn(`Consumer for ${tagQueueName} was cancelled by broker`);
+              this.consumerTags.delete(tagQueueName);
+              this.setupRegistry.delete(`consumer:${tagQueueName}`);
+              return;
+            }
 
-          try {
-            await this.cache.hset(
-              statsKey,
-              'processing',
-              await this.cache.incr(`${statsKey}:processing`),
-            );
+            const isPaused = await this.cache.exists(pauseKey);
+            if (isPaused) {
+              channel.nack(msg, false, true);
+              return;
+            }
 
-            const content = JSON.parse(msg.content.toString());
-            await onMessage(content);
+            try {
+              await updateHeartbeat();
+              await this.cache.hset(
+                statsKey,
+                'processing',
+                await this.cache.incr(`${statsKey}:processing`),
+              );
 
-            channel.ack(msg);
-            await this.cache.hset(
-              statsKey,
-              'success',
-              await this.cache.incr(`${statsKey}:success`),
-            );
-            await this.cache.hset(
-              statsKey,
-              'completed',
-              await this.cache.incr(`${statsKey}:completed`),
-            );
-          } catch (error) {
-            console.error(
-              `Error processing message from queue ${tagQueueName}:`,
-              error,
-            );
-            channel.nack(msg, false, false);
-            await this.cache.hset(
-              statsKey,
-              'failed',
-              await this.cache.incr(`${statsKey}:failed`),
-            );
-          } finally {
-            await this.cache.hset(
-              statsKey,
-              'processing',
-              await this.cache.decr(`${statsKey}:processing`),
-            );
-          }
-        });
-        this.consumerTags.set(tagQueueName, { tag: consumerResult.consumerTag, queue: tagQueueName, callback: onMessage, channel, isActive: true, lastHeartbeatAt: Date.now(), });
+              const content = JSON.parse(msg.content.toString());
+              await onMessage(content);
+
+              channel.ack(msg);
+              await this.cache.hset(statsKey, 'success', await this.cache.incr(`${statsKey}:success`));
+              await this.cache.hset(statsKey, 'completed', await this.cache.incr(`${statsKey}:completed`));
+            } catch (error) {
+              console.error(`Error processing message from queue ${tagQueueName}:`, error);
+              channel.nack(msg, false, false);
+              await this.cache.hset(statsKey, 'failed', await this.cache.incr(`${statsKey}:failed`));
+            } finally {
+              await this.cache.hset(statsKey, 'processing', await this.cache.decr(`${statsKey}:processing`));
+            }
+          });
+
+          const timer = setInterval(updateHeartbeat, 10000);
+          this.channelWrapper.on('close', () => clearInterval(timer));
+          await updateHeartbeat();
+
+          this.consumerTags.set(tagQueueName, {
+            tag: consumerResult.consumerTag,
+            queue: tagQueueName,
+            callback: onMessage,
+            channel: this.channelWrapper,
+            isActive: true,
+            lastHeartbeatAt: Date.now(),
+          });
+        };
+
+        this.setupRegistry.set(setupKey, setupFn);
+
+        if (this.activeChannel) {
+          await setupFn(this.activeChannel);
+        }
+
+        consumerCount++;
       }
       channel.on('close', () => {
         const consumer = this.consumerTags.get(tagQueueName);
@@ -290,7 +334,6 @@ export class RabbitMQAdapter implements OnModuleInit, OnModuleDestroy {
           consumer.isActive = false;
         }
       });
-      consumerCount++;
     }
   }
 
@@ -315,7 +358,8 @@ export class RabbitMQAdapter implements OnModuleInit, OnModuleDestroy {
 
   async getCurrentQueueNumber(queueName?: string) {
     try {
-      const request = await fetch(`https://${this.configs.host}/api/queues`, {
+      const url = this.getManagementUrl('queues');
+      const request = await fetch(url, {
         method: 'GET',
         headers: {
           Authorization: `Basic ${Buffer.from(
@@ -337,7 +381,11 @@ export class RabbitMQAdapter implements OnModuleInit, OnModuleDestroy {
 
   async removeQueue(queueName: string) {
     try {
-      await this.channelWrapper.addSetup((channel: ConfirmChannel) => channel.deleteQueue(queueName));
+      if (this.activeChannel) {
+        await this.activeChannel.deleteQueue(queueName);
+      } else {
+        await this.channelWrapper.addSetup((channel: ConfirmChannel) => channel.deleteQueue(queueName));
+      }
     } catch (error) {
       console.error('Failed to remove queue.', error);
     }
@@ -375,14 +423,20 @@ export class RabbitMQAdapter implements OnModuleInit, OnModuleDestroy {
     const queueConsumers = this.consumerTags.get(queue);
     try {
       if (queueConsumers) {
-        await this.channelWrapper.addSetup((channel: ConfirmChannel) => channel.cancel(queueConsumers.tag));
+        if (this.activeChannel) {
+          try {
+            await this.activeChannel.cancel(queueConsumers.tag);
+          } catch (e) {
+          }
+        }
         this.consumerTags.delete(queue);
+        this.setupRegistry.delete(`consumer:${queue}`);
       }
       const queueName = this.exchangeNames.find(exchange => exchange.queue.startsWith(queue.split('_')[0]));
       if (queueName && queueConsumers?.queue) {
         const success = await this.setConsumer(queueName.exchange, queueConsumers.queue, true);
         if (success) {
-          await this.consume(queueName.queue, queueConsumers.callback);
+          await this.consume(queueName.queue, queueConsumers.callback, queueConsumers.queue);
           return true;
         }
       }
@@ -392,7 +446,7 @@ export class RabbitMQAdapter implements OnModuleInit, OnModuleDestroy {
     return false;
   }
 
-  @Cron('*/30 * * * * *') // Every 10 seconds
+  @Cron('*/10 * * * * *') // Every 10 seconds
   async handleCron() {
     await this.performHealthCheckAndRecover();
   }
@@ -401,13 +455,20 @@ export class RabbitMQAdapter implements OnModuleInit, OnModuleDestroy {
     const health: { [queueName: string]: boolean } = {};
 
     try {
-      for (const [queueName, _] of this.consumerTags.entries()) {
+      for (const [queueName] of this.consumerTags.entries()) {
         try {
-          const ableToConsume =
-            await this.ableToConsume(queueName);
-          health[queueName] = ableToConsume;
+          const heartbeatKey = `queue:heartbeat:${queueName}`;
+          const lastHeartbeat = await this.cache.get(heartbeatKey);
+
+          if (!lastHeartbeat) {
+            health[queueName] = true; // No heartbeat found, unhealthy
+            continue;
+          }
+
+          const diff = Date.now() - parseInt(lastHeartbeat as string);
+          health[queueName] = diff > 30000; // Unhealthy if > 30s stale
         } catch (error) {
-          health[queueName] = false;
+          health[queueName] = true;
         }
       }
     } catch (error) {
