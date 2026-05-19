@@ -42,10 +42,11 @@ export class MailerAdapter implements MailerPort {
         code: string,
         type: MailType,
     ): Promise<any> {
+        console.log('sendSecretCode', { email, code, type })
         try {
             return await this.mailerStrategy[type](email, code);
         } catch (e: any) {
-            console.log(e)
+            console.log('Failed to send secret code', e)
         }
     }
 
