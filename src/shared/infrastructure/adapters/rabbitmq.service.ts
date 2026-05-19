@@ -366,7 +366,7 @@ export class RabbitMQAdapter implements OnModuleInit, OnModuleDestroy {
       }
       const queueName = this.exchangeNames.find(exchange => exchange.queue.startsWith(queue));
       if (queueName) {
-        const success = await this.setConsumer(queueName.queue, queueName.exchange, true);
+        const success = await this.setConsumer(queueName.exchange, queueName.queue, true);
         if (success) {
           return true;
         }
