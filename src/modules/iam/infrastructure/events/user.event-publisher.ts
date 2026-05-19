@@ -6,6 +6,8 @@ import { IUserRepository, USER_REPO } from '../../domain/repositories/user.repos
 import { RabbitMQAdapter } from '@/shared/infrastructure/adapters/rabbitmq.service';
 import { NotificationChannel } from '@/modules/notification/domain/value-objects/notification.enum';
 import { env } from '@/utils/env';
+import { NotificationContent } from '@/modules/notification/domain/value-objects/notification.vo';
+import { MailType } from '@/shared/application/ports/mailer.port';
 
 @Injectable()
 export class UserEventPublisher implements OnModuleInit {
@@ -60,7 +62,8 @@ export class UserEventPublisher implements OnModuleInit {
           body: `Your confirmation code is: ${confirmation.code}`,
           template: './confirmation',
           data: { content: confirmation.code, ...confirmation },
-        },
+          type: MailType.CONFIRMED
+        } as NotificationContent,
       };
 
       await this.rabbitmq.publish(
