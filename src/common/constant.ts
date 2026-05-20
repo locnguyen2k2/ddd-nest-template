@@ -64,12 +64,20 @@ export const RABBITMQ_ROUTING_KEY = {
 export const SETTING_KEYS = {
   PASSWORD_SECURITY: 'password_attempts_policy',
   CODE_EXPIRE: 'code_expire',
+  POOL_SIZE: 'pool_size',
 } as const;
 
 export interface IAttemptPolicy {
   failed_attempts: number;
   lock_duration: number;
 }
+
+export const CACHED_KEYS = {
+  COUNT: {
+    POOLED_USERS: 'pooled_users_count',
+  },
+  POOLED_USERS: 'pooled_users',
+} as const;
 
 export const SETTINGS = {
   [SETTING_KEYS.PASSWORD_SECURITY]: {
@@ -87,5 +95,10 @@ export const SETTINGS = {
   },
   [SETTING_KEYS.CODE_EXPIRE]: {
     mail_confirmation: 5 * 60, // 5 minutes
+  },
+  [SETTING_KEYS.POOL_SIZE]: {
+    max: 50,
+    min: 10,
+    fetch_ratio: 0.6,
   },
 } as const;

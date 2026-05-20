@@ -1,7 +1,7 @@
 import { UserEntity } from '@/modules/iam/domain/entities/user.entity';
 import { IUserRepository } from '@/modules/iam/domain/repositories/user.repository';
 import { UserMapper } from '../mappers/user.mapper';
-import { PrismaAdapter } from '@/shared/infrastructure/adapters/prisma.adapter';
+import { PostgresAdapter } from '@/shared/infrastructure/adapters/postgres.adapter';
 import { Inject, Injectable } from '@nestjs/common';
 import { CacheRepository } from '@/shared/infrastructure/presistence/cache.repository';
 import { ConfigKeyPaths } from '@/config';
@@ -27,7 +27,7 @@ export class UserRepository extends CacheRepository implements IUserRepository {
     default: 3600,
   };
   constructor(
-    private readonly rbacDBService: PrismaAdapter,
+    private readonly rbacDBService: PostgresAdapter,
     @Inject(STAFF_REPO) private readonly staffRepo: IStaffRepository,
     redisConfig: ConfigService<ConfigKeyPaths>,
     @Inject(CACHE_PORT) private readonly cache: CachePort,
@@ -133,6 +133,23 @@ export class UserRepository extends CacheRepository implements IUserRepository {
       username,
       async () =>
         await this.rbacDBService.user.findUnique({ where: { username } }),
+    );
+    if (!item) return null;
+    return UserMapper.toDomain(item);
+  }
+
+  async findByEmailOrUsername(emailOrUsername: string): Promise<UserEntity | null> {
+    const item = await this.getWithCache(
+      emailOrUsername,
+      async () =>
+        await this.rbacDBService.user.findFirst({
+          where: {
+            OR: [
+              { email: emailOrUsername },
+              { username: emailOrUsername }
+            ]
+          }
+        }),
     );
     if (!item) return null;
     return UserMapper.toDomain(item);

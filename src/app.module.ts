@@ -7,11 +7,13 @@ import { IamModule } from '@/modules/iam/iam.module';
 import { ClsModule } from 'nestjs-cls';
 import { AppController } from './app.controller';
 import { PasswordSecurityGuard } from './modules/iam/presentation/guards/passsword-security.guard';
-import { APP_GUARD } from '@nestjs/core';
+import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import { ThrottlerGuard } from '@nestjs/throttler';
 import { NotificationModule } from './modules/notification/notification.module';
+import { LogsModule } from './modules/system/logs/logs.module';
+import { PersistentLoggingInterceptor } from './modules/system/logs/presentation/interceptors/persistent-logging.interceptor';
 
-const modules = [IamModule, NotificationModule];
+const modules = [IamModule, NotificationModule, LogsModule];
 
 @Module({
   imports: [
@@ -47,6 +49,10 @@ const modules = [IamModule, NotificationModule];
     {
       provide: APP_GUARD,
       useClass: ThrottlerGuard,
+    },
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: PersistentLoggingInterceptor,
     },
   ],
 })

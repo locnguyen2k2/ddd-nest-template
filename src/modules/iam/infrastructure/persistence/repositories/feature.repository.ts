@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { IFeatureRepository } from '@/modules/iam/domain/repositories/feature.repository';
 import { FeatureMapper } from '../mappers/feature.mapper';
-import { PrismaAdapter } from '@/shared/infrastructure/adapters/prisma.adapter';
+import { PostgresAdapter } from '@/shared/infrastructure/adapters/postgres.adapter';
 import { LogExecutionTime } from '@/common/decorators/log-execution.decorator';
 import {
   cursorHelper,
@@ -27,8 +27,7 @@ import { StatsGrowInfo } from '@/common/interfaces/stats.interface';
 @Injectable()
 export class FeatureRepository
   extends CacheRepository
-  implements IFeatureRepository
-{
+  implements IFeatureRepository {
   protected readonly boundedContext: string = 'iam';
   protected readonly aggregateType: string = 'feature';
   protected readonly ttlConfig: { [key: string]: number } = {
@@ -36,7 +35,7 @@ export class FeatureRepository
   };
 
   constructor(
-    private readonly rbacDBService: PrismaAdapter,
+    private readonly rbacDBService: PostgresAdapter,
     redisConfig: ConfigService<ConfigKeyPaths>,
     @Inject(CACHE_PORT) cachePort: CachePort,
   ) {
@@ -381,11 +380,11 @@ export class FeatureRepository
       return await this.rbacDBService.feature.findUnique({
         where: organization_id
           ? {
-              id,
-              project: {
-                organization_id,
-              },
-            }
+            id,
+            project: {
+              organization_id,
+            },
+          }
           : { id },
       });
     });

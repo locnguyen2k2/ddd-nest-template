@@ -1,13 +1,13 @@
 import { Injectable } from '@nestjs/common';
 import { INotificationRepository } from '../../domain/repositories/notification.repository';
 import { Notification } from '../../domain/entities/notification.entity';
-import { PrismaAdapter } from '@/shared/infrastructure/adapters/prisma.adapter';
+import { PostgresAdapter } from '@/shared/infrastructure/adapters/postgres.adapter';
 import { NotificationStatus as PrismaNotificationStatus, NotificationChannel as PrismaNotificationChannel } from '@internal/rbac/client';
 import { NotificationStatus } from '../../domain/value-objects/notification.enum';
 
 @Injectable()
 export class PrismaNotificationRepository implements INotificationRepository {
-  constructor(private readonly prisma: PrismaAdapter) {}
+  constructor(private readonly prisma: PostgresAdapter) { }
 
   async save(notification: Notification): Promise<void> {
     const result = await this.prisma.notification.upsert({

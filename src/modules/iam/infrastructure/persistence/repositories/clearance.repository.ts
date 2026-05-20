@@ -4,7 +4,7 @@ import {
   CLEARANCE_REPO,
 } from '@/modules/iam/domain/repositories/clearance.repository';
 import { ClearanceEntity } from '@/modules/iam/domain/entities/clearance.entity';
-import { PrismaAdapter } from '@/shared/infrastructure/adapters/prisma.adapter';
+import { PostgresAdapter } from '@/shared/infrastructure/adapters/postgres.adapter';
 import { ClearanceMapper } from '../mappers/clearance.mapper';
 import {
   cursorHelper,
@@ -20,7 +20,7 @@ import { Prisma } from '@internal/rbac/client';
 
 @Injectable()
 export class ClearanceRepository implements IClearanceRepository {
-  constructor(private readonly prisma: PrismaAdapter) {}
+  constructor(private readonly prisma: PostgresAdapter) { }
 
   async cursorPagination(pageOptions: CursorClearancesQuery) {
     const { data = [], paginated } = await cursorHelper<

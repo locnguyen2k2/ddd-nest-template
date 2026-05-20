@@ -75,6 +75,10 @@ export class RabbitMQAdapter implements OnModuleInit, OnModuleDestroy {
     });
   }
 
+  genRoutingKey(id: string, action: string): string {
+    return `id-${id}.action-${action}`;
+  }
+
   @LogExecutionTime()
   async initialize() {
     console.log(env.str('NODE_ENV'), 'NODE_ENV');
@@ -135,7 +139,6 @@ export class RabbitMQAdapter implements OnModuleInit, OnModuleDestroy {
 
   private getManagementUrl(path: string): string {
     const protocol = this.configs.host.includes('localhost') ? 'http' : 'https';
-    console.log(`${protocol}://${this.configs.host}/api/${path}`)
     return `${protocol}://${this.configs.host}/api/${path}`;
   }
 

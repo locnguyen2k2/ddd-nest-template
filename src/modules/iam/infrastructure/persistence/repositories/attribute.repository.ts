@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { IAttributeRepository } from '@/modules/iam/domain/repositories/attribute.repository';
 import { AttributeEntity } from '@/modules/iam/domain/entities/attribute.entity';
-import { PrismaAdapter } from '@/shared/infrastructure/adapters/prisma.adapter';
+import { PostgresAdapter } from '@/shared/infrastructure/adapters/postgres.adapter';
 import { AttributeMapper } from '../../../../iam/infrastructure/persistence/mappers/attribute.mapper';
 import {
   cursorHelper,
@@ -17,7 +17,7 @@ import { Prisma } from '@internal/rbac/client';
 
 @Injectable()
 export class AttributeRepository implements IAttributeRepository {
-  constructor(private readonly prisma: PrismaAdapter) {}
+  constructor(private readonly prisma: PostgresAdapter) { }
 
   async cursorPagination(pageOptions: CursorAttributesQuery) {
     const { data = [], paginated } = await cursorHelper<

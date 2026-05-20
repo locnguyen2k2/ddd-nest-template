@@ -4,7 +4,7 @@ import {
   ENVIRONMENT_REPO,
 } from '@/modules/iam/domain/repositories/evironment.repository';
 import { EnvironmentEntity } from '@/modules/iam/domain/entities/environment.entity';
-import { PrismaAdapter } from '@/shared/infrastructure/adapters/prisma.adapter';
+import { PostgresAdapter } from '@/shared/infrastructure/adapters/postgres.adapter';
 import { EnvironmentMapper } from '../mappers/environment.mapper';
 import {
   cursorHelper,
@@ -20,7 +20,7 @@ import { Prisma } from '@internal/rbac/client';
 
 @Injectable()
 export class EnvironmentRepository implements IEnvironmentRepository {
-  constructor(private readonly prisma: PrismaAdapter) {}
+  constructor(private readonly prisma: PostgresAdapter) { }
 
   async cursorPagination(pageOptions: CursorEnvironmentsQuery) {
     const { data = [], paginated } = await cursorHelper<

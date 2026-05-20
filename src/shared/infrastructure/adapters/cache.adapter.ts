@@ -175,4 +175,28 @@ export class CacheAdapter implements CachePort {
   async getKeys(pattern: string): Promise<string[]> {
     return await this.scanKeys(pattern);
   }
+
+  async setList(key: string, values: any[]): Promise<void> {
+    const serialized = values.map((value) => JSON.stringify(value));
+    await this.client.lpush(key, ...serialized);
+  }
+  
+  async getList(key: string): Promise<any[]> {
+    const values = await this.client.lrange(key, 0, -1);
+    return values.map((value) => JSON.parse(value));
+  }
+
+  async lpop(key: string): Promise<any> {
+    const value = await this.client.lpop(key);
+    return value ? JSON.parse(value) : null;
+  }
+  
+  async lpush(key: string, value: any): Promise<void> {
+    const serialized = typeof value === 'string' ? value : JSON.stringify(value);
+    await this.client.lpush(key, serialized);
+  }
+  
+  async llen(key: string): Promise<number> {
+    return await this.client.llen(key);
+  }
 }

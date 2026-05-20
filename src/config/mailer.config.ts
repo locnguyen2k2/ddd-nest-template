@@ -9,16 +9,17 @@ export const mailerConfigKey = 'mailer';
 // Khởi tạo và đặt tên (registerAs) cho Mailer configuration object
 export const MailerConfig = registerAs(mailerConfigKey, () => ({
   transport: {
-    host: env.str('MAILER_HOST'),
-    port: env.numb('MAILER_PORT'),
+    // host: env.str('MAILER_HOST'),
+    // port: env.numb('MAILER_PORT'),
+    service: 'gmail',
     auth: {
       user: env.str('MAILER_USER'),
       pass: env.str('MAILER_PASSWORD'),
     },
   },
-  defaults: {
-    from: `"No Reply" <${env.str("MAILER_FROM")}>`,
-  },
+  // defaults: {
+  // from: `"No Reply" <${env.str("MAILER_FROM")}>`,
+  // },
   template: {
     dir: path.join(cwd, 'dist/public/templates/mailers'),
     adapter: new HandlebarsAdapter(),

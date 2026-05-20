@@ -7,7 +7,7 @@ import {
   Effect,
   PolicyEntity,
 } from '@/modules/iam/domain/entities/policy.entity';
-import { PrismaAdapter } from '@/shared/infrastructure/adapters/prisma.adapter';
+import { PostgresAdapter } from '@/shared/infrastructure/adapters/postgres.adapter';
 import { PolicyMapper } from '../mappers/policy.mapper';
 import { JsonLogicEngineAdapter } from '@/shared/infrastructure/adapters/json-logic.adapter';
 import {
@@ -27,9 +27,9 @@ import { capitalize } from '@/utils/string';
 @Injectable()
 export class PrismaPolicyRepository implements IPolicyRepository {
   constructor(
-    private readonly prisma: PrismaAdapter,
+    private readonly prisma: PostgresAdapter,
     private readonly ruleEvaluator: JsonLogicEngineAdapter,
-  ) {}
+  ) { }
 
   @LogExecutionTime()
   async cursorPagination(pageOptions: CursorPoliciesQuery) {

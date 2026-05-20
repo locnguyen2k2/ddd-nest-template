@@ -1,0 +1,78 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../../node_modules/@internal/mongodb/client"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("MONGODB_DATABASE_URL")
+}
+
+model Logs {
+  id           String      @id @default(auto()) @map("_id") @db.ObjectId
+
+  created_at   DateTime    @default(now())
+  created_by   String?     // User ID or System
+
+  context      String?     // e.g., AuthService, ItemsController
+  type         LogType
+  status       LogStatus
+  level        LogLevel
+
+  // HTTP Metadata
+  is_http      Boolean     @default(false)
+  http_method  HttpMethod?
+  path         String?     // URL path
+  status_code  Int?        // HTTP status code
+  request_id   String?
+  trace_id     String?
+  ip           String?
+  user_agent   String?
+
+  // Content
+  action       String      // e.g., CREATE_USER, LOGIN
+  reason       String?     // Brief explanation
+  attributes   Json?       // Extra metadata
+  before       Json?       // State before action
+  after        Json?       // State after action
+  stack        String?     // Error stack trace
+  duration     Int?        // Execution time in ms
+
+  service      String?     // Microservice name (if applicable)
+
+  @@index([type])
+  @@index([status])
+  @@index([level])
+  @@index([created_by])
+  @@index([context])
+  @@index([is_http, http_method])
+  @@index([trace_id])
+  @@map("logs")
+}
+
+enum LogType {
+    SYSTEM
+    USER
+}
+
+enum LogStatus {
+    SUCCESS
+    FAILURE
+}
+
+enum LogLevel {
+    INFO
+    WARNING
+    ERROR
+    DEBUG
+}
+
+enum HttpMethod {
+    GET
+    POST
+    PUT
+    DELETE
+    PATCH
+    OPTIONS
+    HEAD
+}

@@ -1,7 +1,7 @@
 import { LogExecutionTime } from '@/common/decorators/log-execution.decorator';
 import { ConfigKeyPaths } from '@/config';
 import { CACHE_PORT, CachePort } from '@/shared/application/ports/cache.port';
-import { PrismaAdapter } from '@/shared/infrastructure/adapters/prisma.adapter';
+import { PostgresAdapter } from '@/shared/infrastructure/adapters/postgres.adapter';
 import { CacheRepository } from '@/shared/infrastructure/presistence/cache.repository';
 import { Inject } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
@@ -24,15 +24,14 @@ import { Injectable } from '@nestjs/common';
 @Injectable()
 export class DepartmentRepository
   extends CacheRepository
-  implements IDepartmentRepository
-{
+  implements IDepartmentRepository {
   protected readonly boundedContext: string = 'iam';
   protected readonly aggregateType: string = 'departments';
   protected readonly ttlConfig: { [key: string]: number } = {
     default: 3600,
   };
   constructor(
-    private readonly rbacDBService: PrismaAdapter,
+    private readonly rbacDBService: PostgresAdapter,
     redisConfig: ConfigService<ConfigKeyPaths>,
     @Inject(CACHE_PORT) cachePort: CachePort,
   ) {

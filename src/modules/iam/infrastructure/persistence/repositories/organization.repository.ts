@@ -2,7 +2,7 @@ import { Inject, Injectable } from '@nestjs/common';
 import { IOrganizationRepository } from '../../../domain/repositories/organization.repository';
 import { Organization } from '../../../domain/entities/organization.entity';
 import { OrganizationMapper } from '../mappers/organization.mapper';
-import { PrismaAdapter } from '@/shared/infrastructure/adapters/prisma.adapter';
+import { PostgresAdapter } from '@/shared/infrastructure/adapters/postgres.adapter';
 import { LogExecutionTime } from '@/common/decorators/log-execution.decorator';
 import { BusinessException } from '@/common/http/business-exception';
 import { ErrorEnum } from '@/common/exception.enum';
@@ -27,8 +27,7 @@ import { StatsGrowInfo } from '@/common/interfaces/stats.interface';
 @Injectable()
 export class OrganizationRepository
   extends CacheRepository
-  implements IOrganizationRepository
-{
+  implements IOrganizationRepository {
   protected readonly boundedContext: string = 'iam';
   protected readonly aggregateType: string = 'organization';
   protected readonly ttlConfig: { [key: string]: number } = {
@@ -36,7 +35,7 @@ export class OrganizationRepository
   };
 
   constructor(
-    private readonly rbacDBService: PrismaAdapter,
+    private readonly rbacDBService: PostgresAdapter,
     redisConfig: ConfigService<ConfigKeyPaths>,
     @Inject(CACHE_PORT) cachePort: CachePort,
   ) {

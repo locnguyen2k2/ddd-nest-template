@@ -4,7 +4,7 @@ import {
   SUBSCRIPTION_REPO,
 } from '@/modules/iam/domain/repositories/subscription.repository';
 import { SubscriptionEntity } from '@/modules/iam/domain/entities/subscription.entity';
-import { PrismaAdapter } from '@/shared/infrastructure/adapters/prisma.adapter';
+import { PostgresAdapter } from '@/shared/infrastructure/adapters/postgres.adapter';
 import { SubscriptionMapper } from '../mappers/subscription.mapper';
 import {
   cursorHelper,
@@ -20,7 +20,7 @@ import { Prisma } from '@internal/rbac/client';
 
 @Injectable()
 export class SubscriptionRepository implements ISubscriptionRepository {
-  constructor(private readonly prisma: PrismaAdapter) {}
+  constructor(private readonly prisma: PostgresAdapter) { }
 
   async cursorPagination(pageOptions: CursorSubscriptionsQuery) {
     const { data = [], paginated } = await cursorHelper<

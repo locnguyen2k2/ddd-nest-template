@@ -49,22 +49,27 @@ export abstract class CacheRepository {
     fetchFromDb: () => Promise<T | null>,
     version?: number | string,
   ): Promise<T | null> {
-    const cacheKey = this.buildKey(id, version);
+    try {
+      const cacheKey = this.buildKey(id, version);
 
-    const cached = await this.cachePort.get<T>(cacheKey);
+      const cached = await this.cachePort.get<T>(cacheKey);
 
-    if (cached) {
-      return cached;
+      if (cached) {
+        return cached;
+      }
+
+      const entity = await fetchFromDb();
+
+      if (entity !== undefined && entity !== null) {
+        const ttl = this.ttlConfig['default'] ?? 3600;
+        await this.cachePort.set(cacheKey, entity, ttl);
+      }
+
+      return entity;
+    } catch (e: any) {
+      console.error('Error in getWithCache:', e);
+      return null;
     }
-
-    const entity = await fetchFromDb();
-
-    if (entity) {
-      const ttl = this.ttlConfig['default'] ?? 3600;
-      await this.cachePort.set(cacheKey, entity, ttl);
-    }
-
-    return entity;
   }
 
   protected async getWithManyKeysCache<T>(

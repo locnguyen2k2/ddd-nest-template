@@ -4,7 +4,7 @@ import "dotenv/config";
 import { defineConfig } from "prisma/config";
 import { env } from '@/utils/env';
 
-export default defineConfig({
+export const pgRbacConfig = defineConfig({
   schema: "prisma/pg-rbac/schema.prisma",
   migrations: {
     path: "prisma/pg-rbac/migrations",
@@ -13,3 +13,16 @@ export default defineConfig({
     url: env.str("PG_RBAC_DATABASE_URL"),
   },
 });
+
+export const mongodbConfig = defineConfig({
+  schema: "prisma/mognodb/schema.prisma",
+  migrations: {
+    path: "prisma/mognodb/migrations",
+  },
+  engine: "classic",
+  datasource: {
+    url: env.str("MONGODB_DATABASE_URL"),
+  },
+});
+
+export default [pgRbacConfig, mongodbConfig];

@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { IRoleRepository } from '@/modules/iam/domain/repositories/role.repository';
 import { RoleMapper } from '../mappers/role.mapper';
-import { PrismaAdapter } from '@/shared/infrastructure/adapters/prisma.adapter';
+import { PostgresAdapter } from '@/shared/infrastructure/adapters/postgres.adapter';
 import { LogExecutionTime } from '@/common/decorators/log-execution.decorator';
 import {
   cursorHelper,
@@ -32,7 +32,7 @@ export class RoleRepository extends CacheRepository implements IRoleRepository {
   };
 
   constructor(
-    private readonly rbacDBService: PrismaAdapter,
+    private readonly rbacDBService: PostgresAdapter,
     redisConfig: ConfigService<ConfigKeyPaths>,
     @Inject(CACHE_PORT) cachePort: CachePort,
   ) {
@@ -100,9 +100,9 @@ export class RoleRepository extends CacheRepository implements IRoleRepository {
       return await this.rbacDBService.role.findUnique({
         where: organization_id
           ? {
-              id,
-              organization_id,
-            }
+            id,
+            organization_id,
+          }
           : { id },
       });
     });

@@ -19,6 +19,9 @@ import { IOrganizationRepository } from '@/modules/iam/domain/repositories/organ
 import { OrganizationMapper } from '@/modules/iam/infrastructure/persistence/mappers/organization.mapper';
 import { LogExecutionTime } from '@/common/decorators/log-execution.decorator';
 import { AuthWrapperCmdHandler } from './wrapper.command.handler';
+import { LogCmdHandler } from '@/modules/system/logs/application/services/log/command.handler';
+import { CreateLogDto } from '@/modules/system/logs/application/dtos/create-log.dto';
+import { HttpMethod, LogLevel, LogStatus, LogType } from '@/modules/system/logs/domain/log.enum';
 
 @Injectable()
 export class AuthCmdHandler {
@@ -26,6 +29,7 @@ export class AuthCmdHandler {
     private readonly authWrapperCmdHandler: AuthWrapperCmdHandler,
     @Inject(ORGANIZATION_REPO)
     private readonly orgRepo: IOrganizationRepository,
+    private readonly loggerCmd: LogCmdHandler,
   ) { }
 
   @LogExecutionTime()
@@ -53,9 +57,27 @@ export class AuthCmdHandler {
         ),
       ]);
       const orgsPrisma = orgs.map((org) => OrganizationMapper.toPrisma(org));
+      const logArgs: CreateLogDto = {
+        created_by: validUser.id.value,
+        context: 'auth',
+        type: LogType.USER,
+        status: LogStatus.SUCCESS,
+        level: LogLevel.INFO,
+        is_http: true,
+        http_method: HttpMethod.POST,
+        path: '/auth/login',
+        status_code: 200,
+        action: 'login',
+        reason: 'User logged in',
+        attributes: {},
+        before: {},
+        after: {},
+        duration: 0,
+        service: 'auth',
+      };
+      this.loggerCmd.create(logArgs);
       return AuthMapper.toResponseDto(tokenInfo, validUser, orgsPrisma);
     } catch (error) {
-      console.log(error);
       throw new BusinessException(
         ErrorEnum.REQUEST_VALIDATION_ERROR,
         'Login failed',

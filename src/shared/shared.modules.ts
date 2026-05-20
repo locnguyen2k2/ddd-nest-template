@@ -4,7 +4,8 @@ import { SwaggerModule } from '@/shared/infrastructure/swagger.module';
 import { AblyModule } from './infrastructure/ably.module';
 import { JwtModule } from './infrastructure/jwt.module';
 import { RabbitMQModule } from './infrastructure/rabbitmq/rabbitmq.module';
-import { PrismaAdapter } from './infrastructure/adapters/prisma.adapter';
+import { PostgresAdapter } from './infrastructure/adapters/postgres.adapter';
+import { MongodbAdapter } from './infrastructure/adapters/mongodb.adapter';
 import { BcryptAdapter } from './infrastructure/adapters/bcrypt.adapter';
 import { BCRYPT_PORT } from './application/ports/bcrypt.port';
 import { JSON_LOGIC_ENGINE } from './application/ports/json-log-engine.port';
@@ -29,7 +30,8 @@ import { REQUEST_PORT } from './application/ports/http.port';
     ThrottleModule,
   ],
   providers: [
-    PrismaAdapter,
+    PostgresAdapter,
+    MongodbAdapter,
     BcryptAdapter,
     MailerAdapter,
     JsonLogicEngineAdapter,
@@ -59,7 +61,8 @@ import { REQUEST_PORT } from './application/ports/http.port';
     RabbitMQModule,
     MailerModule,
     ThrottleModule,
-    PrismaAdapter,
+    PostgresAdapter,
+    MongodbAdapter,
     BcryptAdapter,
     JsonLogicEngineAdapter,
     RequestAdapter,

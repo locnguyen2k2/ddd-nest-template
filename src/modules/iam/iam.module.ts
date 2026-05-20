@@ -1,6 +1,5 @@
 import { Module } from '@nestjs/common';
 import { FeatureController } from './presentation/controllers/feature.controller';
-import { RabbitMQModule } from '@/shared/infrastructure/rabbitmq/rabbitmq.module';
 import { OrganizationController } from './presentation/controllers/organization.controller';
 import { UserController } from './presentation/controllers/user.controller';
 import { FeatureQueryHandler } from '@/modules/iam/application/services/feature/query.handler';
@@ -91,6 +90,7 @@ import { RoleController } from './presentation/controllers/role.controller';
 import { StaffQueryHandler } from './application/services/staffs/query.handler';
 import { StaffController } from './presentation/controllers/staff.controller';
 import { MailerModule } from '@nestjs-modules/mailer';
+import { LogsModule } from '../system/logs/logs.module';
 
 const abacProviders = [
   PrismaPolicyRepository,
@@ -272,7 +272,7 @@ const environmentExports = [
 const roleExports = [RoleRepository, RoleCommandHandler, RoleQueryHandler];
 
 @Module({
-  imports: [MailerModule],
+  imports: [MailerModule, LogsModule],
   controllers: [
     AttributeController,
     ClearanceController,

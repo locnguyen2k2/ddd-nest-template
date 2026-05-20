@@ -1,6 +1,6 @@
 import { ProjectEntity } from '@/modules/iam/domain/entities/project.entity';
 import { IProjectRepository } from '@/modules/iam/domain/repositories/project.repository';
-import { PrismaAdapter } from '@/shared/infrastructure/adapters/prisma.adapter';
+import { PostgresAdapter } from '@/shared/infrastructure/adapters/postgres.adapter';
 import { ProjectMapper } from '../mappers/project.mapper';
 import { Inject, Injectable } from '@nestjs/common';
 import { Logger } from '@nestjs/common';
@@ -26,8 +26,7 @@ import { CACHE_PORT, CachePort } from '@/shared/application/ports/cache.port';
 @Injectable()
 export class ProjectRepository
   extends CacheRepository
-  implements IProjectRepository
-{
+  implements IProjectRepository {
   private readonly logger = new Logger(ProjectRepository.name);
   protected readonly boundedContext: string = 'iam';
   protected readonly aggregateType: string = 'project';
@@ -35,7 +34,7 @@ export class ProjectRepository
     default: 3600,
   };
   constructor(
-    private readonly rbacDBService: PrismaAdapter,
+    private readonly rbacDBService: PostgresAdapter,
     redisConfig: ConfigService<ConfigKeyPaths>,
     @Inject(CACHE_PORT) cachePort: CachePort,
   ) {

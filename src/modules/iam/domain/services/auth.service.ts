@@ -208,7 +208,7 @@ export class AuthDomainService {
   }
 
   async validateUser(username: string, password: string): Promise<UserEntity> {
-    const user = await this.userRepo.findByUsername(username);
+    const user = await this.userRepo.findByEmailOrUsername(username);
     const key = `${PASSWORD_SECURITY_THROTTLE}:${user?.id.value}`;
 
     switch (true) {
