@@ -56,7 +56,7 @@ export class FeatureRepository
                 )
             SELECT COUNT(*)::int
             FROM "Feature" LEFT JOIN "Project" ON "Feature"."project_id" = "Project"."id"
-            WHERE "Feature"."created_at" < CURRENT_DATE - (SELECT days_in_month - 1 FROM month_days) * INTERVAL '1 day' AND "Project"."organization_id" = ${org_id};
+            WHERE "Feature"."created_at" < CURRENT_DATE - (SELECT days_in_month - 1 FROM month_days) * INTERVAL '1 day' AND "Project"."organization_id" = ${org_id}::uuid;
       `;
       return result[0].count;
     } catch (e: any) {
@@ -86,7 +86,7 @@ export class FeatureRepository
                 JOIN "Project" p ON f."project_id" = p."id"
                 JOIN range_start r
             ON f."created_at" >= r.start_date
-            WHERE DATE(f."created_at") <= CURRENT_DATE AND p."organization_id" = ${org_id};
+            WHERE DATE(f."created_at") <= CURRENT_DATE AND p."organization_id" = ${org_id}::uuid;
               `;
       return result[0].count;
     } catch (e: any) {
@@ -131,7 +131,7 @@ export class FeatureRepository
                 FROM "Feature" u 
                 LEFT JOIN "Project" on "Project"."id" = u."project_id"
                 JOIN range_start r ON u.created_at >= r.start_date
-                WHERE DATE(u.created_at) <= CURRENT_DATE AND "organization_id" = ${organization_id}
+                WHERE DATE(u.created_at) <= CURRENT_DATE AND "organization_id" = ${organization_id}::uuid
                 GROUP BY DATE(u.created_at), "organization_id"
                 ORDER BY DATE(u.created_at);
             `;
@@ -176,7 +176,7 @@ export class FeatureRepository
             FROM "Feature" LEFT JOIN "Project" ON "Project"."id" = "Feature"."project_id"
             WHERE "Feature"."created_at" >= DATE_TRUNC('month', CURRENT_DATE) - INTERVAL '11 months'
             AND "Feature"."created_at" < DATE_TRUNC('month', CURRENT_DATE) + INTERVAL '1 month'
-            AND "organization_id" = ${organization_id}
+            AND "organization_id" = ${organization_id}::uuid
             GROUP BY DATE_TRUNC('month', "Feature"."created_at"), "organization_id"
             ORDER BY DATE_TRUNC('month', "Feature"."created_at");
             `;
@@ -233,7 +233,7 @@ export class FeatureRepository
             FROM "Feature" LEFT JOIN "Project" ON "Project"."id" = "Feature"."project_id"
             WHERE "Feature"."created_at" >= CURRENT_DATE - INTERVAL '6 days'
             AND "Feature"."created_at" < CURRENT_DATE + INTERVAL '1 day'
-            AND "organization_id" = ${organization_id}
+            AND "organization_id" = ${organization_id}::uuid
             GROUP BY DATE("Feature"."created_at"), "organization_id"
             ORDER BY DATE("Feature"."created_at");
             `;
@@ -282,7 +282,7 @@ export class FeatureRepository
             FROM "Feature" LEFT JOIN "Project" ON "Project"."id" = "Feature"."project_id"
             WHERE "Feature"."created_at" >= date_trunc('hour', CURRENT_TIMESTAMP) - INTERVAL '23 hours'
             AND "Feature"."created_at" < date_trunc('hour', CURRENT_TIMESTAMP)+ INTERVAL '1 hour'
-            AND "organization_id" = ${organization_id}
+            AND "organization_id" = ${organization_id}::uuid
             GROUP BY date_trunc('hour', "Feature"."created_at"), "organization_id"
             ORDER BY date_trunc('hour', "Feature"."created_at");
             `;

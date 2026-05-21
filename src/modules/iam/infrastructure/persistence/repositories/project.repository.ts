@@ -55,7 +55,7 @@ export class ProjectRepository
           )
       SELECT COUNT(*)::int
       FROM "Project"
-      WHERE created_at < CURRENT_DATE - (SELECT days_in_month - 1 FROM month_days) * INTERVAL '1 day' AND organization_id = ${org_id};
+      WHERE created_at < CURRENT_DATE - (SELECT days_in_month - 1 FROM month_days) * INTERVAL '1 day' AND organization_id = ${org_id}::uuid;
       `;
       return result[0].count;
     } catch (e: any) {
@@ -84,7 +84,7 @@ export class ProjectRepository
       FROM "Project" prj
           JOIN range_start r
       ON prj.created_at >= r.start_date
-      WHERE DATE(prj.created_at) <= CURRENT_DATE AND prj.organization_id = ${org_id};
+      WHERE DATE(prj.created_at) <= CURRENT_DATE AND prj.organization_id = ${org_id}::uuid;
               `;
       return result[0].count;
     } catch (e: any) {

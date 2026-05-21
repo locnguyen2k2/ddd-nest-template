@@ -54,7 +54,7 @@ export class StaffRepository
                 )
             SELECT COUNT(*)::int
             FROM "Staff"
-            WHERE created_at < CURRENT_DATE - (SELECT days_in_month - 1 FROM month_days) * INTERVAL '1 day' AND organization_id = ${org_id};
+            WHERE created_at < CURRENT_DATE - (SELECT days_in_month - 1 FROM month_days) * INTERVAL '1 day' AND organization_id = ${org_id}::uuid;
             `;
       return result[0].count;
     } catch (e: any) {
@@ -83,7 +83,7 @@ export class StaffRepository
             FROM "Staff" prj
                 JOIN range_start r
             ON prj.created_at >= r.start_date
-            WHERE DATE(prj.created_at) <= CURRENT_DATE AND prj.organization_id = ${org_id};
+            WHERE DATE(prj.created_at) <= CURRENT_DATE AND prj.organization_id = ${org_id}::uuid;
               `;
       return result[0].count;
     } catch (e: any) {
@@ -128,7 +128,7 @@ export class StaffRepository
                     JOIN range_start r
                         ON u.created_at >= r.start_date 
                 WHERE DATE(u.created_at) <= CURRENT_DATE 
-                    AND u.organization_id = ${orgId}
+                    AND u.organization_id = ${orgId}::uuid
                 GROUP BY DATE(u.created_at)
                 ORDER BY DATE(u.created_at);
             `;
@@ -172,7 +172,7 @@ export class StaffRepository
             FROM "Staff"
             WHERE created_at >= DATE_TRUNC('month', CURRENT_DATE) - INTERVAL '11 months'
             AND created_at < DATE_TRUNC('month', CURRENT_DATE) + INTERVAL '1 month'
-            AND organization_id = ${orgId}
+            AND organization_id = ${orgId}::uuid
             GROUP BY DATE_TRUNC('month', created_at)
             ORDER BY DATE_TRUNC('month', created_at);
             `;
@@ -216,7 +216,7 @@ export class StaffRepository
             FROM "Staff"
             WHERE created_at >= CURRENT_DATE - INTERVAL '6 days'
             AND created_at < CURRENT_DATE + INTERVAL '1 day'
-            AND organization_id = ${orgId}
+            AND organization_id = ${orgId}::uuid
             GROUP BY DATE(created_at)
             ORDER BY DATE(created_at);
             `;
@@ -260,7 +260,7 @@ export class StaffRepository
             FROM "Staff"
             WHERE created_at >= date_trunc('hour', CURRENT_TIMESTAMP) - INTERVAL '23 hours'
             AND created_at < date_trunc('hour', CURRENT_TIMESTAMP)
-            AND organization_id = ${orgId}
+            AND organization_id = ${orgId}::uuid
             GROUP BY date_trunc('hour', created_at)
             ORDER BY date_trunc('hour', created_at);
             `;

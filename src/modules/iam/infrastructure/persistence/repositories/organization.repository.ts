@@ -73,7 +73,7 @@ export class OrganizationRepository
           )
       SELECT COUNT(*)::int
       FROM "Organization"
-      WHERE created_at < CURRENT_DATE - (SELECT days_in_month - 1 FROM month_days) * INTERVAL '1 day' AND created_by = ${user_id};
+      WHERE created_at < CURRENT_DATE - (SELECT days_in_month - 1 FROM month_days) * INTERVAL '1 day' AND created_by = ${user_id}::uuid;
       `;
       return result[0].count;
     } catch (e: any) {
@@ -102,7 +102,7 @@ export class OrganizationRepository
       FROM "Organization" org
           JOIN range_start r
       ON org.created_at >= r.start_date
-      WHERE DATE(org.created_at) <= CURRENT_DATE AND org.created_by = ${user_id};
+      WHERE DATE(org.created_at) <= CURRENT_DATE AND org.created_by = ${user_id}::uuid;
               `;
       return result[0].count;
     } catch (e: any) {
