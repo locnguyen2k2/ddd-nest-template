@@ -71,7 +71,7 @@ export class UserEntity extends AggregateRoot<UserEntity, string> {
   }
 
   canAuthenticate() {
-    return this._status === AccessControlStatus.ACTIVE;
+    return this._status !== AccessControlStatus.DELETED;
   }
 
   static create(props: IUserBaseInfo) {

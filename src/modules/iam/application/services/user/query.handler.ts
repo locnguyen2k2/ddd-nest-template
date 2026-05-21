@@ -33,8 +33,7 @@ export class UserQueryHandler {
 
     // Publish events before clearing them
     const notifyEvent = UserEntity.user(user);
-    console.log('user.getEvents()', notifyEvent.getEvents());
-    await this.userEventPublisher.publishEvents([...notifyEvent.getEvents()]);
+    this.userEventPublisher.publishEvents([...notifyEvent.getEvents()]);
 
     const orgsEntity = await this.organizationRepository.findByIds(
       user.organizations.map((org) => org.organization_id),

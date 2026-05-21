@@ -46,13 +46,10 @@ export class UserCmdHandler {
     const password: Password = Password.create(hashedPassword);
 
     if (
-      !this.userService.isUsername(args.username) &&
-      !this.userService.isEmail(args.username)
+      !this.userService.isUsername(args.username) ||
+      !this.userService.isEmail(args.email)
     ) {
-      throw new BusinessException('400|Invalid username');
-    }
-    if (!this.userService.isEmail(args.email)) {
-      throw new BusinessException('400|Invalid email');
+      throw new BusinessException('400|Invalid username or email format');
     }
 
     const [isUsernameExisted, isEmailExisted, isCaptchaValid] = await Promise.all([
@@ -82,19 +79,14 @@ export class UserCmdHandler {
       organizations: [],
     });
 
-    const user = await this.userRepo.create(userDomain);
-    await this.userEventPublisher.publishEvents([...user.getEvents()]);
+    const [tokensInfo, user] = await Promise.all([
+      this.authService.prepareTokens(userDomain),
+      this.userRepo.create(userDomain),
+      this.userEventPublisher.publishEvents([...userDomain.getEvents()])
+    ]);
     user.clearEvents();
 
-    const [tokensInfo, orgs] = await Promise.all([
-      this.authService.prepareTokens(user),
-      this.orgRepo.findByIds(
-        user.organizations.map((org) => org.organization_id),
-      ),
-    ]);
-
-    const orgsPrisma = orgs.map((org) => OrganizationMapper.toPrisma(org));
-    return AuthMapper.toResponseDto(tokensInfo, user, orgsPrisma);
+    return AuthMapper.toResponseDto(tokensInfo, user, []);
   }
 
   async updateProfile(payload: IPayload, args: UpdateProfileArgs): Promise<UserResponseDto> {

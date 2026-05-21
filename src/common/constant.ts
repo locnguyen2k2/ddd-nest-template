@@ -94,7 +94,7 @@ export const SETTINGS = {
     ] as IAttemptPolicy[],
   },
   [SETTING_KEYS.CODE_EXPIRE]: {
-    mail_confirmation: 5 * 60, // 5 minutes
+    mail_confirmation: 1 * 60, // 1 minute
   },
   [SETTING_KEYS.POOL_SIZE]: {
     max: 50,

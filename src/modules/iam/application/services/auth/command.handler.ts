@@ -84,7 +84,7 @@ export class AuthCmdHandler {
       };
       this.loggerCmd.create(logArgs);
       return AuthMapper.toResponseDto(tokenInfo, validUser, orgsPrisma);
-    } catch (error) {
+    } catch (error: any) {
       throw new BusinessException(
         ErrorEnum.REQUEST_VALIDATION_ERROR,
         'Login failed',
