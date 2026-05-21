@@ -146,6 +146,13 @@ export class LogoutDto {
   refresh_token!: string;
 }
 
+export class VerifyEmailDto extends CaptchaDto {
+  @ApiProperty()
+  @IsNotEmpty()
+  @IsString()
+  code!: string;
+}
+
 export class PaginateUsersQuery extends BasePageOptionDto {}
 
 export class CursorUsersQuery extends BaseCursorPageOptionDto {}

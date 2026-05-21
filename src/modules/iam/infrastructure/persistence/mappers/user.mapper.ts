@@ -150,6 +150,7 @@ export class UserMapper {
       password: user.password.value,
       attributes: user.attributes.value as Prisma.JsonObject,
       updated_at: new Date(),
+      status: user.status,
     };
   }
 

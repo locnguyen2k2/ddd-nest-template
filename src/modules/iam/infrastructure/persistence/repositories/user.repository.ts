@@ -189,6 +189,24 @@ export class UserRepository extends CacheRepository implements IUserRepository {
     }
   }
 
+  public async verifyConfirmationCode(user: UserEntity, code: string): Promise<boolean> {
+    try {
+      const existingCode: IConfirmationCode | null = await this.cache.get(`user_${user.username}_${user.email}`);
+      if (!existingCode) {
+        return false;
+      }
+      if (existingCode.code !== code) {
+        return false;
+      }
+      if (existingCode.expires_at < new Date()) {
+        return false;
+      }
+      return true;
+    } catch (e: any) {
+      throw new BusinessException(e?.message);
+    }
+  }
+
   private async generateConfirmationCode(user: UserEntity): Promise<IConfirmationCode> {
     return {
       code: uuidv7().slice(0, 6).toUpperCase(),

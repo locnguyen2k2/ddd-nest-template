@@ -22,6 +22,7 @@ import { OrganizationMapper } from '@/modules/iam/infrastructure/persistence/map
 import { AuthWrapperCmdHandler } from '../auth/wrapper.command.handler';
 import { UserEventPublisher } from '@/modules/iam/infrastructure/events/user.event-publisher';
 import { AccessControlStatus } from '@/common/enum';
+import { IPayload } from '@/modules/iam/domain/services/auth.service';
 
 @Injectable()
 export class UserCmdHandler {
@@ -57,7 +58,7 @@ export class UserCmdHandler {
     const [isUsernameExisted, isEmailExisted, isCaptchaValid] = await Promise.all([
       this.userRepo.findByUsername(args.username),
       this.userRepo.findByEmail(args.email),
-      this.authService.verifyCaptcha(args.captchaId, args.captcha),
+      this.authService.verifyCaptcha({ captchaId: args.captchaId, captcha: args.captcha }),
     ]);
 
     if (isUsernameExisted !== null) {
@@ -96,12 +97,29 @@ export class UserCmdHandler {
     return AuthMapper.toResponseDto(tokensInfo, user, orgsPrisma);
   }
 
-  async updateProfile(args: UpdateProfileArgs): Promise<UserResponseDto> {
+  async updateProfile(payload: IPayload, args: UpdateProfileArgs): Promise<UserResponseDto> {
     try {
-      return {} as UserResponseDto;
+      const isExisted = await this.userRepo.findByIdWithOrganizations(payload.sub);
+      if (!isExisted) {
+        throw new BusinessException('404|User not found');
+      }
+      isExisted.update(args);
+      const user = await this.userRepo.update(isExisted);
+      return new UserResponseDto(
+        user.id.value,
+        user.email,
+        user.username,
+        user.first_name,
+        user.last_name,
+        user.status,
+        user.created_at,
+        user.updated_at,
+        isExisted.organizations,
+      );
     } catch (e: any) {
       console.dir(e?.message);
       throw new BusinessException(`400|Failed to update profile`);
     }
   }
 }
+

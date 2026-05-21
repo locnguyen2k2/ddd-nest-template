@@ -6,6 +6,7 @@ import {
   HttpCode,
   UseGuards,
   Get,
+  Put,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -19,6 +20,9 @@ import {
   VerifyAccessTokenDto,
   RefreshTokenDto,
   LogoutDto,
+  UpdateProfileDto,
+  VerifyEmailDto,
+  CaptchaDto,
 } from '@/modules/iam/presentation/dtos/req/user.dto';
 import {
   AuthResponseDto,
@@ -28,7 +32,7 @@ import {
 } from '@/modules/iam/presentation/dtos/res/user-response.dto';
 import { UserCmdHandler } from '@/modules/iam/application/services/user/command.handler';
 import { AuthCmdHandler } from '@/modules/iam/application/services/auth/command.handler';
-import { RegisterUserArgs } from '@/modules/iam/application/dtos/commands/auth-cmd.dto';
+import { RegisterUserArgs, UpdateProfileArgs, VerifyEmailArgs } from '@/modules/iam/application/dtos/commands/auth-cmd.dto';
 import {
   VerifyAccessTokenArgs,
   RefreshTokenArgs,
@@ -92,6 +96,74 @@ export class UserController {
     };
 
     return await this.userCmdHandler.register(command);
+  }
+
+  @Post('verify-email')
+  @ApiOperation({ summary: 'Verify user email' })
+  @ApiResponse({
+    status: 200,
+    description: 'Email verified successfully',
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Bad Request - Invalid confirmation code',
+  })
+  @UseGuards(JwtAuthGuard)
+  async verifyEmail(@User() user: IPayload, @Body() verifyEmailDto: VerifyEmailDto): Promise<UserResponseDto> {
+    const result = await this.authCmdHandler.verifyEmail(user, {
+      usernameOrEmail: user.username || user.email,
+      code: verifyEmailDto.code,
+      captcha: {
+        captchaId: verifyEmailDto.captcha_id,
+        captcha: verifyEmailDto.captcha,
+      },
+    });
+    return new UserResponseDto(
+      result.id.value,
+      result.email,
+      result.username,
+      result.first_name,
+      result.last_name,
+      result.status,
+      result.created_at,
+      result.updated_at,
+      result.organizations,
+    );
+  }
+
+  @Post('resend-email-verification')
+  @ApiOperation({ summary: 'Resend email verification' })
+  @ApiResponse({
+    status: 200,
+    description: 'Email verification resent successfully',
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Bad Request - Invalid captcha',
+  })
+  @UseGuards(JwtAuthGuard)
+  async resendEmail(@User() user: IPayload, @Body() resendEmailDto: CaptchaDto): Promise<void> {
+    await this.authCmdHandler.resendEmail(user, {
+      captchaId: resendEmailDto.captcha_id,
+      captcha: resendEmailDto.captcha,
+    });
+  }
+
+  @Put('profile')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Update user profile' })
+  @ApiResponse({
+    status: 200,
+    description: 'User profile updated successfully',
+    type: UserResponseDto,
+  })
+  @UseGuards(JwtAuthGuard)
+  async updateProfile(@User() user: IPayload, @Body() updateProfileDto: UpdateProfileDto): Promise<UserResponseDto> {
+    const command: UpdateProfileArgs = {
+      first_name: updateProfileDto.first_name,
+      last_name: updateProfileDto.last_name,
+    };
+    return await this.userCmdHandler.updateProfile(user, command);
   }
 
   @Post('captcha')

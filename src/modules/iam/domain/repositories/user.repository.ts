@@ -18,4 +18,5 @@ export interface IUserRepository {
   requestConfirmationCode(user: UserEntity): Promise<IConfirmationCode>;
   warningPasswordSecurity(user: UserEntity, policy: IAttemptPolicy): Promise<void>;
   findByEmailOrUsername(emailOrUsername: string): Promise<UserEntity | null>;
+  verifyConfirmationCode(user: UserEntity, code: string): Promise<boolean>;
 }

@@ -14,7 +14,7 @@ export interface RegisterUserArgs extends UserBaseArgs, CaptchaArgs {
   email: string;
 }
 
-export interface LoginArgs extends UserBaseArgs, CaptchaArgs {}
+export interface LoginArgs extends UserBaseArgs, CaptchaArgs { }
 
 export interface UpdateProfileArgs {
   first_name?: string;
@@ -37,4 +37,10 @@ export interface RefreshTokenArgs {
 
 export interface VerifyAccessTokenArgs {
   accessToken: string;
+}
+
+export interface VerifyEmailArgs {
+  code: string;
+  usernameOrEmail: string;
+  captcha: CaptchaArgs;
 }

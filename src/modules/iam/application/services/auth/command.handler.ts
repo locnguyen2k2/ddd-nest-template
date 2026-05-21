@@ -1,9 +1,11 @@
 import { Inject, Injectable } from '@nestjs/common';
 import {
+  CaptchaArgs,
   LoginArgs,
   LogoutArgs,
   RefreshTokenArgs,
   VerifyAccessTokenArgs,
+  VerifyEmailArgs,
 } from '../../dtos/commands/auth-cmd.dto';
 import {
   AuthResponseDto,
@@ -22,6 +24,8 @@ import { AuthWrapperCmdHandler } from './wrapper.command.handler';
 import { LogCmdHandler } from '@/modules/system/logs/application/services/log/command.handler';
 import { CreateLogDto } from '@/modules/system/logs/application/dtos/create-log.dto';
 import { HttpMethod, LogLevel, LogStatus, LogType } from '@/modules/system/logs/domain/log.enum';
+import { UserEntity } from '@/modules/iam/domain/entities/user.entity';
+import { IPayload } from '@/modules/iam/domain/services/auth.service';
 
 @Injectable()
 export class AuthCmdHandler {
@@ -42,7 +46,10 @@ export class AuthCmdHandler {
     try {
       const [validUser, isCaptchaValid] = await Promise.all([
         this.authWrapperCmdHandler.validateUser(args.username, args.password),
-        this.authWrapperCmdHandler.verifyCaptcha(args.captchaId, args.captcha),
+        this.authWrapperCmdHandler.verifyCaptcha({
+          captchaId: args.captchaId,
+          captcha: args.captcha,
+        }),
       ]);
       if (!isCaptchaValid) {
         throw new BusinessException(
@@ -104,5 +111,15 @@ export class AuthCmdHandler {
     args: VerifyAccessTokenArgs,
   ): Promise<UserResponseDto> {
     return await this.authWrapperCmdHandler.verifyAccessToken(args.accessToken);
+  }
+
+  @LogExecutionTime()
+  async verifyEmail(payload: IPayload, args: VerifyEmailArgs): Promise<UserEntity> {
+    return await this.authWrapperCmdHandler.verifyEmail(payload, args.code, args.captcha);
+  }
+
+  @LogExecutionTime()
+  async resendEmail(payload: IPayload, args: CaptchaArgs): Promise<void> {
+    return await this.authWrapperCmdHandler.resendEmail(payload, args);
   }
 }

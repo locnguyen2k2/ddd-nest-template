@@ -8,7 +8,7 @@ import {
   TokenBlacklistCacheRepository,
   CaptchaCacheRepository,
 } from '@/modules/iam/infrastructure/persistence/repositories/auth-cache.repository';
-import { AuthDomainService } from '@/modules/iam/domain/services/auth.service';
+import { AuthDomainService, IPayload } from '@/modules/iam/domain/services/auth.service';
 import { UserEntity } from '@/modules/iam/domain/entities/user.entity';
 import {
   CaptchaResponseDto,
@@ -16,6 +16,12 @@ import {
 } from '@/modules/iam/presentation/dtos/res/user-response.dto';
 import { BcryptAdapter } from '@/shared/infrastructure/adapters/bcrypt.adapter';
 import { CacheAdapter } from '@/shared/infrastructure/adapters/cache.adapter';
+import { IConfirmationCode } from '@/modules/iam/domain/services/user.service';
+import { BusinessException } from '@/common/http/business-exception';
+import { ErrorEnum } from '@/common/exception.enum';
+import { AccessControlStatus } from '@/common/enum';
+import { CaptchaArgs } from '../../dtos/commands/auth-cmd.dto';
+import { UserEventPublisher } from '@/modules/iam/infrastructure/events/user.event-publisher';
 
 export const AUTH_WRAPPER_CMD_HANDLER = 'AUTH_WRAPPER_CMD_HANDLER';
 @Injectable()
@@ -32,6 +38,7 @@ export class AuthWrapperCmdHandler {
     private readonly bcryptAdapter: BcryptAdapter,
     private readonly captchaRepo: CaptchaCacheRepository,
     private readonly cache: CacheAdapter,
+    private readonly userEventPublisher: UserEventPublisher,
   ) {
     this.jwtConfigs = this.configService.get<IJwtConfig>(jwtConfigKey)!;
     this.domainService = new AuthDomainService(
@@ -42,7 +49,7 @@ export class AuthWrapperCmdHandler {
       this.blacklistRepo,
       this.bcryptAdapter,
       this.captchaRepo,
-      this.cache, 
+      this.cache,
     );
   }
 
@@ -54,8 +61,8 @@ export class AuthWrapperCmdHandler {
     };
   }
 
-  async verifyCaptcha(captchaId: string, captcha: string): Promise<boolean> {
-    return await this.domainService.validateCaptcha(captchaId, captcha);
+  async verifyCaptcha(args: CaptchaArgs): Promise<boolean> {
+    return await this.domainService.validateCaptcha(args.captchaId, args.captcha);
   }
 
   async validateUser(username: string, password: string): Promise<UserEntity> {
@@ -92,5 +99,51 @@ export class AuthWrapperCmdHandler {
 
   validateCredentials(user: UserEntity, password: string) {
     return this.domainService.validateCredentials(user, password);
+  }
+
+  async verifyEmail(payload: IPayload, code: string, captchaArgs: CaptchaArgs): Promise<UserEntity> {
+    const [user, verifyCaptcha] = await Promise.all([
+      this.userRepo.findByEmailOrUsername(payload?.email || payload?.username),
+      this.verifyCaptcha(captchaArgs),
+    ]);
+    if (!user) {
+      throw new BusinessException(ErrorEnum.RECORD_NOT_FOUND);
+    }
+    if (!verifyCaptcha) {
+      throw new BusinessException(`400|Invalid captcha`);
+    }
+    const isValid = await this.userRepo.verifyConfirmationCode(user, code);
+    if (!isValid) {
+      throw new BusinessException(`400|Invalid confirmation code`);
+    }
+    user.update({
+      status: AccessControlStatus.ACTIVE,
+    });
+    return await this.userRepo.update(user);
+  }
+
+  async resendEmail(payload: IPayload, captchaArgs: CaptchaArgs): Promise<void> {
+    const [user, verifyCaptcha] = await Promise.all([
+      this.userRepo.findByEmailOrUsername(payload?.email || payload?.username),
+      this.verifyCaptcha(captchaArgs),
+    ]);
+    if (!user) {
+      throw new BusinessException(ErrorEnum.RECORD_NOT_FOUND);
+    }
+    if (!verifyCaptcha) {
+      throw new BusinessException(`400|Invalid captcha`);
+    }
+    const userDomain = UserEntity.create({
+      id: user.id,
+      email: user.email,
+      password: user.password,
+      first_name: user.first_name,
+      last_name: user.last_name,
+      username: user.username,
+      status: AccessControlStatus.INACTIVE,
+      organizations: [],
+    });
+    await this.userEventPublisher.publishEvents([...userDomain.getEvents()]);
+    userDomain.clearEvents();
   }
 }

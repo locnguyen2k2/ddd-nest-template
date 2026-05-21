@@ -38,20 +38,21 @@ export interface IUpdateUserArgs {
   first_name?: string;
   last_name?: string;
   password?: string;
+  status?: AccessControlStatus;
 }
 
 export class UserEntity extends AggregateRoot<UserEntity, string> {
-  private readonly _first_name: string;
-  private readonly _last_name: string;
-  private readonly _username: string;
-  private readonly _password: Password;
-  private readonly _email: string;
-  private readonly _created_at: Date;
-  private readonly _updated_at: Date;
-  private readonly _status: AccessControlStatus;
-  private readonly _organizations: IStaff[];
-  private readonly _attributes: Attributes;
-  private readonly _members: IMember[];
+  private _first_name: string;
+  private _last_name: string;
+  private _username: string;
+  private _password: Password;
+  private _email: string;
+  private _created_at: Date;
+  private _updated_at: Date;
+  private _status: AccessControlStatus;
+  private _organizations: IStaff[];
+  private _attributes: Attributes;
+  private _members: IMember[];
 
   private constructor(props: IUserBaseInfo) {
     super(props.id);
@@ -103,7 +104,17 @@ export class UserEntity extends AggregateRoot<UserEntity, string> {
     return user;
   }
 
-  static update(props: IUpdateUserArgs) { }
+  update(props: IUpdateUserArgs) {
+    if (props.first_name) {
+      this._first_name = props.first_name;
+    }
+    if (props.last_name) {
+      this._last_name = props.last_name;
+    }
+    if (props.status) {
+      this._status = props.status;
+    }
+  }
 
   get first_name() {
     return this._first_name;
