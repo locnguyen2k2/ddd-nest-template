@@ -3,6 +3,16 @@ import { ILogRepository } from '@/modules/system/logs/domain/repositories/log.re
 import { LogEntity } from '@/modules/system/logs/domain/entities/log.entity';
 import { LogMapper } from '../mappers/log.mapper';
 import { MongodbAdapter } from '@/shared/infrastructure/adapters/mongodb.adapter';
+import {
+  cursorHelper,
+  paginateHelper,
+  SortableFieldEnum,
+  SortedEnum,
+} from '@/common/pagination';
+import {
+  CursorLogsQuery,
+  PaginateLogsQuery,
+} from '@/modules/system/logs/presentation/controllers/dtos/req/logs-req.dto';
 
 @Injectable()
 export class PrismaLogRepository implements ILogRepository {
@@ -34,5 +44,31 @@ export class PrismaLogRepository implements ILogRepository {
     });
 
     return logs.map((log) => LogMapper.toDomain(log));
+  }
+
+  async paginate(pageOptions: PaginateLogsQuery) {
+    const { data = [], paginated } = await paginateHelper<any>({
+      query: this.mongodb.logs,
+      pageOptions,
+    });
+
+    return {
+      data: data.map((item) => LogMapper.toDomain(item)),
+      paginated,
+    };
+  }
+
+  async cursorPagination(pageOptions: CursorLogsQuery) {
+    const { data = [], paginated } = await cursorHelper<any>({
+      query: this.mongodb.logs,
+      pageOptions,
+      cursorField: SortableFieldEnum.CREATED_AT,
+      orderDirection: SortedEnum.DESC,
+    });
+
+    return {
+      data: data.map((item) => LogMapper.toDomain(item)),
+      paginated,
+    };
   }
 }
