@@ -156,6 +156,6 @@ export const cursorHelper = async <T>({
 
     return new CursorPageDto(resultEntities, pageMetaDto);
   } catch (e: any) {
-    throw new BusinessException(`400:${e.message}`);
+    throw new BusinessException(`400|${e.message}`);
   }
 };

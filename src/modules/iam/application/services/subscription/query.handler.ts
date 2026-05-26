@@ -1,7 +1,13 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { SUBSCRIPTION_REPO, ISubscriptionRepository } from '@/modules/iam/domain/repositories/subscription.repository';
+import {
+  SUBSCRIPTION_REPO,
+  ISubscriptionRepository,
+} from '@/modules/iam/domain/repositories/subscription.repository';
 import { SubscriptionEntity } from '@/modules/iam/domain/entities/subscription.entity';
-import { CursorSubscriptionsQuery, PaginateSubscriptionsQuery } from '@/modules/iam/presentation/dtos/req/subscription-request.dto';
+import {
+  CursorSubscriptionsQuery,
+  PaginateSubscriptionsQuery,
+} from '@/modules/iam/presentation/dtos/req/subscription-request.dto';
 import { PaginateSubscriptionsResponseDto } from '@/modules/iam/presentation/dtos/res/subscription-response.dto';
 import { SubscriptionMapper } from '@/modules/iam/infrastructure/persistence/mappers/subscription.mapper';
 import { LogExecutionTime } from '@/common/decorators/log-execution.decorator';
@@ -11,7 +17,7 @@ export class SubscriptionQueryHandler {
   constructor(
     @Inject(SUBSCRIPTION_REPO)
     private readonly subscriptionRepo: ISubscriptionRepository,
-  ) { }
+  ) {}
 
   async findById(id: string): Promise<SubscriptionEntity | null> {
     return await this.subscriptionRepo.findById(id);
@@ -26,7 +32,9 @@ export class SubscriptionQueryHandler {
   }
 
   @LogExecutionTime()
-  async handlePaginate(query: PaginateSubscriptionsQuery): Promise<PaginateSubscriptionsResponseDto> {
+  async handlePaginate(
+    query: PaginateSubscriptionsQuery,
+  ): Promise<PaginateSubscriptionsResponseDto> {
     const result = await this.subscriptionRepo.paginate(query);
     return {
       data: result.data.map((item) => SubscriptionMapper.toResponseDto(item)),

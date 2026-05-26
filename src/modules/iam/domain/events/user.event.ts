@@ -4,13 +4,15 @@ export enum UserEventType {
   CREATED = 'user.created',
   UPDATED = 'user.updated',
   DELETED = 'user.deleted',
+  NOTIFIED = 'user.notified',
 }
 
 export interface ICreateUserEvent {
   id: string;
-  name: string;
   email: string;
-  password: string;
+  first_name: string;
+  last_name: string;
+  username: string;
   organizationId: string;
 }
 
@@ -26,9 +28,31 @@ export class UserCreatedEvent extends BaseDomainEvent<string> {
   get eventData(): Record<string, unknown> {
     return {
       id: this.props.id,
-      name: this.props.name,
+      first_name: this.props.first_name,
+      last_name: this.props.last_name,
+      username: this.props.username,
       email: this.props.email,
-      password: this.props.password,
+      organizationId: this.props.organizationId,
+    };
+  }
+}
+
+export class UserNotifiedEvent extends BaseDomainEvent<string> {
+  constructor(private readonly props: ICreateUserEvent) {
+    super(props.id);
+  }
+
+  get eventName(): string {
+    return UserEventType.NOTIFIED;
+  }
+
+  get eventData(): Record<string, unknown> {
+    return {
+      id: this.props.id,
+      first_name: this.props.first_name,
+      last_name: this.props.last_name,
+      username: this.props.username,
+      email: this.props.email,
       organizationId: this.props.organizationId,
     };
   }

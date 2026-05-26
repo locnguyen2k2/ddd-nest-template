@@ -1,3 +1,4 @@
+import { env } from '@/utils/env';
 import { registerAs } from '@nestjs/config';
 
 export const jwtConfigKey = 'jwt';
@@ -12,9 +13,9 @@ export interface IJwtConfig {
 export const JwtConfig = registerAs(
   jwtConfigKey,
   (): IJwtConfig => ({
-    secret: process.env.JWT_SECRET || 'secret',
-    expiresIn: process.env.JWT_EXPIRES_IN || '1d',
-    refreshSecret: process.env.JWT_REFRESH_SECRET || 'refresh_secret',
-    refreshExpiresIn: process.env.JWT_REFRESH_EXPIRES_IN || '7d',
+    secret: env.str('JWT_SECRET') || 'secret',
+    expiresIn: env.str('JWT_EXPIRES_IN') || '1d',
+    refreshSecret: env.str('JWT_REFRESH_SECRET') || 'refresh_secret',
+    refreshExpiresIn: env.str('JWT_REFRESH_EXPIRES_IN') || '7d',
   }),
 );

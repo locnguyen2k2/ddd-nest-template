@@ -43,11 +43,16 @@ import { JwtAuthGuard } from '../guards/jwt-auth.guard';
 import { TenantContextGuard } from '../guards/tenant-context.guard';
 import { AbacGuard } from '../guards/abac.guard';
 import { CheckAbac } from '../../../../common/decorators/check-abac.decorator';
-import { HeaderKey } from '@/common/decorators'
+import { GetHeaderKey, HeaderKey, User } from '@/common/decorators';
 import { ClsService } from 'nestjs-cls';
 import { MyClsStore } from '@/common/interfaces/cls-store.interface';
-import { CreateProjectArgs, UpdateProjectArgs, DeleteProjectArgs } from '../../application/dtos/commands/project-cmd.dto';
+import {
+  CreateProjectArgs,
+  UpdateProjectArgs,
+  DeleteProjectArgs,
+} from '../../application/dtos/commands/project-cmd.dto';
 import { HeadersAuthGuard } from '../guards/headers-auth.guard';
+import { IPayload } from '../../domain/services/auth.service';
 
 const name = 'projects';
 
@@ -58,7 +63,28 @@ export class ProjectController {
     private readonly projectCmdHandler: ProjectCmdHandler,
     private readonly prjectQueryHandler: ProjectQueryHandler,
     private readonly cls: ClsService<MyClsStore>,
-  ) { }
+  ) {}
+
+  @Get('percent-growth')
+  @ApiOperation({ summary: 'Get project percent growth' })
+  @ApiResponse({
+    status: 200,
+    description: 'Project percent growth',
+    type: Number,
+  })
+  @ApiResponse({ status: 400, description: 'Bad Request' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 403, description: 'Forbidden' })
+  @ApiResponse({ status: 404, description: 'Not Found' })
+  @ApiResponse({ status: 500, description: 'Internal Server Error' })
+  @HeaderKey(HeaderKeys.ORG_ID)
+  @UseGuards(JwtAuthGuard, HeadersAuthGuard)
+  async percentGrowth(
+    @Query('period') period: string,
+    @GetHeaderKey(HeaderKeys.ORG_ID) orgId: string,
+  ) {
+    return await this.prjectQueryHandler.percentGrowth(orgId, period);
+  }
 
   // CREATE
   @Post()
@@ -77,13 +103,16 @@ export class ProjectController {
   @HeaderKey(HeaderKeys.ORG_ID)
   @CheckAbac(PermissionAction.CREATE, 'project')
   @UseGuards(JwtAuthGuard, HeadersAuthGuard, TenantContextGuard, AbacGuard)
-  async create(@Body() createProjectDto: CreateProjectDto): Promise<ProjectResponseDto> {
+  async create(
+    @Body() createProjectDto: CreateProjectDto,
+    @User() user: IPayload,
+  ): Promise<ProjectResponseDto> {
     const orgId = this.cls.get(StorageKeys.ORG_ID);
     const command: CreateProjectArgs = {
       ...createProjectDto,
       organization_id: orgId,
     };
-    const project = await this.projectCmdHandler.handleCreate(command);
+    const project = await this.projectCmdHandler.handleCreate(user, command);
     return ProjectMapper.toResponseDto(ProjectMapper.toPrisma(project));
   }
 
@@ -137,12 +166,11 @@ export class ProjectController {
   @HeaderKey(HeaderKeys.ORG_ID)
   @CheckAbac(PermissionAction.READ, 'project')
   @UseGuards(JwtAuthGuard, HeadersAuthGuard, TenantContextGuard, AbacGuard)
-  async getBySlug(
-    @Param('slug') slug: string,
-  ): Promise<ProjectResponseDto> {
+  async getBySlug(@Param('slug') slug: string): Promise<ProjectResponseDto> {
     const orgId = this.cls.get(StorageKeys.ORG_ID);
     const query: GetProjectBySlugQuery = { slug, organization_id: orgId };
-    const project = await this.prjectQueryHandler.handlerGetProjectBySlug(query);
+    const project =
+      await this.prjectQueryHandler.handlerGetProjectBySlug(query);
 
     if (!project) {
       throw new Error('Project not found');
@@ -190,8 +218,8 @@ export class ProjectController {
     required: true,
   })
   @HeaderKey(HeaderKeys.ORG_ID)
-  @CheckAbac(PermissionAction.READ, 'project')
-  @UseGuards(JwtAuthGuard, HeadersAuthGuard, TenantContextGuard, AbacGuard)
+  // @CheckAbac(PermissionAction.READ, 'project')
+  @UseGuards(JwtAuthGuard, HeadersAuthGuard, TenantContextGuard)
   async cursorPagination(
     @Query() listQuery: CursorProjectsQuery,
   ): Promise<CursorProjectsResponseDto> {
@@ -256,9 +284,7 @@ export class ProjectController {
   @HeaderKey(HeaderKeys.ORG_ID)
   @CheckAbac(PermissionAction.DELETE, 'project')
   @UseGuards(JwtAuthGuard, HeadersAuthGuard, TenantContextGuard, AbacGuard)
-  async delete(
-    @Param('id') id: string,
-  ): Promise<void> {
+  async delete(@Param('id') id: string): Promise<void> {
     const orgId = this.cls.get(StorageKeys.ORG_ID);
     const command: DeleteProjectArgs = {
       id,

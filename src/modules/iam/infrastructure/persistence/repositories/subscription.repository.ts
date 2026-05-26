@@ -1,24 +1,36 @@
 import { Injectable } from '@nestjs/common';
-import { ISubscriptionRepository, SUBSCRIPTION_REPO } from '@/modules/iam/domain/repositories/subscription.repository';
+import {
+  ISubscriptionRepository,
+  SUBSCRIPTION_REPO,
+} from '@/modules/iam/domain/repositories/subscription.repository';
 import { SubscriptionEntity } from '@/modules/iam/domain/entities/subscription.entity';
-import { PrismaAdapter } from '@/shared/infrastructure/adapters/prisma.adapter';
+import { PostgresAdapter } from '@/shared/infrastructure/adapters/postgres.adapter';
 import { SubscriptionMapper } from '../mappers/subscription.mapper';
-import { cursorHelper, paginateHelper, SortableFieldEnum, SortedEnum } from '@/common/pagination';
-import { CursorSubscriptionsQuery, PaginateSubscriptionsQuery } from '@/modules/iam/presentation/dtos/req/subscription-request.dto';
-import { Prisma } from "@internal/rbac/client"
+import {
+  cursorHelper,
+  paginateHelper,
+  SortableFieldEnum,
+  SortedEnum,
+} from '@/common/pagination';
+import {
+  CursorSubscriptionsQuery,
+  PaginateSubscriptionsQuery,
+} from '@/modules/iam/presentation/dtos/req/subscription-request.dto';
+import { Prisma } from '@internal/rbac/client';
 
 @Injectable()
 export class SubscriptionRepository implements ISubscriptionRepository {
-  constructor(private readonly prisma: PrismaAdapter) { }
+  constructor(private readonly prisma: PostgresAdapter) { }
 
   async cursorPagination(pageOptions: CursorSubscriptionsQuery) {
-    const { data = [], paginated } =
-      await cursorHelper<Prisma.SubscriptionGetPayload<{}>>({
-        query: this.prisma.subscription,
-        pageOptions,
-        cursorField: SortableFieldEnum.CREATED_AT,
-        orderDirection: SortedEnum.DESC,
-      });
+    const { data = [], paginated } = await cursorHelper<
+      Prisma.SubscriptionGetPayload<{}>
+    >({
+      query: this.prisma.subscription,
+      pageOptions,
+      cursorField: SortableFieldEnum.CREATED_AT,
+      orderDirection: SortedEnum.DESC,
+    });
 
     return {
       data: data.map((item) => SubscriptionMapper.toDomain(item)),
@@ -27,11 +39,12 @@ export class SubscriptionRepository implements ISubscriptionRepository {
   }
 
   async paginate(pageOptions: PaginateSubscriptionsQuery) {
-    const { data = [], paginated } =
-      await paginateHelper<Prisma.SubscriptionGetPayload<{}>>({
-        query: this.prisma.subscription,
-        pageOptions,
-      });
+    const { data = [], paginated } = await paginateHelper<
+      Prisma.SubscriptionGetPayload<{}>
+    >({
+      query: this.prisma.subscription,
+      pageOptions,
+    });
 
     return {
       data: data.map((item) => SubscriptionMapper.toDomain(item)),
@@ -65,7 +78,9 @@ export class SubscriptionRepository implements ISubscriptionRepository {
   }
 
   async findBySlug(slug: string): Promise<SubscriptionEntity | null> {
-    const result = await this.prisma.subscription.findUnique({ where: { slug } });
+    const result = await this.prisma.subscription.findUnique({
+      where: { slug },
+    });
     if (!result) return null;
     return SubscriptionMapper.toDomain(result);
   }

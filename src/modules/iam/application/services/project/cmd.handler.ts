@@ -13,25 +13,32 @@ import {
   IProjectRepository,
   PROJECT_REPO,
 } from '@/modules/iam/domain/repositories/project.repository';
+import { IPayload } from '@/modules/iam/domain/services/auth.service';
 
 export class ProjectCmdHandler {
   constructor(
     @Inject(PROJECT_REPO) private readonly pojectRepo: IProjectRepository,
   ) {}
 
-  async handleCreate(props: CreateProjectArgs) {
+  async handleCreate(user: IPayload, props: CreateProjectArgs) {
     const isExisted = await this.pojectRepo.findBySlug(
       props.slug,
       props.organization_id,
     );
     if (isExisted) throw new BusinessException(ErrorEnum.RECORD_ALREADY_EXISTS);
-    const _id = uuidv7();
-    const id: IEntityID<string> = { _id, value: _id, get: () => _id };
+    const id = uuidv7();
+    const entityId: IEntityID<string> = {
+      value: id,
+      _id: id,
+      get: () => id,
+    };
     const project = ProjectEntity.create({
       ...props,
-      id,
+      id: entityId,
       created_at: new Date(),
       updated_at: new Date(),
+      created_by: user.sub,
+      updated_by: user.sub,
     });
 
     return await this.pojectRepo.create(project);
@@ -42,7 +49,10 @@ export class ProjectCmdHandler {
     if (!isExisted) throw new BusinessException(ErrorEnum.RECORD_NOT_FOUND);
 
     if (isExisted.organizationID !== props.organization_id) {
-      throw new BusinessException(ErrorEnum.ACCESS_DENIED, 'Project does not belong to your organization');
+      throw new BusinessException(
+        ErrorEnum.ACCESS_DENIED,
+        'Project does not belong to your organization',
+      );
     }
 
     isExisted.update({ ...props });
@@ -55,7 +65,10 @@ export class ProjectCmdHandler {
     if (!isExisted) throw new BusinessException(ErrorEnum.RECORD_NOT_FOUND);
 
     if (isExisted.organizationID !== props.organization_id) {
-      throw new BusinessException(ErrorEnum.ACCESS_DENIED, 'Project does not belong to your organization');
+      throw new BusinessException(
+        ErrorEnum.ACCESS_DENIED,
+        'Project does not belong to your organization',
+      );
     }
 
     return await this.pojectRepo.delete(props.id);

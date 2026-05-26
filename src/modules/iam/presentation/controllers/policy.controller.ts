@@ -18,14 +18,25 @@ import {
   ApiBearerAuth,
   ApiParam,
 } from '@nestjs/swagger';
-import { CreatePolicyDto, CursorPoliciesQuery, PaginatePoliciesQuery, PolicyEvaluateDto, UpdatePolicyDto } from '../dtos/req/policy.dto';
-import { CursorPoliciesResponseDto, EvaluationResponseDto, PaginatePoliciesResponseDto, PolicyResponseDto } from '../dtos/res/policy-response.dto';
+import {
+  CreatePolicyDto,
+  CursorPoliciesQuery,
+  PaginatePoliciesQuery,
+  PolicyEvaluateDto,
+  UpdatePolicyDto,
+} from '../dtos/req/policy.dto';
+import {
+  CursorPoliciesResponseDto,
+  EvaluationResponseDto,
+  PaginatePoliciesResponseDto,
+  PolicyResponseDto,
+} from '../dtos/res/policy-response.dto';
 import { CursorResourcesResponseDto } from '../dtos/res/resource-response.dto';
 import { SortedEnum } from '@/common/pagination/dtos/page-options.dto';
 import { PolicyCommandHandler } from '../../application/services/policy/command.handler';
 import { PolicyQueryHandler } from '../../application/services/policy/query.handler';
 import { PolicyEvaluationService } from '../../application/services/policy/policy-evaluation.service';
-import { API_VERS, StorageKeys } from '@/common/constant';
+import { API_VERS, HeaderKeys, StorageKeys } from '@/common/constant';
 import { JwtAuthGuard } from '../guards/jwt-auth.guard';
 import { TenantContextGuard } from '../guards/tenant-context.guard';
 import { ClsService } from 'nestjs-cls';
@@ -34,19 +45,22 @@ import { CheckAbac } from '@/common/decorators/check-abac.decorator';
 import { PolicyMapper } from '../../infrastructure/persistence/mappers/policy.mapper';
 import { PermissionAction } from '@/common/enum';
 import { AbacGuard } from '../guards/abac.guard';
+import { HeadersAuthGuard } from '../guards/headers-auth.guard';
+import { HeaderKey, User } from '@/common/decorators';
+import { IPayload } from '../../domain/services/auth.service';
 
 @ApiTags('policies')
 @ApiBearerAuth()
-@Controller(API_VERS.V1 + '')
+@Controller(API_VERS.V1 + '/policies')
 export class PolicyController {
   constructor(
     private readonly policyCmdHandler: PolicyCommandHandler,
     private readonly policyQueryHandler: PolicyQueryHandler,
     private readonly policyEvaluationService: PolicyEvaluationService,
     private readonly cls: ClsService<MyClsStore>,
-  ) { }
+  ) {}
 
-  @Post('organizations/:orgId/policies/evaluate')
+  @Post('organizations/:orgId/evaluate')
   @ApiOperation({ summary: 'Evaluate policy decision' })
   @ApiParam({ name: 'orgId', type: 'string' })
   @ApiResponse({
@@ -58,60 +72,69 @@ export class PolicyController {
   @UseGuards(JwtAuthGuard, TenantContextGuard)
   async evaluate(
     @Body() dto: PolicyEvaluateDto,
+    @User() user: IPayload,
   ): Promise<EvaluationResponseDto> {
     const orgId = this.cls.get(StorageKeys.ORG_ID);
+    dto.resource.user_id = user.sub;
     return await this.policyEvaluationService.evaluate({
       ...dto,
       organization_id: orgId,
     });
   }
 
-  @Get('organizations/:orgId/policies')
+  @Get('organizations/:orgId')
   @ApiBearerAuth()
-  @UseGuards(JwtAuthGuard, TenantContextGuard)
   @ApiOperation({ summary: 'List policies with pagination' })
   @ApiResponse({
     status: 200,
     description: 'Policies retrieved successfully',
     type: PaginatePoliciesResponseDto,
   })
-  @CheckAbac(PermissionAction.READ, 'Organization')
-  @UseGuards(JwtAuthGuard, AbacGuard)
+  @HeaderKey(HeaderKeys.ORG_ID)
+  @CheckAbac(PermissionAction.READ, 'Policy')
+  @UseGuards(HeadersAuthGuard, JwtAuthGuard, TenantContextGuard, AbacGuard)
   async pagination(
     @Query() listQuery: PaginatePoliciesQuery,
   ): Promise<PaginatePoliciesResponseDto> {
     return await this.policyQueryHandler.handlePaginate(listQuery);
   }
 
-  @Get('organizations/:orgId/policies/cursor')
+  @Get('organizations/:orgId/cursor')
   @ApiOperation({ summary: 'List policies with cursor pagination' })
   @ApiResponse({
     status: 200,
     description: 'Policies retrieved successfully',
     type: CursorPoliciesResponseDto,
   })
-  @CheckAbac(PermissionAction.READ, 'Organization')
-  @UseGuards(JwtAuthGuard, AbacGuard)
+  @CheckAbac(PermissionAction.READ, 'Policy')
+  @UseGuards(HeadersAuthGuard, JwtAuthGuard, TenantContextGuard, AbacGuard)
   async cursorPagination(
     @Query() listQuery: CursorPoliciesQuery,
   ): Promise<CursorPoliciesResponseDto> {
-    const result = await this.policyQueryHandler.handleCursorPaginate(listQuery);
+    const result =
+      await this.policyQueryHandler.handleCursorPaginate(listQuery);
     return {
       data: result.data.map((item) => PolicyMapper.toResponse(item)),
       paginated: result.paginated,
     };
   }
 
-  @Get('policies/resources/cursor')
+  @Get('resources/cursor')
   @ApiOperation({ summary: 'List available resources' })
   @ApiResponse({
     status: 200,
     description: 'Resources retrieved successfully',
     type: CursorResourcesResponseDto,
   })
+  @HeaderKey(HeaderKeys.ORG_ID)
+  @UseGuards(HeadersAuthGuard, JwtAuthGuard, TenantContextGuard)
   async getResources(): Promise<CursorResourcesResponseDto> {
     const mockResources = [
-      { name: 'Organization', slug: 'organization', description: 'Organization resource' },
+      {
+        name: 'Organization',
+        slug: 'organization',
+        description: 'Organization resource',
+      },
       { name: 'Project', slug: 'project', description: 'Project resource' },
       { name: 'Feature', slug: 'feature', description: 'Feature resource' },
       { name: 'User', slug: 'user', description: 'User resource' },
@@ -136,7 +159,7 @@ export class PolicyController {
       },
     };
   }
-  @Post('organizations/:orgId/policies')
+  @Post('organizations/:orgId')
   @ApiOperation({ summary: 'Create a custom policy' })
   @ApiParam({ name: 'orgId', type: 'string' })
   @ApiResponse({
@@ -144,11 +167,11 @@ export class PolicyController {
     description: 'Policy created successfully',
     type: PolicyResponseDto,
   })
+  @CheckAbac(PermissionAction.CREATE, 'Policy')
+  @HeaderKey(HeaderKeys.ORG_ID)
+  @UseGuards(HeadersAuthGuard, JwtAuthGuard, TenantContextGuard, AbacGuard)
   @HttpCode(HttpStatus.CREATED)
-  @UseGuards(JwtAuthGuard, TenantContextGuard)
-  async create(
-    @Body() dto: CreatePolicyDto,
-  ): Promise<PolicyResponseDto> {
+  async create(@Body() dto: CreatePolicyDto): Promise<PolicyResponseDto> {
     const orgId = this.cls.get(StorageKeys.ORG_ID);
     const policy = await this.policyCmdHandler.handleCreatePolicy({
       ...dto,
@@ -157,15 +180,16 @@ export class PolicyController {
     return PolicyResponseDto.fromDomain(policy);
   }
 
-  @Patch('organizations/:orgId/policies/:id')
+  @Patch('/:id')
   @ApiOperation({ summary: 'Update policy' })
-  @ApiParam({ name: 'orgId', type: 'string' })
   @ApiParam({ name: 'id', type: 'string' })
   @ApiResponse({
     status: 200,
     description: 'Policy updated successfully',
     type: PolicyResponseDto,
   })
+  @CheckAbac(PermissionAction.UPDATE, 'Policy')
+  @UseGuards(HeadersAuthGuard, JwtAuthGuard, TenantContextGuard, AbacGuard)
   async update(
     @Param('id') id: string,
     @Body() dto: UpdatePolicyDto,
@@ -179,19 +203,18 @@ export class PolicyController {
     return PolicyResponseDto.fromDomain(policy);
   }
 
-  @Delete('organizations/:orgId/policies/:id')
+  @Delete('/:id')
   @ApiOperation({ summary: 'Remove a policy' })
-  @ApiParam({ name: 'orgId', type: 'string' })
   @ApiParam({ name: 'id', type: 'string' })
   @ApiResponse({
     status: 204,
     description: 'Policy removed successfully',
   })
+  @HeaderKey(HeaderKeys.ORG_ID)
+  @CheckAbac(PermissionAction.DELETE, 'Policy')
+  @UseGuards(HeadersAuthGuard, JwtAuthGuard, TenantContextGuard, AbacGuard)
   @HttpCode(HttpStatus.NO_CONTENT)
-  @UseGuards(JwtAuthGuard, TenantContextGuard)
-  async remove(
-    @Param('id') id: string,
-  ): Promise<void> {
+  async remove(@Param('id') id: string): Promise<void> {
     const orgId = this.cls.get(StorageKeys.ORG_ID);
     await this.policyCmdHandler.handleDeletePolicy({
       id,
@@ -199,4 +222,3 @@ export class PolicyController {
     });
   }
 }
-

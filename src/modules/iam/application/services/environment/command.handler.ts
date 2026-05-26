@@ -1,19 +1,28 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { ENVIRONMENT_REPO, IEnvironmentRepository } from '@/modules/iam/domain/repositories/evironment.repository';
+import {
+  ENVIRONMENT_REPO,
+  IEnvironmentRepository,
+} from '@/modules/iam/domain/repositories/evironment.repository';
 import { EnvironmentEntity } from '@/modules/iam/domain/entities/environment.entity';
 import { uuidv7 } from 'uuidv7';
 import { BusinessException } from '@/common/http/business-exception';
 import { ErrorEnum } from '@/common/exception.enum';
-import { CreateEnvironmentCommand, UpdateEnvironmentCommand, DeleteEnvironmentCommand } from '../../dtos/commands/environment-cmd.dto';
+import {
+  CreateEnvironmentCommand,
+  UpdateEnvironmentCommand,
+  DeleteEnvironmentCommand,
+} from '../../dtos/commands/environment-cmd.dto';
 
 @Injectable()
 export class EnvironmentCommandHandler {
   constructor(
     @Inject(ENVIRONMENT_REPO)
     private readonly environmentRepo: IEnvironmentRepository,
-  ) { }
+  ) {}
 
-  async handleCreate(command: CreateEnvironmentCommand): Promise<EnvironmentEntity> {
+  async handleCreate(
+    command: CreateEnvironmentCommand,
+  ): Promise<EnvironmentEntity> {
     const existing = await this.environmentRepo.findBySlug(command.slug);
     if (existing) {
       throw new BusinessException(
@@ -39,7 +48,9 @@ export class EnvironmentCommandHandler {
     return await this.environmentRepo.create(environment);
   }
 
-  async handleUpdate(command: UpdateEnvironmentCommand): Promise<EnvironmentEntity> {
+  async handleUpdate(
+    command: UpdateEnvironmentCommand,
+  ): Promise<EnvironmentEntity> {
     const existing = await this.environmentRepo.findById(command.id);
     if (!existing) {
       throw new BusinessException(
@@ -64,7 +75,10 @@ export class EnvironmentCommandHandler {
       id: existing.id,
       name: command.name ?? existing.name,
       slug: slug,
-      description: command.description !== undefined ? command.description : existing.description,
+      description:
+        command.description !== undefined
+          ? command.description
+          : existing.description,
     });
 
     return await this.environmentRepo.update(updatedEnvironment);

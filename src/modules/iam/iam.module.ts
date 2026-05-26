@@ -21,10 +21,12 @@ import { PROJECT_REPO } from './domain/repositories/project.repository';
 import { AuthCmdHandler } from './application/services/auth/command.handler';
 import { AuthDomainService } from './domain/services/auth.service';
 import {
+  CAPTCHA_REPO,
   SESSION_REPO,
   TOKEN_BLACKLIST_REPO,
 } from './domain/repositories/auth.repository';
 import {
+  CaptchaCacheRepository,
   SessionCacheRepository,
   TokenBlacklistCacheRepository,
 } from './infrastructure/persistence/repositories/auth-cache.repository';
@@ -32,12 +34,16 @@ import { UserService } from './domain/services/user.service';
 import { UserCmdHandler } from './application/services/user/command.handler';
 import { USER_REPO } from './domain/repositories/user.repository';
 import { UserQueryHandler } from './application/services/user/query.handler';
+import { UserEventPublisher } from './infrastructure/events/user.event-publisher';
 import { OrgSerevice } from './domain/services/organization.service';
 import { POLICY_REPO } from './domain/repositories/policy.repository';
 import { PrismaPolicyRepository } from './infrastructure/persistence/repositories/policy.repository';
 import { AbacGuard } from './presentation/guards/abac.guard';
 import { TenantContextGuard } from './presentation/guards/tenant-context.guard';
-import { AUTH_WRAPPER_CMD_HANDLER, AuthWrapperCmdHandler } from './application/services/auth/wrapper.command.handler';
+import {
+  AUTH_WRAPPER_CMD_HANDLER,
+  AuthWrapperCmdHandler,
+} from './application/services/auth/wrapper.command.handler';
 import { PolicyQueryService } from './application/services/policy/policy-query.service';
 import { PolicyEvaluationService } from './application/services/policy/policy-evaluation.service';
 
@@ -76,6 +82,15 @@ import { EnvironmentQueryHandler } from './application/services/environment/quer
 import { ENVIRONMENT_REPO } from './domain/repositories/evironment.repository';
 import { EnvironmentRepository } from './infrastructure/persistence/repositories/environment.repository';
 import { EnvironmentController } from './presentation/controllers/environment.controller';
+import { RoleCommandHandler } from './application/services/role/command.handler';
+import { RoleQueryHandler } from './application/services/role/query.handler';
+import { ROLE_REPO } from './domain/repositories/role.repository';
+import { RoleRepository } from './infrastructure/persistence/repositories/role.repository';
+import { RoleController } from './presentation/controllers/role.controller';
+import { StaffQueryHandler } from './application/services/staffs/query.handler';
+import { StaffController } from './presentation/controllers/staff.controller';
+import { MailerModule } from '@nestjs-modules/mailer';
+import { LogsModule } from '../system/logs/logs.module';
 
 const abacProviders = [
   PrismaPolicyRepository,
@@ -122,6 +137,7 @@ const userProviders = [
   UserService,
   UserCmdHandler,
   UserQueryHandler,
+  UserEventPublisher,
   {
     provide: USER_REPO,
     useClass: UserRepository,
@@ -129,6 +145,7 @@ const userProviders = [
 ];
 const staffProviders = [
   StaffRepository,
+  StaffQueryHandler,
   { provide: STAFF_REPO, useClass: StaffRepository },
 ];
 const departmentProviders = [
@@ -148,10 +165,15 @@ const authProviders = [
   AuthDomainService,
   SessionCacheRepository,
   TokenBlacklistCacheRepository,
+  CaptchaCacheRepository,
   AuthWrapperCmdHandler,
   {
     provide: SESSION_REPO,
     useClass: SessionCacheRepository,
+  },
+  {
+    provide: CAPTCHA_REPO,
+    useClass: CaptchaCacheRepository,
   },
   {
     provide: TOKEN_BLACKLIST_REPO,
@@ -186,31 +208,86 @@ const environmentProviders = [
   EnvironmentRepository,
   { provide: ENVIRONMENT_REPO, useClass: EnvironmentRepository },
 ];
-// const roleProviders = [
-//   RoleCommandHandler,
-//   RoleQueryHandler,
-//   RoleRepository,
-//   { provide: ROLE_REPO, useClass: RoleRepository },
-// ];
+const roleProviders = [
+  RoleCommandHandler,
+  RoleQueryHandler,
+  RoleRepository,
+  { provide: ROLE_REPO, useClass: RoleRepository },
+];
 
 const featureExports = [FeatureRepository];
-const organizationExports = [OrganizationRepository, OrgSerevice, TenantContextGuard];
-const projectExports = [ProjectRepository, ProjectCmdHandler, ProjectQueryHandler];
-const userExports = [UserRepository, UserService, UserCmdHandler, UserQueryHandler];
+const organizationExports = [
+  OrganizationRepository,
+  OrgSerevice,
+  TenantContextGuard,
+];
+const projectExports = [
+  ProjectRepository,
+  ProjectCmdHandler,
+  ProjectQueryHandler,
+];
+const userExports = [
+  UserRepository,
+  UserService,
+  UserCmdHandler,
+  UserQueryHandler,
+];
 const authExports = [AuthCmdHandler, AuthDomainService, AuthWrapperCmdHandler];
-const abacExports = [PrismaPolicyRepository, PolicyEvaluationService, AbacGuard];
+const abacExports = [
+  PrismaPolicyRepository,
+  PolicyEvaluationService,
+  AbacGuard,
+];
 const staffExports = [StaffRepository];
-const departmentExports = [DepartmentRepository, DepartmentCommandHandler, DepartmentQueryHandler];
-const memberExports = [MemberRepository, MemberCommandHandler, MemberQueryHandler];
-const attributeExports = [AttributeRepository, AttributeCommandHandler, AttributeQueryHandler];
-const clearanceExports = [ClearanceRepository, ClearanceCommandHandler, ClearanceQueryHandler];
-const subscriptionExports = [SubscriptionRepository, SubscriptionCommandHandler, SubscriptionQueryHandler];
-const environmentExports = [EnvironmentRepository, EnvironmentCommandHandler, EnvironmentQueryHandler];
-// const roleExports = [RoleRepository, RoleCommandHandler, RoleQueryHandler];
+const departmentExports = [
+  DepartmentRepository,
+  DepartmentCommandHandler,
+  DepartmentQueryHandler,
+];
+const memberExports = [
+  MemberRepository,
+  MemberCommandHandler,
+  MemberQueryHandler,
+];
+const attributeExports = [
+  AttributeRepository,
+  AttributeCommandHandler,
+  AttributeQueryHandler,
+];
+const clearanceExports = [
+  ClearanceRepository,
+  ClearanceCommandHandler,
+  ClearanceQueryHandler,
+];
+const subscriptionExports = [
+  SubscriptionRepository,
+  SubscriptionCommandHandler,
+  SubscriptionQueryHandler,
+];
+const environmentExports = [
+  EnvironmentRepository,
+  EnvironmentCommandHandler,
+  EnvironmentQueryHandler,
+];
+const roleExports = [RoleRepository, RoleCommandHandler, RoleQueryHandler];
 
 @Module({
-  imports: [],
-  controllers: [AttributeController, ClearanceController, SubscriptionController, EnvironmentController, FeatureController, OrganizationController, ProjectController, UserController, PolicyController, DepartmentController, MemberController],
+  imports: [MailerModule, LogsModule],
+  controllers: [
+    AttributeController,
+    ClearanceController,
+    SubscriptionController,
+    EnvironmentController,
+    FeatureController,
+    OrganizationController,
+    ProjectController,
+    UserController,
+    PolicyController,
+    DepartmentController,
+    MemberController,
+    RoleController,
+    StaffController,
+  ],
   providers: [
     ...abacProviders,
     ...featureProviders,
@@ -225,6 +302,7 @@ const environmentExports = [EnvironmentRepository, EnvironmentCommandHandler, En
     ...clearanceProviders,
     ...subscriptionProviders,
     ...environmentProviders,
+    ...roleProviders,
   ],
   exports: [
     ...featureExports,
@@ -240,6 +318,7 @@ const environmentExports = [EnvironmentRepository, EnvironmentCommandHandler, En
     ...clearanceExports,
     ...subscriptionExports,
     ...environmentExports,
+    ...roleExports,
   ],
 })
 export class IamModule { }

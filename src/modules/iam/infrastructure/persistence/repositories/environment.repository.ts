@@ -1,24 +1,36 @@
 import { Injectable } from '@nestjs/common';
-import { IEnvironmentRepository, ENVIRONMENT_REPO } from '@/modules/iam/domain/repositories/evironment.repository';
+import {
+  IEnvironmentRepository,
+  ENVIRONMENT_REPO,
+} from '@/modules/iam/domain/repositories/evironment.repository';
 import { EnvironmentEntity } from '@/modules/iam/domain/entities/environment.entity';
-import { PrismaAdapter } from '@/shared/infrastructure/adapters/prisma.adapter';
+import { PostgresAdapter } from '@/shared/infrastructure/adapters/postgres.adapter';
 import { EnvironmentMapper } from '../mappers/environment.mapper';
-import { cursorHelper, paginateHelper, SortableFieldEnum, SortedEnum } from '@/common/pagination';
-import { CursorEnvironmentsQuery, PaginateEnvironmentsQuery } from '@/modules/iam/presentation/dtos/req/environment-request.dto';
-import { Prisma } from "@internal/rbac/client"
+import {
+  cursorHelper,
+  paginateHelper,
+  SortableFieldEnum,
+  SortedEnum,
+} from '@/common/pagination';
+import {
+  CursorEnvironmentsQuery,
+  PaginateEnvironmentsQuery,
+} from '@/modules/iam/presentation/dtos/req/environment-request.dto';
+import { Prisma } from '@internal/rbac/client';
 
 @Injectable()
 export class EnvironmentRepository implements IEnvironmentRepository {
-  constructor(private readonly prisma: PrismaAdapter) { }
+  constructor(private readonly prisma: PostgresAdapter) { }
 
   async cursorPagination(pageOptions: CursorEnvironmentsQuery) {
-    const { data = [], paginated } =
-      await cursorHelper<Prisma.EnvironmentGetPayload<{}>>({
-        query: this.prisma.environment,
-        pageOptions,
-        cursorField: SortableFieldEnum.CREATED_AT,
-        orderDirection: SortedEnum.DESC,
-      });
+    const { data = [], paginated } = await cursorHelper<
+      Prisma.EnvironmentGetPayload<{}>
+    >({
+      query: this.prisma.environment,
+      pageOptions,
+      cursorField: SortableFieldEnum.CREATED_AT,
+      orderDirection: SortedEnum.DESC,
+    });
 
     return {
       data: data.map((item) => EnvironmentMapper.toDomain(item)),
@@ -27,11 +39,12 @@ export class EnvironmentRepository implements IEnvironmentRepository {
   }
 
   async paginate(pageOptions: PaginateEnvironmentsQuery) {
-    const { data = [], paginated } =
-      await paginateHelper<Prisma.EnvironmentGetPayload<{}>>({
-        query: this.prisma.environment,
-        pageOptions,
-      });
+    const { data = [], paginated } = await paginateHelper<
+      Prisma.EnvironmentGetPayload<{}>
+    >({
+      query: this.prisma.environment,
+      pageOptions,
+    });
 
     return {
       data: data.map((item) => EnvironmentMapper.toDomain(item)),
@@ -65,7 +78,9 @@ export class EnvironmentRepository implements IEnvironmentRepository {
   }
 
   async findBySlug(slug: string): Promise<EnvironmentEntity | null> {
-    const result = await this.prisma.environment.findUnique({ where: { slug } });
+    const result = await this.prisma.environment.findUnique({
+      where: { slug },
+    });
     if (!result) return null;
     return EnvironmentMapper.toDomain(result);
   }

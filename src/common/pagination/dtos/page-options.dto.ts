@@ -53,7 +53,7 @@ export class BasePageOptionDto {
       (obj.from_date.valueOf() > date.valueOf() ||
         date.valueOf() > new Date().valueOf())
     )
-      throw new BusinessException(`400:Date invalid!`);
+      throw new BusinessException('400|Date invalid!');
 
     const toDate = moment(date).set('date', moment(date).get('date') + 1);
     return resetHours(`${toDate.format('YYYY-MM-DD HH:mm:ss')}`);

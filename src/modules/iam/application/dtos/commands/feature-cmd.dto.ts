@@ -21,4 +21,3 @@ export interface DeleteFeatureArgs {
   id: string;
   organization_id: string;
 }
-

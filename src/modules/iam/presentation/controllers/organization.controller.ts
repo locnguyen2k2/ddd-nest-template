@@ -19,7 +19,11 @@ import {
   ApiBearerAuth,
   ApiHeader,
 } from '@nestjs/swagger';
-import { CreateOrganizationDto, CursorOrganizationsQuery, PaginateOrganizationsQuery } from '@/modules/iam/presentation/dtos/req/organization.dto';
+import {
+  CreateOrganizationDto,
+  CursorOrganizationsQuery,
+  PaginateOrganizationsQuery,
+} from '@/modules/iam/presentation/dtos/req/organization.dto';
 import { UpdateOrganizationDto } from '@/modules/iam/presentation/dtos/req/organization.dto';
 import {
   CursorOrganizationsResponseDto,
@@ -48,8 +52,9 @@ import { CheckAbac } from '../../../../common/decorators/check-abac.decorator';
 import { AbacGuard } from '../guards/abac.guard';
 import { TenantContextGuard } from '../guards/tenant-context.guard';
 import { PermissionAction } from '@/common/enum';
+import { StatsPercentInfo } from '@/common/interfaces/stats.interface';
 
-const name = 'organizations'
+const name = 'organizations';
 
 @ApiTags(`${name}`)
 @Controller(API_VERS.V1 + `/${name}`)
@@ -57,7 +62,24 @@ export class OrganizationController {
   constructor(
     private readonly commandHandler: OrganizationCommandHandler,
     private readonly queryHandler: OrganizationQueryHandler,
-  ) { }
+  ) {}
+
+  @Get('percent-growth')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get organization percent growth' })
+  @ApiResponse({
+    status: 200,
+    description: 'Organization percent growth retrieved successfully',
+    type: Object,
+  })
+  @HeaderKey(HeaderKeys.ORG_ID)
+  @UseGuards(JwtAuthGuard, HeadersAuthGuard)
+  async percent(
+    @Query('period') period: string,
+    @User() user: IPayload,
+  ): Promise<StatsPercentInfo> {
+    return await this.queryHandler.handlePercentByMonth(user.sub, period);
+  }
 
   @Get()
   @ApiBearerAuth()
@@ -71,7 +93,9 @@ export class OrganizationController {
   @UseGuards(JwtAuthGuard, AbacGuard)
   async pagination(
     @Query() listQuery: PaginateOrganizationsQuery,
+    @User() user: IPayload,
   ): Promise<PaginateOrganizationsResponseDto> {
+    listQuery.userId = user.sub;
     const result = await this.queryHandler.handlePaginate(listQuery);
 
     return {
@@ -108,7 +132,7 @@ export class OrganizationController {
 
   @Post('/:id/join')
   @ApiBearerAuth()
-  @ApiOperation({ summary: "Join organization" })
+  @ApiOperation({ summary: 'Join organization' })
   @ApiParam({ name: 'id', description: 'Organization ID' })
   @ApiResponse({
     status: 200,
@@ -119,13 +143,19 @@ export class OrganizationController {
   @HeaderKey(HeaderKeys.PROJECT_ID)
   @CheckAbac('UPDATE', 'Organization')
   @UseGuards(JwtAuthGuard, HeadersAuthGuard, AbacGuard)
-  async joinOrganization(@User() user: IPayload, @Param('id') id: string): Promise<void> {
-    await this.commandHandler.handleJoinOrganization({ userId: user.sub, organizationId: id });
+  async joinOrganization(
+    @User() user: IPayload,
+    @Param('id') id: string,
+  ): Promise<void> {
+    await this.commandHandler.handleJoinOrganization({
+      userId: user.sub,
+      organizationId: id,
+    });
   }
 
   @Get('/joined')
   @ApiBearerAuth()
-  @ApiOperation({ summary: "Get organizations by user ID" })
+  @ApiOperation({ summary: 'Get organizations by user ID' })
   @ApiResponse({
     status: 200,
     description: 'Organizations retrieved successfully',
@@ -133,8 +163,14 @@ export class OrganizationController {
   })
   @ApiResponse({ status: 404, description: 'User not found' })
   @UseGuards(JwtAuthGuard)
-  async myOrganizations(@Query() listQuery: PaginateOrganizationsQuery, @User() user: IPayload): Promise<PaginateOrganizationsResponseDto> {
-    const result = await this.queryHandler.handleListOrganizationsByJoiner(listQuery, user.sub);
+  async myOrganizations(
+    @Query() listQuery: PaginateOrganizationsQuery,
+    @User() user: IPayload,
+  ): Promise<PaginateOrganizationsResponseDto> {
+    const result = await this.queryHandler.handleListOrganizationsByJoiner(
+      listQuery,
+      user.sub,
+    );
     return {
       data: result.data.map((organization) =>
         OrganizationMapper.toResponseDto(organization),
@@ -228,9 +264,7 @@ export class OrganizationController {
   @HeaderKey(HeaderKeys.ORG_ID)
   @CheckAbac('READ', 'Organization')
   @UseGuards(JwtAuthGuard, HeadersAuthGuard, TenantContextGuard, AbacGuard)
-  async getBySlug(
-    @Param('slug') slug: string,
-  ): Promise<OrgBaseResDto> {
+  async getBySlug(@Param('slug') slug: string): Promise<OrgBaseResDto> {
     const query: GetOrganizationBySlugQuery = { slug };
     const organization =
       await this.queryHandler.handleGetOrganizationBySlug(query);

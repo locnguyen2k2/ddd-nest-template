@@ -1,5 +1,6 @@
 import { AggregateRoot, IEntityID } from '@/shared/domain/entities/base.entity';
 import { Attributes } from '../vo/attributes.vo';
+import { Department } from './department.entity';
 
 export interface IProjectProps {
   name: string;
@@ -13,9 +14,10 @@ export interface IProjectProps {
   id: IEntityID<string>;
   attributes?: Attributes;
   department_id?: string;
+  department?: Department;
 }
 
-export interface ICreateProject extends IProjectProps { }
+export interface ICreateProject extends IProjectProps {}
 
 export interface IUpdateProject extends Pick<IProjectProps, 'updated_by'> {
   name?: string;
@@ -34,6 +36,7 @@ export class ProjectEntity extends AggregateRoot<ProjectEntity, string> {
   private _updated_by?: string;
   private _attributes: Attributes;
   private _department_id?: string;
+  private _department?: Department;
 
   private constructor(id: IEntityID<string>, props: IProjectProps) {
     super(id);
@@ -48,6 +51,7 @@ export class ProjectEntity extends AggregateRoot<ProjectEntity, string> {
     this._updated_by = props.updated_by;
     this._attributes = props.attributes ?? Attributes.create({});
     this._department_id = props.department_id;
+    this._department = props.department;
   }
 
   static create(props: ICreateProject): ProjectEntity {
@@ -112,8 +116,12 @@ export class ProjectEntity extends AggregateRoot<ProjectEntity, string> {
   get attributes(): Attributes {
     return this._attributes;
   }
-  
+
   get departmentID(): string | null {
     return this._department_id || null;
+  }
+
+  get department(): Department | null {
+    return this._department || null;
   }
 }

@@ -18,8 +18,17 @@ import {
   ApiParam,
   ApiBearerAuth,
 } from '@nestjs/swagger';
-import { CreateSubscriptionDto, CursorSubscriptionsQuery, PaginateSubscriptionsQuery, UpdateSubscriptionDto } from '../dtos/req/subscription-request.dto';
-import { SubscriptionResponseDto, CursorSubscriptionsResponseDto, PaginateSubscriptionsResponseDto } from '../dtos/res/subscription-response.dto';
+import {
+  CreateSubscriptionDto,
+  CursorSubscriptionsQuery,
+  PaginateSubscriptionsQuery,
+  UpdateSubscriptionDto,
+} from '../dtos/req/subscription-request.dto';
+import {
+  SubscriptionResponseDto,
+  CursorSubscriptionsResponseDto,
+  PaginateSubscriptionsResponseDto,
+} from '../dtos/res/subscription-response.dto';
 import { SubscriptionCommandHandler } from '@/modules/iam/application/services/subscription/command.handler';
 import { SubscriptionQueryHandler } from '@/modules/iam/application/services/subscription/query.handler';
 import { SubscriptionMapper } from '@/modules/iam/infrastructure/persistence/mappers/subscription.mapper';
@@ -32,7 +41,7 @@ export class SubscriptionController {
   constructor(
     private readonly commandHandler: SubscriptionCommandHandler,
     private readonly queryHandler: SubscriptionQueryHandler,
-  ) { }
+  ) {}
 
   @Get('cursor')
   @ApiBearerAuth()
@@ -59,7 +68,9 @@ export class SubscriptionController {
   @ApiOperation({ summary: 'Get subscription by slug' })
   @ApiParam({ name: 'slug' })
   @ApiResponse({ status: 200, type: SubscriptionResponseDto })
-  async findBySlug(@Param('slug') slug: string): Promise<SubscriptionResponseDto> {
+  async findBySlug(
+    @Param('slug') slug: string,
+  ): Promise<SubscriptionResponseDto> {
     const subscription = await this.queryHandler.findBySlug(slug);
     if (!subscription) {
       throw new Error('Subscription not found');
@@ -101,7 +112,9 @@ export class SubscriptionController {
   @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: 'Create a new subscription' })
   @ApiResponse({ status: 201, type: SubscriptionResponseDto })
-  async create(@Body() dto: CreateSubscriptionDto): Promise<SubscriptionResponseDto> {
+  async create(
+    @Body() dto: CreateSubscriptionDto,
+  ): Promise<SubscriptionResponseDto> {
     const subscription = await this.commandHandler.handleCreate(dto);
     return SubscriptionMapper.toResponseDto(subscription);
   }

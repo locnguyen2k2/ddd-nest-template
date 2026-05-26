@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { JwtPort, JwtSignOptions } from '@/shared/application/ports/jwt.port';
 import { ConfigService } from '@nestjs/config';
-import { ConfigKeyPaths, IJwtConfig, jwtConfigKey, JwtConfig } from '@/config';
+import { ConfigKeyPaths, IJwtConfig, jwtConfigKey } from '@/config';
 import * as jwt from 'jsonwebtoken';
 
 @Injectable()

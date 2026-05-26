@@ -18,8 +18,17 @@ import {
   ApiParam,
   ApiBearerAuth,
 } from '@nestjs/swagger';
-import { CreateClearanceDto, CursorClearancesQuery, PaginateClearancesQuery, UpdateClearanceDto } from '../dtos/req/clearance-request.dto';
-import { ClearanceResponseDto, CursorClearancesResponseDto, PaginateClearancesResponseDto } from '../dtos/res/clearance-response.dto';
+import {
+  CreateClearanceDto,
+  CursorClearancesQuery,
+  PaginateClearancesQuery,
+  UpdateClearanceDto,
+} from '../dtos/req/clearance-request.dto';
+import {
+  ClearanceResponseDto,
+  CursorClearancesResponseDto,
+  PaginateClearancesResponseDto,
+} from '../dtos/res/clearance-response.dto';
 import { ClearanceCommandHandler } from '@/modules/iam/application/services/clearance/command.handler';
 import { ClearanceQueryHandler } from '@/modules/iam/application/services/clearance/query.handler';
 import { ClearanceMapper } from '@/modules/iam/infrastructure/persistence/mappers/clearance.mapper';
@@ -32,7 +41,7 @@ export class ClearanceController {
   constructor(
     private readonly commandHandler: ClearanceCommandHandler,
     private readonly queryHandler: ClearanceQueryHandler,
-  ) { }
+  ) {}
 
   @Get('cursor')
   @ApiBearerAuth()
@@ -59,7 +68,9 @@ export class ClearanceController {
   @ApiOperation({ summary: 'Get clearance by level' })
   @ApiParam({ name: 'level' })
   @ApiResponse({ status: 200, type: ClearanceResponseDto })
-  async findByLevel(@Param('level') level: number): Promise<ClearanceResponseDto> {
+  async findByLevel(
+    @Param('level') level: number,
+  ): Promise<ClearanceResponseDto> {
     const clearance = await this.queryHandler.findByLevel(level);
     if (!clearance) {
       throw new Error('Clearance not found');

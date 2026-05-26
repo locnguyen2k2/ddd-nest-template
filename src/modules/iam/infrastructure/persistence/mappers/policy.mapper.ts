@@ -1,4 +1,7 @@
-import { PolicyEntity, Effect } from '@/modules/iam/domain/entities/policy.entity';
+import {
+  PolicyEntity,
+  Effect,
+} from '@/modules/iam/domain/entities/policy.entity';
 import { PolicyResponseDto } from '@/modules/iam/presentation/dtos/res/policy-response.dto';
 import { IEntityID } from '@/shared/domain/entities/base.entity';
 import { Prisma, Policy } from '@internal/rbac/client';
@@ -63,7 +66,9 @@ export class PolicyMapper {
       action: props.action,
       resource: props.resource,
       condition: props.condition || Prisma.JsonNull,
-      organization: props.organizationId ? { connect: { id: props.organizationId } } : undefined,
+      organization: props.organizationId
+        ? { connect: { id: props.organizationId } }
+        : undefined,
       created_at: props.createdAt,
       updated_at: props.updatedAt,
     };

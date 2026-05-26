@@ -1,6 +1,9 @@
 import { IsString, IsOptional, IsNotEmpty, MaxLength } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
-import { BasePageOptionDto, BaseCursorPageOptionDto } from '@/common/pagination';
+import {
+  BasePageOptionDto,
+  BaseCursorPageOptionDto,
+} from '@/common/pagination';
 
 export class CreateFeatureDto {
   @ApiProperty()
@@ -53,7 +56,15 @@ export class UpdateFeatureDto {
 }
 
 export class PaginateFeaturesQuery extends BasePageOptionDto {
+  @ApiProperty({ required: false })
+  @IsString()
+  @IsOptional()
+  project_id?: string;
 }
 
 export class CursorFeaturesQuery extends BaseCursorPageOptionDto {
+  @ApiProperty({ required: false })
+  @IsString()
+  @IsOptional()
+  project_id?: string;
 }

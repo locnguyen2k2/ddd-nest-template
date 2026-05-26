@@ -4,10 +4,13 @@ import { ConfigService } from '@nestjs/config';
 import { ConfigKeyPaths } from '@/config';
 import { CACHE_PORT, CachePort } from '@/shared/application/ports/cache.port';
 import {
+  ICaptchaRepository,
   ISessionRepository,
   ITokenBlacklistRepository,
 } from '@/modules/iam/domain/repositories/auth.repository';
 import { LogExecutionTime } from '@/common/decorators/log-execution.decorator';
+import { uuidv7 } from 'uuidv7';
+import * as svgCaptchaService from 'svg-captcha';
 
 @Injectable()
 export class SessionCacheRepository
@@ -68,5 +71,58 @@ export class TokenBlacklistCacheRepository
   async isTokenBlacklisted(token: string): Promise<boolean> {
     const key = this.buildKey(token);
     return await this.port.exists(key);
+  }
+}
+
+const width = 120;
+const height = 56;
+const alphaNumeric =
+  '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
+@Injectable()
+export class CaptchaCacheRepository
+  extends CacheRepository
+  implements ICaptchaRepository {
+  protected readonly boundedContext: string = 'iam';
+  protected readonly aggregateType: string = 'captcha';
+  protected readonly ttlConfig: { [key: string]: number } = {
+    default: 60, // 1 minute
+  };
+
+  constructor(
+    configService: ConfigService<ConfigKeyPaths>,
+    @Inject(CACHE_PORT) private readonly port: CachePort,
+  ) {
+    super(configService, port);
+  }
+
+  async getCaptcha(): Promise<{ captchaId: string; captcha: string }> {
+    const captchaObj = svgCaptchaService.create({
+      size: 4,
+      color: true,
+      noise: 4,
+      width: width,
+      height: height,
+      charPreset: alphaNumeric,
+    });
+
+    const captchaId = uuidv7();
+    const captcha = `data:image/svg+xml;base64,${Buffer.from(captchaObj.data).toString('base64')}`;
+
+    const result = { captchaId, captcha };
+    const key = this.buildKey(result.captchaId);
+    await this.port.set(key, captchaObj.text, this.ttlConfig.default);
+    return result;
+  }
+
+  async confirmedCaptcha(data: { captchaId: string; captcha: string }): Promise<boolean> {
+    try {
+      const captcha = await this.port.get(this.buildKey(data.captchaId));
+      const inValid = !captcha || captcha !== data.captcha;
+      if (inValid) return false;
+      await this.port.delete(this.buildKey(data.captchaId));
+      return true;
+    } catch (e: any) {
+      return false;
+    }
   }
 }

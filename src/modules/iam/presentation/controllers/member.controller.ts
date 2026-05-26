@@ -49,8 +49,12 @@ export class MemberController {
   @ApiOperation({ summary: 'Get members by project ID' })
   @ApiParam({ name: 'projectId' })
   @ApiResponse({ status: 200, type: [MemberResponseDto] })
-  async findByProjectId(@Param('projectId') projectId: string): Promise<MemberResponseDto[]> {
-    const members = await this.queryHandler.handleGetMembersByProjectId({ project_id: projectId });
+  async findByProjectId(
+    @Param('projectId') projectId: string,
+  ): Promise<MemberResponseDto[]> {
+    const members = await this.queryHandler.handleGetMembersByProjectId({
+      project_id: projectId,
+    });
     return members.map(MemberMapper.toResponseDto);
   }
 

@@ -1,3 +1,5 @@
+import { env } from "@/utils/env";
+
 export const providers = {
   REDIS: 'REDIS_CLIENT',
 };
@@ -13,7 +15,7 @@ export const HeaderKeys = {
   ORG_ID: 'organization-id',
   ORG_SLUG: 'organization-slug',
   PROJECT_ID: 'project-id',
-}
+};
 
 export const StorageKeys = {
   ORG_ID: 'org_id',
@@ -32,3 +34,71 @@ export const REGEX = {
   regValidPassword: /^\S*(?=\S{6,})(?=\S*\d)(?=\S*[A-Za-z])\S*$/,
   regValidEmail: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
 };
+
+export const RABBITMQ = {
+  EXCHANGE_BASE_NAME: {
+    NOTIFICATION_MODULE: `${env.str('NODE_ENV')}_cjool_exchange_notification`,
+    IAM_MODULE: `${env.str('NODE_ENV')}_cjool_exchange_iam`,
+  },
+  QUEUE_BASE_NAME: {
+    NOTIFICATION_MODULE: `${env.str('NODE_ENV')}_cjool_queue_notification`,
+    IAM_MODULE: `${env.str('NODE_ENV')}_cjool_queue_iam`,
+  },
+};
+
+export const RABBITMQ_EXCHANGE = {
+  NOTIFICATIONS: `${RABBITMQ.EXCHANGE_BASE_NAME.NOTIFICATION_MODULE}.notifications`,
+  IAM: `${RABBITMQ.EXCHANGE_BASE_NAME.IAM_MODULE}.iam`,
+} as const;
+
+export const RABBITMQ_QUEUE = {
+  NOTIFICATIONS: `${RABBITMQ.QUEUE_BASE_NAME.NOTIFICATION_MODULE}.notifications:2`,
+  IAM: `${RABBITMQ.QUEUE_BASE_NAME.IAM_MODULE}.iam:2`,
+} as const;
+
+export const RABBITMQ_ROUTING_KEY = {
+  USER_CREATED: 'user.created',
+  USER_NOTIFIED: 'user.notified',
+} as const;
+
+export const SETTING_KEYS = {
+  PASSWORD_SECURITY: 'password_attempts_policy',
+  CODE_EXPIRE: 'code_expire',
+  POOL_SIZE: 'pool_size',
+} as const;
+
+export interface IAttemptPolicy {
+  failed_attempts: number;
+  lock_duration: number;
+}
+
+export const CACHED_KEYS = {
+  COUNT: {
+    POOLED_USERS: 'pooled_users_count',
+  },
+  POOLED_USERS: 'pooled_users',
+} as const;
+
+export const SETTINGS = {
+  [SETTING_KEYS.PASSWORD_SECURITY]: {
+    cooldown_period: 60, // Cooldown period in seconds before retrying 
+    attempts: [
+      {
+        failed_attempts: 5, // Maximum failed login attempts before lockout
+        lock_duration: 60, // Lockout duration in seconds (5 minutes)
+      },
+      {
+        failed_attempts: 10, // Maximum failed login attempts before lockout
+        lock_duration: 120, // Lockout duration in seconds (10 minutes)
+      },
+    ] as IAttemptPolicy[],
+  },
+  [SETTING_KEYS.CODE_EXPIRE]: {
+    mail_confirmation: 1 * 60, // 1 minute
+  },
+  [SETTING_KEYS.POOL_SIZE]: {
+    max: 50,
+    min: 10,
+    fetch_ratio: 0.6,
+  },
+} as const;

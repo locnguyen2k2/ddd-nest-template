@@ -6,6 +6,7 @@ import {
   HttpCode,
   UseGuards,
   Get,
+  Put,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -13,12 +14,30 @@ import {
   ApiResponse,
   ApiBearerAuth,
 } from '@nestjs/swagger';
-import { RegisterUserDto, LoginUserDto, VerifyAccessTokenDto, RefreshTokenDto, LogoutDto } from '@/modules/iam/presentation/dtos/req/user.dto';
-import { AuthResponseDto, UserResponseDto, TokenResponseDto } from '@/modules/iam/presentation/dtos/res/user-response.dto';
+import {
+  RegisterUserDto,
+  LoginUserDto,
+  VerifyAccessTokenDto,
+  RefreshTokenDto,
+  LogoutDto,
+  UpdateProfileDto,
+  VerifyEmailDto,
+  CaptchaDto,
+} from '@/modules/iam/presentation/dtos/req/user.dto';
+import {
+  AuthResponseDto,
+  UserResponseDto,
+  TokenResponseDto,
+  CaptchaResponseDto,
+} from '@/modules/iam/presentation/dtos/res/user-response.dto';
 import { UserCmdHandler } from '@/modules/iam/application/services/user/command.handler';
 import { AuthCmdHandler } from '@/modules/iam/application/services/auth/command.handler';
-import { RegisterUserArgs } from '@/modules/iam/application/dtos/commands/user-cmd.dto';
-import { VerifyAccessTokenArgs, RefreshTokenArgs, LogoutArgs } from '@/modules/iam/application/dtos/commands/auth-cmd.dto';
+import { RegisterUserArgs, UpdateProfileArgs, VerifyEmailArgs } from '@/modules/iam/application/dtos/commands/auth-cmd.dto';
+import {
+  VerifyAccessTokenArgs,
+  RefreshTokenArgs,
+  LogoutArgs,
+} from '@/modules/iam/application/dtos/commands/auth-cmd.dto';
 import { LoginArgs } from '@/modules/iam/application/dtos/commands/auth-cmd.dto';
 import { API_VERS } from '@/common/constant';
 import { BusinessException } from '@/common/http/business-exception';
@@ -27,6 +46,7 @@ import { User } from '@/common/decorators';
 import { UserQueryHandler } from '../../application/services/user/query.handler';
 import { JwtAuthGuard } from '../guards/jwt-auth.guard';
 import { IPayload } from '../../domain/services/auth.service';
+import { PasswordSecurityGuard } from '../guards/passsword-security.guard';
 
 @ApiTags('users')
 @Controller(API_VERS.V1 + '/users')
@@ -46,9 +66,7 @@ export class UserController {
     type: UserResponseDto,
   })
   @UseGuards(JwtAuthGuard)
-  async me(
-    @User() user: IPayload,
-  ): Promise<UserResponseDto> {
+  async me(@User() user: IPayload): Promise<UserResponseDto> {
     return await this.userQueryHandler.profile(user.sub);
   }
 
@@ -59,7 +77,10 @@ export class UserController {
     description: 'User registered successfully',
     type: AuthResponseDto,
   })
-  @ApiResponse({ status: 400, description: 'Bad Request - Username or email already taken' })
+  @ApiResponse({
+    status: 400,
+    description: 'Bad Request - Username or email already taken',
+  })
   @HttpCode(HttpStatus.CREATED)
   async register(
     @Body() registerUserDto: RegisterUserDto,
@@ -70,9 +91,91 @@ export class UserController {
       first_name: registerUserDto.first_name,
       last_name: registerUserDto.last_name,
       email: registerUserDto.email,
+      captchaId: registerUserDto.captcha_id,
+      captcha: registerUserDto.captcha,
     };
 
     return await this.userCmdHandler.register(command);
+  }
+
+  @Post('verify-email')
+  @ApiOperation({ summary: 'Verify user email' })
+  @ApiResponse({
+    status: 200,
+    description: 'Email verified successfully',
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Bad Request - Invalid confirmation code',
+  })
+  @UseGuards(JwtAuthGuard)
+  async verifyEmail(@User() user: IPayload, @Body() verifyEmailDto: VerifyEmailDto): Promise<UserResponseDto> {
+    const result = await this.authCmdHandler.verifyEmail(user, {
+      usernameOrEmail: user.username || user.email,
+      code: verifyEmailDto.code,
+      captcha: {
+        captchaId: verifyEmailDto.captcha_id,
+        captcha: verifyEmailDto.captcha,
+      },
+    });
+    return new UserResponseDto(
+      result.id.value,
+      result.email,
+      result.username,
+      result.first_name,
+      result.last_name,
+      result.status,
+      result.created_at,
+      result.updated_at,
+      result.organizations,
+    );
+  }
+
+  @Post('resend-email-verification')
+  @ApiOperation({ summary: 'Resend email verification' })
+  @ApiResponse({
+    status: 200,
+    description: 'Email verification resent successfully',
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Bad Request - Invalid captcha',
+  })
+  @UseGuards(JwtAuthGuard)
+  async resendEmail(@User() user: IPayload, @Body() resendEmailDto: CaptchaDto): Promise<void> {
+    await this.authCmdHandler.resendEmail(user, {
+      captchaId: resendEmailDto.captcha_id,
+      captcha: resendEmailDto.captcha,
+    });
+  }
+
+  @Put('profile')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Update user profile' })
+  @ApiResponse({
+    status: 200,
+    description: 'User profile updated successfully',
+    type: UserResponseDto,
+  })
+  @UseGuards(JwtAuthGuard)
+  async updateProfile(@User() user: IPayload, @Body() updateProfileDto: UpdateProfileDto): Promise<UserResponseDto> {
+    const command: UpdateProfileArgs = {
+      first_name: updateProfileDto.first_name,
+      last_name: updateProfileDto.last_name,
+    };
+    return await this.userCmdHandler.updateProfile(user, command);
+  }
+
+  @Post('captcha')
+  @ApiOperation({ summary: 'Get captcha' })
+  @ApiResponse({
+    status: 200,
+    description: 'Captcha retrieved successfully',
+    type: CaptchaResponseDto,
+  })
+  @HttpCode(HttpStatus.OK)
+  async captcha(): Promise<CaptchaResponseDto> {
+    return await this.authCmdHandler.reCaptcha();
   }
 
   @Post('login')
@@ -82,21 +185,25 @@ export class UserController {
     description: 'User logged in successfully',
     type: AuthResponseDto,
   })
-  @ApiResponse({ status: 401, description: 'Unauthorized - Invalid credentials' })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - Invalid credentials',
+  })
+  @UseGuards(PasswordSecurityGuard)
   @HttpCode(HttpStatus.OK)
-  async login(
-    @Body() loginUserDto: LoginUserDto,
-  ): Promise<AuthResponseDto> {
+  async login(@Body() loginUserDto: LoginUserDto): Promise<AuthResponseDto> {
     try {
       const command: LoginArgs = {
         username: loginUserDto.username,
         password: loginUserDto.password,
+        captchaId: loginUserDto.captcha_id,
+        captcha: loginUserDto.captcha,
       };
 
       return await this.authCmdHandler.login(command);
     } catch (error: any) {
-      console.log(error)
-      throw new BusinessException(ErrorEnum.UNAUTHORIZED, error?.message);
+      console.log(error);
+      throw new BusinessException(`400|${error?.message}`);
     }
   }
 
@@ -107,7 +214,10 @@ export class UserController {
     description: 'Access token is valid',
     type: UserResponseDto,
   })
-  @ApiResponse({ status: 401, description: 'Unauthorized - Invalid or expired token' })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - Invalid or expired token',
+  })
   @HttpCode(HttpStatus.OK)
   async verifyAccessToken(
     @Body() verifyAccessTokenDto: VerifyAccessTokenDto,
@@ -129,7 +239,10 @@ export class UserController {
     description: 'Token refreshed successfully',
     type: TokenResponseDto,
   })
-  @ApiResponse({ status: 401, description: 'Unauthorized - Invalid or expired refresh token' })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - Invalid or expired refresh token',
+  })
   @HttpCode(HttpStatus.OK)
   async refreshToken(
     @Body() refreshTokenDto: RefreshTokenDto,
@@ -152,9 +265,7 @@ export class UserController {
   })
   @ApiResponse({ status: 401, description: 'Unauthorized - Invalid tokens' })
   @HttpCode(HttpStatus.OK)
-  async logout(
-    @Body() logoutDto: LogoutDto,
-  ): Promise<void> {
+  async logout(@Body() logoutDto: LogoutDto): Promise<void> {
     try {
       const userResponse = await this.authCmdHandler.verifyAccessToken({
         accessToken: logoutDto.access_token,

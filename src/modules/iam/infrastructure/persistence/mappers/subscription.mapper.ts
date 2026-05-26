@@ -1,6 +1,9 @@
 import { SubscriptionEntity } from '@/modules/iam/domain/entities/subscription.entity';
 import { IEntityID } from '@/shared/domain/entities/base.entity';
-import { Subscription as PrismaSubscription, Prisma } from '@internal/rbac/client';
+import {
+  Subscription as PrismaSubscription,
+  Prisma,
+} from '@internal/rbac/client';
 import { SubscriptionResponseDto } from '@/modules/iam/presentation/dtos/res/subscription-response.dto';
 
 export class SubscriptionMapper {
@@ -30,7 +33,9 @@ export class SubscriptionMapper {
     };
   }
 
-  static toPrismaCreate(subscription: SubscriptionEntity): Prisma.SubscriptionCreateInput {
+  static toPrismaCreate(
+    subscription: SubscriptionEntity,
+  ): Prisma.SubscriptionCreateInput {
     return {
       id: subscription.id.value,
       name: subscription.name,
@@ -41,7 +46,9 @@ export class SubscriptionMapper {
     };
   }
 
-  static toPrismaUpdate(subscription: SubscriptionEntity): Prisma.SubscriptionUpdateInput {
+  static toPrismaUpdate(
+    subscription: SubscriptionEntity,
+  ): Prisma.SubscriptionUpdateInput {
     return {
       name: subscription.name,
       slug: subscription.slug,
@@ -51,7 +58,9 @@ export class SubscriptionMapper {
     };
   }
 
-  static toResponseDto(subscription: SubscriptionEntity): SubscriptionResponseDto {
+  static toResponseDto(
+    subscription: SubscriptionEntity,
+  ): SubscriptionResponseDto {
     return new SubscriptionResponseDto(
       subscription.id.value,
       subscription.name,

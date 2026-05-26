@@ -1,7 +1,8 @@
-import { BaseCursorPageOptionDto, BasePageOptionDto } from "@/common/pagination";
+import {
+  BaseCursorPageOptionDto,
+  BasePageOptionDto,
+} from '@/common/pagination';
 
-export class PaginateStaffsQuery extends BasePageOptionDto {
-}
+export class PaginateStaffsQuery extends BasePageOptionDto {}
 
-export class CursorStaffsQuery extends BaseCursorPageOptionDto {
-}
+export class CursorStaffsQuery extends BaseCursorPageOptionDto {}

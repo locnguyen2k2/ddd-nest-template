@@ -3,11 +3,19 @@ import { CacheModule } from '@/shared/infrastructure/cache.module';
 import { SwaggerModule } from '@/shared/infrastructure/swagger.module';
 import { AblyModule } from './infrastructure/ably.module';
 import { JwtModule } from './infrastructure/jwt.module';
-import { PrismaAdapter } from './infrastructure/adapters/prisma.adapter';
+import { RabbitMQModule } from './infrastructure/rabbitmq/rabbitmq.module';
+import { PostgresAdapter } from './infrastructure/adapters/postgres.adapter';
+import { MongodbAdapter } from './infrastructure/adapters/mongodb.adapter';
 import { BcryptAdapter } from './infrastructure/adapters/bcrypt.adapter';
 import { BCRYPT_PORT } from './application/ports/bcrypt.port';
 import { JSON_LOGIC_ENGINE } from './application/ports/json-log-engine.port';
 import { JsonLogicEngineAdapter } from './infrastructure/adapters/json-logic.adapter';
+import { MailerModule } from './infrastructure/mailer.module';
+import { MAILER_PORT } from './application/ports/mailer.port';
+import { MailerAdapter } from './infrastructure/adapters/mailer.adapter';
+import { ThrottleModule } from './infrastructure/throttle.module';
+import { RequestAdapter } from './infrastructure/adapters/http.adapter';
+import { REQUEST_PORT } from './application/ports/http.port';
 
 @Global()
 @Module({
@@ -17,8 +25,17 @@ import { JsonLogicEngineAdapter } from './infrastructure/adapters/json-logic.ada
     SwaggerModule,
     AblyModule,
     JwtModule,
+    RabbitMQModule,
+    MailerModule,
+    ThrottleModule,
   ],
-  providers: [PrismaAdapter, BcryptAdapter, JsonLogicEngineAdapter,
+  providers: [
+    PostgresAdapter,
+    MongodbAdapter,
+    BcryptAdapter,
+    MailerAdapter,
+    JsonLogicEngineAdapter,
+    RequestAdapter,
     {
       provide: BCRYPT_PORT,
       useClass: BcryptAdapter,
@@ -26,8 +43,30 @@ import { JsonLogicEngineAdapter } from './infrastructure/adapters/json-logic.ada
     {
       provide: JSON_LOGIC_ENGINE,
       useClass: JsonLogicEngineAdapter,
+    },
+    {
+      provide: MAILER_PORT,
+      useClass: MailerAdapter,
+    },
+    {
+      provide: REQUEST_PORT,
+      useClass: RequestAdapter,
     }
   ],
-  exports: [CacheModule, SwaggerModule, AblyModule, JwtModule, PrismaAdapter, BcryptAdapter, JsonLogicEngineAdapter],
+  exports: [
+    CacheModule,
+    SwaggerModule,
+    AblyModule,
+    JwtModule,
+    RabbitMQModule,
+    MailerModule,
+    ThrottleModule,
+    PostgresAdapter,
+    MongodbAdapter,
+    BcryptAdapter,
+    JsonLogicEngineAdapter,
+    RequestAdapter,
+    MailerAdapter,
+  ],
 })
 export class SharedModules { }

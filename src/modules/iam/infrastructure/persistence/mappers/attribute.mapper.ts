@@ -1,6 +1,10 @@
 import { AttributeEntity } from '@/modules/iam/domain/entities/attribute.entity';
 import { IEntityID } from '@/shared/domain/entities/base.entity';
-import { Attributes as PrismaAttributes, Prisma, AttributeCategory } from '@internal/rbac/client';
+import {
+  Attributes as PrismaAttributes,
+  Prisma,
+  AttributeCategory,
+} from '@internal/rbac/client';
 import { AttributeResponseDto } from '@/modules/iam/presentation/dtos/res/attribute-response.dto';
 
 export class AttributeMapper {
@@ -36,7 +40,9 @@ export class AttributeMapper {
     };
   }
 
-  static toPrismaCreate(attribute: AttributeEntity): Prisma.AttributesCreateInput {
+  static toPrismaCreate(
+    attribute: AttributeEntity,
+  ): Prisma.AttributesCreateInput {
     return {
       id: attribute.id.value,
       entity_type: attribute.entity_type,
@@ -50,7 +56,9 @@ export class AttributeMapper {
     };
   }
 
-  static toPrismaUpdate(attribute: AttributeEntity): Prisma.AttributesUpdateInput {
+  static toPrismaUpdate(
+    attribute: AttributeEntity,
+  ): Prisma.AttributesUpdateInput {
     return {
       entity_type: attribute.entity_type,
       key: attribute.key,

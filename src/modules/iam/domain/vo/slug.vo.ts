@@ -1,3 +1,5 @@
+import { BusinessException } from "@/common/http/business-exception";
+
 export class Slug {
   private constructor(public readonly value: string) {
     this.value = this.format();
@@ -5,10 +7,10 @@ export class Slug {
 
   static create(value: string): Slug {
     if (!value || value.trim().length === 0) {
-      throw new Error('Slug value cannot be empty');
+      throw new BusinessException('400|Slug value cannot be empty');
     }
     if (value.length > 100) {
-      throw new Error('Slug value cannot exceed 100 characters');
+      throw new BusinessException('400|Slug value cannot exceed 100 characters');
     }
     return new Slug(value);
   }

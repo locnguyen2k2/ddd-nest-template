@@ -1,14 +1,23 @@
 import { UserEntity } from '@/modules/iam/domain/entities/user.entity';
 import { IUserRepository } from '@/modules/iam/domain/repositories/user.repository';
 import { UserMapper } from '../mappers/user.mapper';
-import { PrismaAdapter } from '@/shared/infrastructure/adapters/prisma.adapter';
+import { PostgresAdapter } from '@/shared/infrastructure/adapters/postgres.adapter';
 import { Inject, Injectable } from '@nestjs/common';
 import { CacheRepository } from '@/shared/infrastructure/presistence/cache.repository';
 import { ConfigKeyPaths } from '@/config';
 import { CACHE_PORT, CachePort } from '@/shared/application/ports/cache.port';
 import { ConfigService } from '@nestjs/config';
 import { StaffMapper } from '../mappers/staff.mapper';
-import { IStaffRepository, STAFF_REPO } from '@/modules/iam/domain/repositories/staff.repository';
+import {
+  IStaffRepository,
+  STAFF_REPO,
+} from '@/modules/iam/domain/repositories/staff.repository';
+import { IConfirmationCode } from '@/modules/iam/domain/services/user.service';
+import { countdown } from '@/utils/date';
+import { IAttemptPolicy, SETTINGS, SETTING_KEYS } from '@/common/constant';
+import { BusinessException } from '@/common/http/business-exception';
+import { uuidv7 } from 'uuidv7';
+import { MailerAdapter } from '@/shared/infrastructure/adapters/mailer.adapter';
 
 @Injectable()
 export class UserRepository extends CacheRepository implements IUserRepository {
@@ -18,11 +27,13 @@ export class UserRepository extends CacheRepository implements IUserRepository {
     default: 3600,
   };
   constructor(
-    private readonly rbacDBService: PrismaAdapter,
+    private readonly rbacDBService: PostgresAdapter,
     @Inject(STAFF_REPO) private readonly staffRepo: IStaffRepository,
     redisConfig: ConfigService<ConfigKeyPaths>,
-    @Inject(CACHE_PORT) cachePort: CachePort,) {
-    super(redisConfig, cachePort);
+    @Inject(CACHE_PORT) private readonly cache: CachePort,
+    private readonly mailer: MailerAdapter,
+  ) {
+    super(redisConfig, cache);
   }
 
   async create(props: UserEntity): Promise<UserEntity> {
@@ -50,7 +61,7 @@ export class UserRepository extends CacheRepository implements IUserRepository {
     try {
       const [user, staffs] = await Promise.all([
         this.findById(userId),
-        this.staffRepo.findByUserId(userId)
+        this.staffRepo.findByUserId(userId),
       ]);
 
       if (!user) return null;
@@ -59,7 +70,7 @@ export class UserRepository extends CacheRepository implements IUserRepository {
 
       const item = UserMapper.toDomain({
         ...prismaUser,
-        organizations: prismaOrgs
+        organizations: prismaOrgs,
       });
       return item;
     } catch (error) {
@@ -68,11 +79,14 @@ export class UserRepository extends CacheRepository implements IUserRepository {
     }
   }
 
-  async findByIdWithOrganization(userId: string, orgId: string): Promise<UserEntity | null> {
+  async findByIdWithOrganization(
+    userId: string,
+    orgId: string,
+  ): Promise<UserEntity | null> {
     try {
       const [user, staffs] = await Promise.all([
         this.findById(userId),
-        this.staffRepo.findByUserIdAndOrgId(userId, orgId)
+        this.staffRepo.findByUserIdAndOrgId(userId, orgId),
       ]);
 
       if (!user || !staffs) return null;
@@ -81,7 +95,7 @@ export class UserRepository extends CacheRepository implements IUserRepository {
 
       const item = UserMapper.toDomain({
         ...prismaUser,
-        organizations: [prismaOrgs]
+        organizations: [prismaOrgs],
       });
       return item;
     } catch (error) {
@@ -91,24 +105,113 @@ export class UserRepository extends CacheRepository implements IUserRepository {
   }
 
   async findById(id: string): Promise<UserEntity | null> {
-    const item = await this.getWithCache(id, async () => await this.rbacDBService.user.findUnique({
-      where: {
-        id: id,
-      },
-    }));
+    const item = await this.getWithCache(
+      id,
+      async () =>
+        await this.rbacDBService.user.findUnique({
+          where: {
+            id: id,
+          },
+        }),
+    );
     if (!item) return null;
     return UserMapper.toDomain(item);
   }
 
   async findByEmail(email: string): Promise<UserEntity | null> {
-    const item = await this.getWithCache(email, async () => await this.rbacDBService.user.findUnique({ where: { email } }));
+    const item = await this.getWithCache(
+      email,
+      async () =>
+        await this.rbacDBService.user.findUnique({ where: { email } }),
+    );
     if (!item) return null;
     return UserMapper.toDomain(item);
   }
 
   async findByUsername(username: string): Promise<UserEntity | null> {
-    const item = await this.getWithCache(username, async () => await this.rbacDBService.user.findUnique({ where: { username } }));
+    const item = await this.getWithCache(
+      username,
+      async () =>
+        await this.rbacDBService.user.findUnique({ where: { username } }),
+    );
     if (!item) return null;
     return UserMapper.toDomain(item);
+  }
+
+  async findByEmailOrUsername(emailOrUsername: string): Promise<UserEntity | null> {
+    const item = await this.getWithCache(
+      emailOrUsername,
+      async () =>
+        await this.rbacDBService.user.findFirst({
+          where: {
+            OR: [
+              { email: emailOrUsername },
+              { username: emailOrUsername }
+            ]
+          }
+        }),
+    );
+    if (!item) return null;
+    return UserMapper.toDomain(item);
+  }
+
+  public async warningPasswordSecurity(user: UserEntity, policy: IAttemptPolicy): Promise<void> {
+    await this.mailer.sendEmail({
+      to: user.email,
+      subject: 'Password Security Warning',
+      template: './password-warning',
+      context: {
+        attempts: `${policy.failed_attempts}`,
+        time: `${policy.lock_duration}`,
+        ipAddress: "",
+      },
+    });
+  }
+
+  public async requestConfirmationCode(user: UserEntity): Promise<IConfirmationCode> {
+    try {
+      const existingCode: IConfirmationCode | null = await this.cache.get(`user_${user.username}_${user.email}`);
+      if (existingCode) {
+        const timeLeft = countdown(1, existingCode.expires_at);
+        if (timeLeft > 0) {
+          return existingCode;
+        }
+      }
+      const code = await this.generateConfirmationCode(user);
+      await this.cache.set(
+        `user_${user.username}_${user.email}`,
+        code,
+        SETTINGS[SETTING_KEYS.CODE_EXPIRE].mail_confirmation,
+      );
+      return code;
+    } catch (e: any) {
+      throw new BusinessException(e?.message);
+    }
+  }
+
+  public async verifyConfirmationCode(user: UserEntity, code: string): Promise<boolean> {
+    try {
+      const existingCode: IConfirmationCode | null = await this.cache.get(`user_${user.username}_${user.email}`);
+      if (!existingCode) {
+        return false;
+      }
+      if (existingCode.code !== code) {
+        return false;
+      }
+      if (existingCode.expires_at < new Date()) {
+        return false;
+      }
+      return true;
+    } catch (e: any) {
+      throw new BusinessException(e?.message);
+    }
+  }
+
+  private async generateConfirmationCode(user: UserEntity): Promise<IConfirmationCode> {
+    return {
+      code: uuidv7().slice(0, 6).toUpperCase(),
+      expires_at: new Date(Date.now() + SETTINGS[SETTING_KEYS.CODE_EXPIRE].mail_confirmation),
+      user_id: user.id.value,
+    };
   }
 }

@@ -18,10 +18,11 @@ export class HttpExceptionFilter implements ExceptionFilter {
         Array.isArray(exception.getResponse()['message']) &&
         exception.getResponse()['message'][0]) ||
       exception.getResponse()['message'];
+    const msg = message ? message : exception.message;
     response.status(status).send({
       statusCode: status,
       success: false,
-      message: message ? message : exception.message,
+      message: msg,
       ...(exception.getResponse()['data'] && {
         data: exception.getResponse()['data'],
       }),

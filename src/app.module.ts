@@ -5,15 +5,22 @@ import { SharedModules } from '@/shared/shared.modules';
 import { ScheduleModule } from '@nestjs/schedule';
 import { IamModule } from '@/modules/iam/iam.module';
 import { ClsModule } from 'nestjs-cls';
+import { AppController } from './app.controller';
+import { PasswordSecurityGuard } from './modules/iam/presentation/guards/passsword-security.guard';
+import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
+import { ThrottlerGuard } from '@nestjs/throttler';
+import { NotificationModule } from './modules/notification/notification.module';
+import { LogsModule } from './modules/system/logs/logs.module';
+import { PersistentLoggingInterceptor } from './modules/system/logs/presentation/interceptors/persistent-logging.interceptor';
 
-const modules = [IamModule];
+const modules = [IamModule, NotificationModule, LogsModule];
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
       expandVariables: true,
-      envFilePath: [`.env.local`, `.env.${process.env.NODE_ENV}`, '.env'], // Load more env files
+      envFilePath: [`.env.${process.env.NODE_ENV}`, '.env'], // Load more env files
       load: [...Object.values(configs)], // Loading configure objects
     }),
 
@@ -26,6 +33,8 @@ const modules = [IamModule];
     ...modules,
   ],
 
+  controllers: [AppController],
+
   providers: [
     // JWT Guard
     // { provide: APP_GUARD, useClass: JwtAuthGuard },
@@ -33,6 +42,18 @@ const modules = [IamModule];
     // { provide: APP_GUARD, useClass: GqlThrottlerGuard },
     // // Role-base access control authorization
     // { provide: APP_GUARD, useClass: RbacAuthGuard },
+    {
+      provide: APP_GUARD,
+      useClass: PasswordSecurityGuard,
+    },
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard,
+    },
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: PersistentLoggingInterceptor,
+    },
   ],
 })
 export class AppModule { }

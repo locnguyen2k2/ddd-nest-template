@@ -1,24 +1,24 @@
 export class CreateClearanceCommand {
-    name!: string;
-    level!: number;
-    description?: string;
+  name!: string;
+  level!: number;
+  description?: string;
 }
 
 export class UpdateClearanceCommand {
-    id!: string;
-    name?: string;
-    level?: number;
-    description?: string;
+  id!: string;
+  name?: string;
+  level?: number;
+  description?: string;
 }
 
 export class DeleteClearanceCommand {
-    id!: string;
+  id!: string;
 }
 
 export class GetClearanceByIdQuery {
-    id!: string;
+  id!: string;
 }
 
 export class GetClearanceByLevelQuery {
-    level!: number;
+  level!: number;
 }

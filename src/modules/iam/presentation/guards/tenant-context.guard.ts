@@ -1,8 +1,4 @@
-import {
-  CanActivate,
-  ExecutionContext,
-  Injectable,
-} from '@nestjs/common';
+import { CanActivate, ExecutionContext, Injectable } from '@nestjs/common';
 import { ClsService } from 'nestjs-cls';
 import { OrganizationRepository } from '../../infrastructure/persistence/repositories/organization.repository';
 import { BusinessException } from '@/common/http/business-exception';
@@ -16,20 +12,25 @@ export class TenantContextGuard implements CanActivate {
   constructor(
     private readonly cls: ClsService<MyClsStore>,
     private readonly organizationRepository: OrganizationRepository,
-  ) { }
+  ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest();
-    const orgId = (request.headers[HeaderKeys.ORG_ID] || request.params.orgId) as string;
-    const orgSlug = (request.headers[HeaderKeys.ORG_SLUG] || request.params.orgSlug) as string;
+    const orgId = (request.headers[HeaderKeys.ORG_ID] ||
+      request.params.orgId) as string;
+    const orgSlug = (request.headers[HeaderKeys.ORG_SLUG] ||
+      request.params.orgSlug) as string;
 
     if (!orgId && !orgSlug) {
-      throw new BusinessException(ErrorEnum.REQUEST_FAILED_TO_EXECUTE, "Organization ID or slug is required");
+      throw new BusinessException(
+        ErrorEnum.REQUEST_FAILED_TO_EXECUTE,
+        'Organization ID or slug is required',
+      );
     }
 
     const user = request.user;
     if (!user || !user.sub) {
-      throw new BusinessException(ErrorEnum.UNAUTHORIZED, "User not found");
+      throw new BusinessException(ErrorEnum.UNAUTHORIZED, 'User not found');
     }
 
     let organization: Organization | null = null;
@@ -40,7 +41,10 @@ export class TenantContextGuard implements CanActivate {
     }
 
     if (!organization) {
-      throw new BusinessException(ErrorEnum.RECORD_NOT_FOUND, "Organization not found");
+      throw new BusinessException(
+        ErrorEnum.RECORD_NOT_FOUND,
+        'Organization not found',
+      );
     }
 
     const hasAccess = await this.organizationRepository.organizationHasUser(
@@ -49,7 +53,10 @@ export class TenantContextGuard implements CanActivate {
     );
 
     if (!hasAccess) {
-      throw new BusinessException(ErrorEnum.RECORD_NOT_FOUND, "User does not have access to this organization");
+      throw new BusinessException(
+        ErrorEnum.RECORD_NOT_FOUND,
+        'User does not have access to this organization',
+      );
     }
 
     this.cls.set(StorageKeys.ORG_ID, organization.id.value);

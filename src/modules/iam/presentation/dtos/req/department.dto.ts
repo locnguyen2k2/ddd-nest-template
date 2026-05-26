@@ -1,4 +1,7 @@
-import { BasePageOptionDto, BaseCursorPageOptionDto } from '@/common/pagination';
+import {
+  BasePageOptionDto,
+  BaseCursorPageOptionDto,
+} from '@/common/pagination';
 import { ApiProperty } from '@nestjs/swagger';
 import { IsString, IsNotEmpty, IsOptional } from 'class-validator';
 
@@ -31,8 +34,6 @@ export class UpdateDepartmentDto {
   slug?: string;
 }
 
-export class PaginateDepartmentsQuery extends BasePageOptionDto {
-}
+export class PaginateDepartmentsQuery extends BasePageOptionDto {}
 
-export class CursorDepartmentsQuery extends BaseCursorPageOptionDto {
-}
+export class CursorDepartmentsQuery extends BaseCursorPageOptionDto {}

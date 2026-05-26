@@ -32,7 +32,9 @@ export class OrganizationMapper {
     }
   }
 
-  static toPrisma(organization: Organization): Prisma.OrganizationGetPayload<{}> {
+  static toPrisma(
+    organization: Organization,
+  ): Prisma.OrganizationGetPayload<{}> {
     try {
       return {
         id: organization.id.value,
@@ -50,7 +52,9 @@ export class OrganizationMapper {
     }
   }
 
-  static toPrismaUserOrgs(organization: Organization): Prisma.OrganizationUpdateInput {
+  static toPrismaUserOrgs(
+    organization: Organization,
+  ): Prisma.OrganizationUpdateInput {
     try {
       return {
         id: organization.id.value,
@@ -67,7 +71,9 @@ export class OrganizationMapper {
     }
   }
 
-  static toPrismaCreate(organization: Organization): Prisma.OrganizationCreateInput {
+  static toPrismaCreate(
+    organization: Organization,
+  ): Prisma.OrganizationCreateInput {
     try {
       return {
         id: organization.id.value,

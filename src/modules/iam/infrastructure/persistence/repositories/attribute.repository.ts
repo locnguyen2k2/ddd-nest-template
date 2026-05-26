@@ -1,24 +1,33 @@
 import { Injectable } from '@nestjs/common';
 import { IAttributeRepository } from '@/modules/iam/domain/repositories/attribute.repository';
 import { AttributeEntity } from '@/modules/iam/domain/entities/attribute.entity';
-import { PrismaAdapter } from '@/shared/infrastructure/adapters/prisma.adapter';
+import { PostgresAdapter } from '@/shared/infrastructure/adapters/postgres.adapter';
 import { AttributeMapper } from '../../../../iam/infrastructure/persistence/mappers/attribute.mapper';
-import { cursorHelper, paginateHelper, SortableFieldEnum, SortedEnum } from '@/common/pagination';
-import { CursorAttributesQuery, PaginateAttributesQuery } from '@/modules/iam/presentation/dtos/req/attribute-request.dto';
-import { Prisma } from "@internal/rbac/client"
+import {
+  cursorHelper,
+  paginateHelper,
+  SortableFieldEnum,
+  SortedEnum,
+} from '@/common/pagination';
+import {
+  CursorAttributesQuery,
+  PaginateAttributesQuery,
+} from '@/modules/iam/presentation/dtos/req/attribute-request.dto';
+import { Prisma } from '@internal/rbac/client';
 
 @Injectable()
 export class AttributeRepository implements IAttributeRepository {
-  constructor(private readonly prisma: PrismaAdapter) { }
+  constructor(private readonly prisma: PostgresAdapter) { }
 
   async cursorPagination(pageOptions: CursorAttributesQuery) {
-    const { data = [], paginated } =
-      await cursorHelper<Prisma.AttributesGetPayload<{}>>({
-        query: this.prisma.attributes,
-        pageOptions,
-        cursorField: SortableFieldEnum.CREATED_AT,
-        orderDirection: SortedEnum.DESC,
-      });
+    const { data = [], paginated } = await cursorHelper<
+      Prisma.AttributesGetPayload<{}>
+    >({
+      query: this.prisma.attributes,
+      pageOptions,
+      cursorField: SortableFieldEnum.CREATED_AT,
+      orderDirection: SortedEnum.DESC,
+    });
 
     return {
       data: data.map((item) => AttributeMapper.toDomain(item)),
@@ -27,11 +36,12 @@ export class AttributeRepository implements IAttributeRepository {
   }
 
   async paginate(pageOptions: PaginateAttributesQuery) {
-    const { data = [], paginated } =
-      await paginateHelper<Prisma.AttributesGetPayload<{}>>({
-        query: this.prisma.attributes,
-        pageOptions,
-      });
+    const { data = [], paginated } = await paginateHelper<
+      Prisma.AttributesGetPayload<{}>
+    >({
+      query: this.prisma.attributes,
+      pageOptions,
+    });
 
     return {
       data: data.map((item) => AttributeMapper.toDomain(item)),
@@ -64,7 +74,10 @@ export class AttributeRepository implements IAttributeRepository {
     return AttributeMapper.toDomain(result);
   }
 
-  async findByEntityTypeAndKey(entityType: string, key: string): Promise<AttributeEntity | null> {
+  async findByEntityTypeAndKey(
+    entityType: string,
+    key: string,
+  ): Promise<AttributeEntity | null> {
     const result = await this.prisma.attributes.findUnique({
       where: {
         entity_type_key: {
