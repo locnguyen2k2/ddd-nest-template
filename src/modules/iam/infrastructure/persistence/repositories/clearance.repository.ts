@@ -17,74 +17,105 @@ import {
   PaginateClearancesQuery,
 } from '@/modules/iam/presentation/dtos/req/clearance-request.dto';
 import { Prisma } from '@internal/rbac/client';
+import { BusinessException } from '@/common/http/business-exception';
 
 @Injectable()
 export class ClearanceRepository implements IClearanceRepository {
   constructor(private readonly prisma: PostgresAdapter) { }
 
   async cursorPagination(pageOptions: CursorClearancesQuery) {
-    const { data = [], paginated } = await cursorHelper<
-      Prisma.ClearanceGetPayload<{}>
-    >({
-      query: this.prisma.clearance,
-      pageOptions,
-      cursorField: SortableFieldEnum.CREATED_AT,
-      orderDirection: SortedEnum.DESC,
-    });
+    try {
+      const { data = [], paginated } = await cursorHelper<
+        Prisma.ClearanceGetPayload<{}>
+      >({
+        query: this.prisma.clearance,
+        pageOptions,
+        cursorField: SortableFieldEnum.CREATED_AT,
+        orderDirection: SortedEnum.DESC,
+      });
 
-    return {
-      data: data.map((item) => ClearanceMapper.toDomain(item)),
-      paginated,
-    };
+      return {
+        data: data.map((item) => ClearanceMapper.toDomain(item)),
+        paginated,
+      };
+    } catch (e: any) {
+      throw new BusinessException(`400|${e?.message}`);
+    }
   }
 
   async paginate(pageOptions: PaginateClearancesQuery) {
-    const { data = [], paginated } = await paginateHelper<
-      Prisma.ClearanceGetPayload<{}>
-    >({
-      query: this.prisma.clearance,
-      pageOptions,
-    });
+    try {
+      const { data = [], paginated } = await paginateHelper<
+        Prisma.ClearanceGetPayload<{}>
+      >({
+        query: this.prisma.clearance,
+        pageOptions,
+      });
 
-    return {
-      data: data.map((item) => ClearanceMapper.toDomain(item)),
-      paginated,
-    };
+      return {
+        data: data.map((item) => ClearanceMapper.toDomain(item)),
+        paginated,
+      };
+    } catch (e: any) {
+      throw new BusinessException(`400|${e?.message}`);
+    }
   }
 
   async create(clearance: ClearanceEntity): Promise<ClearanceEntity> {
-    const toPrisma = ClearanceMapper.toPrismaCreate(clearance);
-    const result = await this.prisma.clearance.create({ data: toPrisma });
-    return ClearanceMapper.toDomain(result);
+    try {
+      const toPrisma = ClearanceMapper.toPrismaCreate(clearance);
+      const result = await this.prisma.clearance.create({ data: toPrisma });
+      return ClearanceMapper.toDomain(result);
+    } catch (e: any) {
+      throw new BusinessException(`400|${e?.message}`);
+    }
   }
 
   async update(clearance: ClearanceEntity): Promise<ClearanceEntity> {
-    const toPrisma = ClearanceMapper.toPrismaUpdate(clearance);
-    const result = await this.prisma.clearance.update({
-      where: { id: clearance.id.value },
-      data: toPrisma,
-    });
-    return ClearanceMapper.toDomain(result);
+    try {
+      const toPrisma = ClearanceMapper.toPrismaUpdate(clearance);
+      const result = await this.prisma.clearance.update({
+        where: { id: clearance.id.value },
+        data: toPrisma,
+      });
+      return ClearanceMapper.toDomain(result);
+    } catch (e: any) {
+      throw new BusinessException(`400|${e?.message}`);
+    }
   }
 
   async delete(id: string): Promise<void> {
-    await this.prisma.clearance.delete({ where: { id } });
+    try { await this.prisma.clearance.delete({ where: { id } }); } catch (e: any) {
+      throw new BusinessException(`400|${e?.message}`);
+    }
   }
 
   async findById(id: string): Promise<ClearanceEntity | null> {
-    const result = await this.prisma.clearance.findUnique({ where: { id } });
-    if (!result) return null;
-    return ClearanceMapper.toDomain(result);
+    try {
+      const result = await this.prisma.clearance.findUnique({ where: { id } });
+      if (!result) return null;
+      return ClearanceMapper.toDomain(result);
+    } catch (e: any) {
+      throw new BusinessException(`400|${e?.message}`);
+    }
   }
 
   async findByLevel(level: number): Promise<ClearanceEntity | null> {
-    const result = await this.prisma.clearance.findUnique({ where: { level } });
-    if (!result) return null;
-    return ClearanceMapper.toDomain(result);
+    try {
+      const result = await this.prisma.clearance.findUnique({ where: { level } });
+      if (!result) return null;
+      return ClearanceMapper.toDomain(result);
+    } catch (e: any) {
+      throw new BusinessException(`400|${e?.message}`);
+    }
   }
 
   async findAll(): Promise<ClearanceEntity[]> {
-    const results = await this.prisma.clearance.findMany();
-    return results.map((result) => ClearanceMapper.toDomain(result));
+    try {
+      const results = await this.prisma.clearance.findMany();
+      return results.map((result) => ClearanceMapper.toDomain(result));
+    } catch (e: any) {
+      throw new BusinessException(`400|${e?.message}`);
+    }
   }
 }

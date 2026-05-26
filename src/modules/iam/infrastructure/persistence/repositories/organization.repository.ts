@@ -115,77 +115,85 @@ export class OrganizationRepository
 
   @LogExecutionTime()
   async paginate(pageOptions: PaginateOrganizationsQuery) {
-    const filterOptions: any[] = [];
+    try {
+      const filterOptions: any[] = [];
 
-    if (pageOptions.userId) {
-      filterOptions.push({
-        staffs: {
-          some: {
-            user_id: pageOptions.userId,
-          },
-        },
-      });
-    }
-    const { data = [], paginated } = await paginateHelper<
-      Prisma.OrganizationGetPayload<{}>
-    >({
-      query: this.rbacDBService.organization,
-      pageOptions,
-      ...(filterOptions.length > 0 && {
-        filterOptions,
-        include: {
+      if (pageOptions.userId) {
+        filterOptions.push({
           staffs: {
-            select: {
-              user_id: true,
+            some: {
+              user_id: pageOptions.userId,
             },
           },
-        },
-      }),
-    });
+        });
+      }
+      const { data = [], paginated } = await paginateHelper<
+        Prisma.OrganizationGetPayload<{}>
+      >({
+        query: this.rbacDBService.organization,
+        pageOptions,
+        ...(filterOptions.length > 0 && {
+          filterOptions,
+          include: {
+            staffs: {
+              select: {
+                user_id: true,
+              },
+            },
+          },
+        }),
+      });
 
-    return {
-      data: data.map((item) => OrganizationMapper.toDomain(item)),
-      paginated,
-    };
+      return {
+        data: data.map((item) => OrganizationMapper.toDomain(item)),
+        paginated,
+      };
+    } catch (e: any) {
+      throw new BusinessException(`400|${e?.message}`);
+    }
   }
 
   @LogExecutionTime()
   async cursorPagination(pageOptions: CursorOrganizationsQuery) {
-    const filterOptions: any[] = [];
+    try {
+      const filterOptions: any[] = [];
 
-    if (pageOptions.userId) {
-      filterOptions.push({
-        staffs: {
-          some: {
-            user_id: pageOptions.userId,
-          },
-        },
-      });
-    }
-
-    const { data = [], paginated } = await cursorHelper<
-      Prisma.OrganizationGetPayload<{}>
-    >({
-      query: this.rbacDBService.organization,
-      pageOptions,
-      cursorField: SortableFieldEnum.CREATED_AT,
-      orderDirection: SortedEnum.DESC,
-      ...(filterOptions.length > 0 && {
-        filterOptions,
-        include: {
+      if (pageOptions.userId) {
+        filterOptions.push({
           staffs: {
-            select: {
-              user_id: true,
+            some: {
+              user_id: pageOptions.userId,
             },
           },
-        },
-      }),
-    });
+        });
+      }
 
-    return {
-      data: data.map((item) => OrganizationMapper.toDomain(item)),
-      paginated,
-    };
+      const { data = [], paginated } = await cursorHelper<
+        Prisma.OrganizationGetPayload<{}>
+      >({
+        query: this.rbacDBService.organization,
+        pageOptions,
+        cursorField: SortableFieldEnum.CREATED_AT,
+        orderDirection: SortedEnum.DESC,
+        ...(filterOptions.length > 0 && {
+          filterOptions,
+          include: {
+            staffs: {
+              select: {
+                user_id: true,
+              },
+            },
+          },
+        }),
+      });
+
+      return {
+        data: data.map((item) => OrganizationMapper.toDomain(item)),
+        paginated,
+      };
+    } catch (e: any) {
+      throw new BusinessException(`400|${e?.message}`);
+    }
   }
 
   @LogExecutionTime()
@@ -383,42 +391,54 @@ export class OrganizationRepository
 
   @LogExecutionTime()
   async findById(id: string): Promise<Organization | null> {
-    const item = await this.getWithCache(id, async () => {
-      return await this.rbacDBService.organization.findUnique({
-        where: { id },
+    try {
+      const item = await this.getWithCache(id, async () => {
+        return await this.rbacDBService.organization.findUnique({
+          where: { id },
+        });
       });
-    });
 
-    return item ? OrganizationMapper.toDomain(item) : null;
+      return item ? OrganizationMapper.toDomain(item) : null;
+    } catch (e: any) {
+      throw new BusinessException(`400|${e?.message}`);
+    }
   }
 
   @LogExecutionTime()
   async findBySlug(slug: string): Promise<Organization | null> {
-    const item = await this.getWithCache(slug, async () => {
-      return await this.rbacDBService.organization.findUnique({
-        where: { slug },
+    try {
+      const item = await this.getWithCache(slug, async () => {
+        return await this.rbacDBService.organization.findUnique({
+          where: { slug },
+        });
       });
-    });
 
-    return item ? OrganizationMapper.toDomain(item) : null;
+      return item ? OrganizationMapper.toDomain(item) : null;
+    } catch (e: any) {
+      throw new BusinessException(`400|${e?.message}`);
+    }
   }
 
   @LogExecutionTime()
   async findByIds(ids: string[]): Promise<Organization[]> {
-    const items = await this.getWithManyKeysCache(
-      ids,
-      async (ids) => {
-        return await this.rbacDBService.organization.findMany({
-          where: {
-            id: {
-              in: ids,
+    try {
+      const items = await this.getWithManyKeysCache(
+        ids,
+        async (ids) => {
+          return await this.rbacDBService.organization.findMany({
+            where: {
+              id: {
+                in: ids,
+              },
             },
-          },
-        });
-      },
-      (org) => org.id,
-    );
-    return items.map((org) => OrganizationMapper.toDomain(org));
+          });
+        },
+        (org) => org.id,
+      );
+      return items.map((org) => OrganizationMapper.toDomain(org));
+    } catch (e: any) {
+      throw new BusinessException(`400|${e?.message}`);
+    }
   }
 
   @LogExecutionTime()

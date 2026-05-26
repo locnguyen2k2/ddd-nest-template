@@ -18,6 +18,7 @@ import { IAttemptPolicy, SETTINGS, SETTING_KEYS } from '@/common/constant';
 import { BusinessException } from '@/common/http/business-exception';
 import { uuidv7 } from 'uuidv7';
 import { MailerAdapter } from '@/shared/infrastructure/adapters/mailer.adapter';
+import { ErrorEnum } from '@/common/exception.enum';
 
 @Injectable()
 export class UserRepository extends CacheRepository implements IUserRepository {
@@ -37,24 +38,39 @@ export class UserRepository extends CacheRepository implements IUserRepository {
   }
 
   async create(props: UserEntity): Promise<UserEntity> {
-    const toPrisma = UserMapper.toPrismaCreate(props);
-    const result = await this.rbacDBService.user.create({ data: toPrisma });
-    return UserMapper.toDomain(result);
+    try {
+      const toPrisma = UserMapper.toPrismaCreate(props);
+      const result = await this.rbacDBService.user.create({ data: toPrisma });
+      return UserMapper.toDomain(result);
+    } catch (e: any) {
+      console.log(e?.message);
+      throw new BusinessException(`400|${e?.message}`);
+    }
   }
 
   async update(props: UserEntity): Promise<UserEntity> {
-    const toPrisma = UserMapper.toPrismaUpdate(props);
-    const result = await this.rbacDBService.user.update({
-      where: { id: props.id.value },
-      data: toPrisma,
-    });
-    await this.invalidateCache(props.id.value);
-    return UserMapper.toDomain(result);
+    try {
+      const toPrisma = UserMapper.toPrismaUpdate(props);
+      const result = await this.rbacDBService.user.update({
+        where: { id: props.id.value },
+        data: toPrisma,
+      });
+      await this.invalidateCache(props.id.value);
+      return UserMapper.toDomain(result);
+    } catch (e: any) {
+      console.log(e?.message);
+      throw new BusinessException(`400|${e?.message}`);
+    }
   }
 
   async delete(id: string) {
-    await this.rbacDBService.user.delete({ where: { id } });
-    await this.invalidateCache(id);
+    try {
+      await this.rbacDBService.user.delete({ where: { id } });
+      await this.invalidateCache(id);
+    } catch (e: any) {
+      console.log(e?.message);
+      throw new BusinessException(`400|${e?.message}`);
+    }
   }
 
   async findByIdWithOrganizations(userId: string): Promise<UserEntity | null> {
@@ -105,67 +121,92 @@ export class UserRepository extends CacheRepository implements IUserRepository {
   }
 
   async findById(id: string): Promise<UserEntity | null> {
-    const item = await this.getWithCache(
-      id,
-      async () =>
-        await this.rbacDBService.user.findUnique({
-          where: {
-            id: id,
-          },
-        }),
-    );
-    if (!item) return null;
-    return UserMapper.toDomain(item);
+    try {
+      const item = await this.getWithCache(
+        id,
+        async () =>
+          await this.rbacDBService.user.findUnique({
+            where: {
+              id: id,
+            },
+          }),
+      );
+      if (!item) return null;
+      return UserMapper.toDomain(item);
+    } catch (e: any) {
+      console.log(e?.message);
+      throw new BusinessException(`400|${e?.message}`);
+    }
   }
 
   async findByEmail(email: string): Promise<UserEntity | null> {
-    const item = await this.getWithCache(
-      email,
-      async () =>
-        await this.rbacDBService.user.findUnique({ where: { email } }),
-    );
-    if (!item) return null;
-    return UserMapper.toDomain(item);
+    try {
+      const item = await this.getWithCache(
+        email,
+        async () =>
+          await this.rbacDBService.user.findUnique({ where: { email } }),
+      );
+      if (!item) return null;
+      return UserMapper.toDomain(item);
+    } catch (e: any) {
+      console.log(e?.message);
+      throw new BusinessException(`400|${e?.message}`);
+    }
   }
 
   async findByUsername(username: string): Promise<UserEntity | null> {
-    const item = await this.getWithCache(
-      username,
-      async () =>
-        await this.rbacDBService.user.findUnique({ where: { username } }),
-    );
-    if (!item) return null;
-    return UserMapper.toDomain(item);
+    try {
+      const item = await this.getWithCache(
+        username,
+        async () =>
+          await this.rbacDBService.user.findUnique({ where: { username } }),
+      );
+      if (!item) return null;
+      return UserMapper.toDomain(item);
+    } catch (e: any) {
+      console.log(e?.message);
+      throw new BusinessException(`400|${e?.message}`);
+    }
   }
 
   async findByEmailOrUsername(emailOrUsername: string): Promise<UserEntity | null> {
-    const item = await this.getWithCache(
-      emailOrUsername,
-      async () =>
-        await this.rbacDBService.user.findFirst({
-          where: {
-            OR: [
-              { email: emailOrUsername },
-              { username: emailOrUsername }
-            ]
-          }
-        }),
-    );
-    if (!item) return null;
-    return UserMapper.toDomain(item);
+    try {
+      const item = await this.getWithCache(
+        emailOrUsername,
+        async () =>
+          await this.rbacDBService.user.findFirst({
+            where: {
+              OR: [
+                { email: emailOrUsername },
+                { username: emailOrUsername }
+              ]
+            }
+          }),
+      );
+      if (!item) return null;
+      return UserMapper.toDomain(item);
+    } catch (e: any) {
+      console.log(e?.message);
+      throw new BusinessException(`400|${e?.message}`);
+    }
   }
 
   public async warningPasswordSecurity(user: UserEntity, policy: IAttemptPolicy): Promise<void> {
-    await this.mailer.sendEmail({
-      to: user.email,
-      subject: 'Password Security Warning',
-      template: './password-warning',
-      context: {
-        attempts: `${policy.failed_attempts}`,
-        time: `${policy.lock_duration}`,
-        ipAddress: "",
-      },
-    });
+    try {
+      await this.mailer.sendEmail({
+        to: user.email,
+        subject: 'Password Security Warning',
+        template: './password-warning',
+        context: {
+          attempts: `${policy.failed_attempts}`,
+          time: `${policy.lock_duration}`,
+          ipAddress: "",
+        },
+      });
+    } catch (e: any) {
+      console.log(e?.message);
+      throw new BusinessException(`400|${e?.message}`);
+    }
   }
 
   public async requestConfirmationCode(user: UserEntity): Promise<IConfirmationCode> {
@@ -185,7 +226,7 @@ export class UserRepository extends CacheRepository implements IUserRepository {
       );
       return code;
     } catch (e: any) {
-      throw new BusinessException(e?.message);
+      throw new BusinessException(`400|${e?.message}`);
     }
   }
 
@@ -203,7 +244,7 @@ export class UserRepository extends CacheRepository implements IUserRepository {
       }
       return true;
     } catch (e: any) {
-      throw new BusinessException(e?.message);
+      throw new BusinessException(`400|${e?.message}`);
     }
   }
 
