@@ -707,7 +707,7 @@ If you need help contributing:
 
 ## 📄 License
 
-By contributing to ABAC NestJS, you agree that your contributions will be licensed under the project's license (UNLICENSED).
+By contributing to ABAC NestJS, you agree that your contributions will be licensed under the **GNU General Public License v3.0**. See the [LICENSE](../LICENSE) file for the full license text.
 
 ---
 

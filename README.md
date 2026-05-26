@@ -3,7 +3,7 @@
 [![NestJS](https://img.shields.io/badge/framework-NestJS-red.svg)](https://nestjs.com/)
 [![Prisma](https://img.shields.io/badge/ORM-Prisma-blue.svg)](https://www.prisma.io/)
 [![ABAC](https://img.shields.io/badge/Auth-ABAC-green.svg)](https://en.wikipedia.org/wiki/Attribute-based_access_control)
-[![License: UNLICENSED](https://img.shields.io/badge/License-UNLICENSED-lightgrey.svg)](LICENSE)
+[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](LICENSE)
 
 **ABAC NestJS** is a production-grade, fine-grained, context-aware authorization system built with NestJS. It implements **Attribute-Based Access Control (ABAC)** using Domain-Driven Design (DDD) principles to provide a scalable and flexible solution for modern multi-tenant applications.
 
@@ -146,7 +146,7 @@ We welcome contributions! Please follow these steps:
 
 ## 📄 License
 
-This project is UNLICENSED. See the [package.json](package.json) for more details.
+This project is licensed under the **GNU General Public License v3.0**. See the [LICENSE](LICENSE) file for the full license text.
 
 ---
 

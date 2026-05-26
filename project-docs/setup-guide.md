@@ -1023,7 +1023,9 @@ app.get('/health', (req, res) => {
 
 ---
 
-**ABAC NestJS Setup Guide**
+## 📄 License
+
+This project is licensed under the **GNU General Public License v3.0**. See the [LICENSE](../LICENSE) file for the full license text.
 
 Generated on: 2026-04-14
 Version: 0.0.1
