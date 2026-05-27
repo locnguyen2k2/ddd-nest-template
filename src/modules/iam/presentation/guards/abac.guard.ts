@@ -2,43 +2,27 @@ import {
   Injectable,
   CanActivate,
   ExecutionContext,
-  Inject,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import {
   CHECK_ABAC_KEY,
   AbacMetadata,
 } from '../../../../common/decorators/check-abac.decorator';
-import {
-  IUserRepository,
-  USER_REPO,
-} from '../../domain/repositories/user.repository';
-import {
-  PROJECT_REPO,
-  IProjectRepository,
-} from '../../domain/repositories/project.repository';
-import {
-  ORGANIZATION_REPO,
-  IOrganizationRepository,
-} from '../../domain/repositories/organization.repository';
-import {
-  FEATURE_REPO,
-  IFeatureRepository,
-} from '../../domain/repositories/feature.repository';
 import { PolicyQueryService } from '../../application/services/policy/policy-query.service';
 import { ClsService } from 'nestjs-cls';
 import { MyClsStore } from '@/common/interfaces/cls-store.interface';
 import { HeaderKeys, StorageKeys } from '@/common/constant';
-import {
-  IMemberRepository,
-  MEMBER_REPO,
-} from '../../domain/repositories/member.repository';
 import { MemberMapper } from '../../infrastructure/persistence/mappers/member.mapper';
 import { UserMapper } from '../../infrastructure/persistence/mappers/user.mapper';
 import { ProjectMapper } from '../../infrastructure/persistence/mappers/project.mapper';
 import { OrganizationMapper } from '../../infrastructure/persistence/mappers/organization.mapper';
 import { FeatureMapper } from '../../infrastructure/persistence/mappers/feature.mapper';
 import { BusinessException } from '@/common/http/business-exception';
+import { UserQueryHandler } from '../../application/services/user/query.handler';
+import { ProjectQueryHandler } from '../../application/services/project/query.handler';
+import { OrganizationQueryHandler } from '../../application/services/organization/query.handler';
+import { FeatureQueryHandler } from '../../application/services/feature/query.handler';
+import { MemberQueryHandler } from '../../application/services/member/query.handler';
 
 @Injectable()
 export class AbacGuard implements CanActivate {
@@ -46,16 +30,12 @@ export class AbacGuard implements CanActivate {
     private reflector: Reflector,
     private readonly pdp: PolicyQueryService,
     private readonly cls: ClsService<MyClsStore>,
-    @Inject(USER_REPO)
-    private readonly userRepo: IUserRepository,
-    @Inject(PROJECT_REPO)
-    private readonly projectRepo: IProjectRepository,
-    @Inject(ORGANIZATION_REPO)
-    private readonly organizationRepo: IOrganizationRepository,
-    @Inject(FEATURE_REPO)
-    private readonly featureRepo: IFeatureRepository,
-    @Inject(MEMBER_REPO) private readonly memberRepo: IMemberRepository,
-  ) {}
+    private readonly userQueryHandler: UserQueryHandler,
+    private readonly projectQueryHandler: ProjectQueryHandler,
+    private readonly orgQueryHandler: OrganizationQueryHandler,
+    private readonly featureQueryHandler: FeatureQueryHandler,
+    private readonly memberQueryHandler: MemberQueryHandler,
+  ) { }
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const metadata = this.reflector.getAllAndOverride<AbacMetadata>(
@@ -73,7 +53,7 @@ export class AbacGuard implements CanActivate {
     const organizationId = this.cls.get(StorageKeys.ORG_ID);
 
     const [user, resource] = await Promise.all([
-      this.userRepo.findByIdWithOrganizations(userId),
+      this.userQueryHandler.findByIdWithOrganizations(userId),
       this.fetchResource(metadata.resource, request),
     ]);
 
@@ -82,7 +62,7 @@ export class AbacGuard implements CanActivate {
     const staffId = user.organizations.find(
       (org) => org.organization_id === organizationId,
     )?.id;
-    const joinedProjects = await this.memberRepo.findByStaffId(staffId || '');
+    const joinedProjects = await this.memberQueryHandler.handleGetByStaffId({ staff_id: staffId! });
     const members = joinedProjects.map(MemberMapper.toPrisma);
     const userMembers = UserMapper.toDomainWithMembers({
       ...UserMapper.toPrismaWithOrganizations(user),
@@ -118,10 +98,10 @@ export class AbacGuard implements CanActivate {
       case 'project':
         if (!id) {
           id = request.headers[HeaderKeys.ORG_ID];
-          data = await this.organizationRepo.findById(id);
+          data = await this.orgQueryHandler.handleGetById({ id });
           data = OrganizationMapper.toPrisma(data);
         } else {
-          data = await this.projectRepo.findById(id);
+          data = await this.projectQueryHandler.handlerGetByID(id);
           data = ProjectMapper.toPrisma(data);
         }
         data['type'] = 'project';
@@ -130,17 +110,17 @@ export class AbacGuard implements CanActivate {
         if (!id) {
           id = request.headers[HeaderKeys.ORG_ID];
         }
-        data = await this.organizationRepo.findById(id);
+        data = await this.orgQueryHandler.handleGetById({ id });
         data = OrganizationMapper.toPrisma(data);
         data['type'] = 'organization';
         break;
       case 'feature':
         if (!id) {
           id = request.headers[HeaderKeys.PROJECT_ID];
-          data = await this.projectRepo.findById(id);
+          data = await this.projectQueryHandler.handlerGetByID(id);
           data = ProjectMapper.toPrisma(data);
         } else {
-          data = await this.featureRepo.findOneById(id);
+          data = await this.featureQueryHandler.handleGetById({ id });
           data = FeatureMapper.toPrisma(data);
         }
         data['type'] = 'feature';

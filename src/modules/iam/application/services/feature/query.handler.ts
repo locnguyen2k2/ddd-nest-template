@@ -20,7 +20,7 @@ export class FeatureQueryHandler {
   constructor(
     @Inject(FEATURE_REPO)
     private readonly featureRepository: IFeatureRepository,
-  ) {}
+  ) { }
 
   private readonly percentGrowthCalc = {
     [Period.MONTH]: async (org_id: string) => this.handlePercentByMonth(org_id),
@@ -84,10 +84,10 @@ export class FeatureQueryHandler {
   }
 
   @LogExecutionTime()
-  async handleGetFeatureRoles(prj_id: string, slug: string) {}
+  async handleGetFeatureRoles(prj_id: string, slug: string) { }
 
   @LogExecutionTime()
-  async handleGetFeatureById(
+  async handleGetById(
     query: GetFeatureByIdQuery,
   ): Promise<Feature | null> {
     return await this.featureRepository.findOneById(

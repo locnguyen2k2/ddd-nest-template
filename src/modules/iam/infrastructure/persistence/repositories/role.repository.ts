@@ -41,54 +41,69 @@ export class RoleRepository extends CacheRepository implements IRoleRepository {
 
   @LogExecutionTime()
   async paginate(pageOptions: PaginateRolesQuery) {
-    const { data = [], paginated } = await paginateHelper<
-      Prisma.RoleGetPayload<{}>
-    >({
-      query: this.rbacDBService.role,
-      pageOptions,
-      filterOptions: [
-        {
-          organization_id: pageOptions.organization_id,
-        },
-      ],
-    });
+    try {
+      const { data = [], paginated } = await paginateHelper<
+        Prisma.RoleGetPayload<{}>
+      >({
+        query: this.rbacDBService.role,
+        pageOptions,
+        filterOptions: [
+          {
+            organization_id: pageOptions.organization_id,
+          },
+        ],
+      });
 
-    return {
-      data: data.map((item) => RoleMapper.toDomain(item)),
-      paginated,
-    };
+      return {
+        data: data.map((item) => RoleMapper.toDomain(item)),
+        paginated,
+      };
+    } catch (e: any) {
+      console.log(e?.message);
+      throw new BusinessException(`400|${e?.message}`);
+    }
   }
 
   @LogExecutionTime()
   async cursorPagination(pageOptions: CursorRolesQuery) {
-    const { data = [], paginated } = await cursorHelper<
-      Prisma.RoleGetPayload<{}>
-    >({
-      query: this.rbacDBService.role,
-      pageOptions,
-      cursorField: SortableFieldEnum.CREATED_AT,
-      orderDirection: SortedEnum.DESC,
-      filterOptions: [
-        {
-          organization_id: pageOptions.organization_id,
-        },
-      ],
-    });
+    try {
+      const { data = [], paginated } = await cursorHelper<
+        Prisma.RoleGetPayload<{}>
+      >({
+        query: this.rbacDBService.role,
+        pageOptions,
+        cursorField: SortableFieldEnum.CREATED_AT,
+        orderDirection: SortedEnum.DESC,
+        filterOptions: [
+          {
+            organization_id: pageOptions.organization_id,
+          },
+        ],
+      });
 
-    return {
-      data: data.map((item) => RoleMapper.toDomain(item)),
-      paginated,
-    };
+      return {
+        data: data.map((item) => RoleMapper.toDomain(item)),
+        paginated,
+      };
+    } catch (e: any) {
+      console.log(e?.message);
+      throw new BusinessException(`400|${e?.message}`);
+    }
   }
 
   @LogExecutionTime()
   async findByOrganizationId(orgId: string): Promise<Role[]> {
-    const items = await this.rbacDBService.role.findMany({
-      where: {
-        organization_id: orgId,
-      },
-    });
-    return items.map((item) => RoleMapper.toDomain(item));
+    try {
+      const items = await this.rbacDBService.role.findMany({
+        where: {
+          organization_id: orgId,
+        },
+      });
+      return items.map((item) => RoleMapper.toDomain(item));
+    } catch (e: any) {
+      console.log(e?.message);
+      throw new BusinessException(`400|${e?.message}`);
+    }
   }
 
   @LogExecutionTime()
@@ -96,18 +111,23 @@ export class RoleRepository extends CacheRepository implements IRoleRepository {
     id: string,
     organization_id?: string,
   ): Promise<Role | null> {
-    const item = await this.getWithCache(id, async () => {
-      return await this.rbacDBService.role.findUnique({
-        where: organization_id
-          ? {
-            id,
-            organization_id,
-          }
-          : { id },
+    try {
+      const item = await this.getWithCache(id, async () => {
+        return await this.rbacDBService.role.findUnique({
+          where: organization_id
+            ? {
+              id,
+              organization_id,
+            }
+            : { id },
+        });
       });
-    });
 
-    return item ? RoleMapper.toDomain(item) : null;
+      return item ? RoleMapper.toDomain(item) : null;
+    } catch (e: any) {
+      console.log(e?.message);
+      throw new BusinessException(`400|${e?.message}`);
+    }
   }
 
   @LogExecutionTime()
@@ -115,56 +135,76 @@ export class RoleRepository extends CacheRepository implements IRoleRepository {
     slug: string,
     organization_id: string,
   ): Promise<Role | null> {
-    const referenceCachedKey = `slug:${slug}:${organization_id}`;
-    const item = await this.getWithReference(
-      referenceCachedKey,
-      (role) => role.id,
-      async () => {
-        return await this.rbacDBService.role.findUnique({
-          where: {
-            organization_id_slug: {
-              slug,
-              organization_id,
+    try {
+      const referenceCachedKey = `slug:${slug}:${organization_id}`;
+      const item = await this.getWithReference(
+        referenceCachedKey,
+        (role) => role.id,
+        async () => {
+          return await this.rbacDBService.role.findUnique({
+            where: {
+              organization_id_slug: {
+                slug,
+                organization_id,
+              },
             },
-          },
-        });
-      },
-    );
-    return item ? RoleMapper.toDomain(item) : null;
+          });
+        },
+      );
+      return item ? RoleMapper.toDomain(item) : null;
+    } catch (e: any) {
+      console.log(e?.message);
+      throw new BusinessException(`400|${e?.message}`);
+    }
   }
 
   @LogExecutionTime()
   async create(role: Role): Promise<Role> {
-    const prismaData = RoleMapper.toPrismaCreate(role);
+    try {
+      const prismaData = RoleMapper.toPrismaCreate(role);
 
-    const item = await this.rbacDBService.role.create({
-      data: prismaData,
-    });
+      const item = await this.rbacDBService.role.create({
+        data: prismaData,
+      });
 
-    if (!item) {
-      throw new BusinessException(ErrorEnum.RECORD_NOT_FOUND, 'Role');
+      if (!item) {
+        throw new BusinessException(ErrorEnum.RECORD_NOT_FOUND, 'Role');
+      }
+
+      return RoleMapper.toDomain(item);
+    } catch (e: any) {
+      console.log(e?.message);
+      throw new BusinessException(`400|${e?.message}`);
     }
-
-    return RoleMapper.toDomain(item);
   }
 
   @LogExecutionTime()
   async update(id: string, role: Role): Promise<Role> {
-    const prismaData = RoleMapper.toPrismaUpdate(role);
-    const updatedRole = await this.rbacDBService.role.update({
-      where: { id },
-      data: prismaData,
-    });
-    await this.invalidateCache(id);
+    try {
+      const prismaData = RoleMapper.toPrismaUpdate(role);
+      const updatedRole = await this.rbacDBService.role.update({
+        where: { id },
+        data: prismaData,
+      });
+      await this.invalidateCache(id);
 
-    return RoleMapper.toDomain(updatedRole);
+      return RoleMapper.toDomain(updatedRole);
+    } catch (e: any) {
+      console.log(e?.message);
+      throw new BusinessException(`400|${e?.message}`);
+    }
   }
 
   @LogExecutionTime()
   async delete(id: string): Promise<void> {
-    await this.rbacDBService.role.delete({
-      where: { id },
-    });
-    await this.invalidateCache(id);
+    try {
+      await this.rbacDBService.role.delete({
+        where: { id },
+      });
+      await this.invalidateCache(id);
+    } catch (e: any) {
+      console.log(e?.message);
+      throw new BusinessException(`400|${e?.message}`);
+    }
   }
 }

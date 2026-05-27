@@ -102,3 +102,130 @@ export const SETTINGS = {
     fetch_ratio: 0.6,
   },
 } as const;
+
+export const DefaultPolicies = [
+  {
+    name: 'Org Owner has full access to everything in their org',
+    effect: 'ALLOW' as const,
+    action: '*',
+    resource: '*',
+    condition: { "==": [{ "var": "subject.context_attributes.is_org_owner" }, true] }
+  },
+  {
+    name: 'Users can manage their own profile',
+    effect: 'ALLOW' as const,
+    action: '*',
+    resource: 'User',
+    condition: { "==": [{ "var": "subject.id" }, { "var": "resource.id" }] }
+  },
+  {
+    name: 'Locked roles cannot be modified or deleted',
+    effect: 'DENY' as const,
+    action: ['UPDATE', 'DELETE'],
+    resource: 'Role',
+    condition: { "==": [{ "var": "resource.attributes.is_locked" }, true] }
+  },
+  {
+    name: 'Users can only access projects matching their clearance',
+    effect: 'ALLOW' as const,
+    action: 'READ',
+    resource: 'Project',
+    condition: { ">=": [{ "var": "subject.context_attributes.clearance" }, { "var": "resource.attributes.sensitivity" }] }
+  },
+  {
+    name: 'Internal network required for Top Secret Project',
+    effect: 'DENY' as const,
+    action: 'READ',
+    resource: 'Project',
+    condition: {
+      "and": [
+        { "==": [{ "var": "resource.slug" }, "top-secret-project"] },
+        { "!!": { "var": "env.ip" } },
+        { "!": { "in": ["192.168.", { "var": "env.ip" }] } }
+      ]
+    }
+  },
+  {
+    name: 'Resource owners can update their resources',
+    effect: 'ALLOW' as const,
+    action: 'UPDATE',
+    resource: '*',
+    condition: { "==": [{ "var": "subject.id" }, { "var": "resource.attributes.owner_id" }] }
+  },
+  {
+    name: 'MFA is required for Top Secret Project access',
+    effect: 'DENY' as const,
+    action: 'READ',
+    resource: 'Project',
+    condition: {
+      "and": [
+        { "==": [{ "var": "resource.attributes.sensitivity" }, 4] },
+        { "==": [{ "var": "env.mfa_authenticated" }, false] }
+      ]
+    }
+  },
+  {
+    name: 'Department managers can manage projects in their department',
+    effect: 'ALLOW' as const,
+    action: '*',
+    resource: 'Project',
+    condition: {
+      "and": [
+        { "==": [{ "var": "subject.context_attributes.role" }, "manager"] },
+        { "==": [{ "var": "subject.id" }, { "var": "resource.department.attributes.owner_id" }] }
+      ]
+    }
+  },
+  {
+    name: 'AI Core feature requires Enterprise plan',
+    effect: 'DENY' as const,
+    action: '*',
+    resource: 'Feature',
+    condition: {
+      "and": [
+        { "==": [{ "var": "resource.slug" }, "ai-core"] },
+        { "!=": [{ "var": "organization.attributes.plan_tier" }, "ENTERPRISE"] }
+      ]
+    }
+  },
+  {
+    name: 'Only Org Owners can manage staff',
+    effect: 'ALLOW' as const,
+    action: ['CREATE', 'DELETE', 'UPDATE'],
+    resource: 'Staff',
+    condition: { "==": [{ "var": "subject.context_attributes.is_org_owner" }, true] }
+  },
+  {
+    name: 'Production deployments require high clearance',
+    effect: 'DENY' as const,
+    action: 'UPDATE',
+    resource: 'Feature',
+    condition: {
+      "and": [
+        { "==": [{ "var": "resource.attributes.environment" }, "PRODUCTION"] },
+        { "<": [{ "var": "subject.context_attributes.clearance" }, 4] }
+      ]
+    }
+  },
+  {
+    name: "Members can view features for joined projects",
+    effect: 'ALLOW' as const,
+    action: 'READ',
+    resource: 'Feature',
+    condition: { "in": [{ "var": "resource.id" }, { "map": [{ "var": "subject.members" }, { "var": "project_id" }] }] },
+  },
+  {
+    name: "Only Org Owners can view logs and audit trails",
+    effect: 'ALLOW' as const,
+    action: 'READ',
+    resource: 'Log',
+    condition: { "==": [{ "var": "subject.context_attributes.is_org_owner" }, true] }
+  },
+  {
+    name: "User can only read their own logs",
+    effect: 'ALLOW' as const,
+    action: 'READ',
+    resource: 'Log',
+    condition: { "==": [{ "var": "resource.created_by" }, { "var": "subject.id" }] }
+  }
+];

@@ -321,54 +321,66 @@ export class FeatureRepository
 
   @LogExecutionTime()
   async paginate(pageOptions: PaginateFeaturesQuery) {
-    const { data = [], paginated } = await paginateHelper<
-      Prisma.FeatureGetPayload<{}>
-    >({
-      query: this.rbacDBService.feature,
-      pageOptions,
-      filterOptions: [
-        {
-          project_id: pageOptions.project_id,
-        },
-      ],
-    });
+    try {
+      const { data = [], paginated } = await paginateHelper<
+        Prisma.FeatureGetPayload<{}>
+      >({
+        query: this.rbacDBService.feature,
+        pageOptions,
+        filterOptions: [
+          {
+            project_id: pageOptions.project_id,
+          },
+        ],
+      });
 
-    return {
-      data: data.map((item) => FeatureMapper.toDomain(item)),
-      paginated,
-    };
+      return {
+        data: data.map((item) => FeatureMapper.toDomain(item)),
+        paginated,
+      };
+    } catch (e: any) {
+      throw new BusinessException(`400|${e?.message}`);
+    }
   }
 
   @LogExecutionTime()
   async cursorPagination(pageOptions: CursorFeaturesQuery) {
-    const { data = [], paginated } = await cursorHelper<
-      Prisma.FeatureGetPayload<{}>
-    >({
-      query: this.rbacDBService.feature,
-      pageOptions,
-      cursorField: SortableFieldEnum.CREATED_AT,
-      orderDirection: SortedEnum.DESC,
-      filterOptions: [
-        {
-          project_id: pageOptions.project_id,
-        },
-      ],
-    });
+    try {
+      const { data = [], paginated } = await cursorHelper<
+        Prisma.FeatureGetPayload<{}>
+      >({
+        query: this.rbacDBService.feature,
+        pageOptions,
+        cursorField: SortableFieldEnum.CREATED_AT,
+        orderDirection: SortedEnum.DESC,
+        filterOptions: [
+          {
+            project_id: pageOptions.project_id,
+          },
+        ],
+      });
 
-    return {
-      data: data.map((item) => FeatureMapper.toDomain(item)),
-      paginated,
-    };
+      return {
+        data: data.map((item) => FeatureMapper.toDomain(item)),
+        paginated,
+      };
+    } catch (e: any) {
+      throw new BusinessException(`400|${e?.message}`);
+    }
   }
 
   @LogExecutionTime()
   async findByProjectId(prjId: string): Promise<Feature[]> {
-    const items = await this.rbacDBService.feature.findMany({
-      where: {
-        project_id: prjId,
-      },
-    });
-    return items.map((item) => FeatureMapper.toDomain(item));
+    try {
+      const items = await this.rbacDBService.feature.findMany({
+        where: {
+          project_id: prjId,
+        },
+      });
+      return items.map((item) => FeatureMapper.toDomain(item));
+    } catch (e: any) {
+      throw new BusinessException(`400|${e?.message}`);
+    }
   }
 
   @LogExecutionTime()
@@ -376,20 +388,24 @@ export class FeatureRepository
     id: string,
     organization_id?: string,
   ): Promise<Feature | null> {
-    const item = await this.getWithCache(id, async () => {
-      return await this.rbacDBService.feature.findUnique({
-        where: organization_id
-          ? {
-            id,
-            project: {
-              organization_id,
-            },
-          }
-          : { id },
+    try {
+      const item = await this.getWithCache(id, async () => {
+        return await this.rbacDBService.feature.findUnique({
+          where: organization_id
+            ? {
+              id,
+              project: {
+                organization_id,
+              },
+            }
+            : { id },
+        });
       });
-    });
 
-    return item ? FeatureMapper.toDomain(item) : null;
+      return item ? FeatureMapper.toDomain(item) : null;
+    } catch (e: any) {
+      throw new BusinessException(`400|${e?.message}`);
+    }
   }
 
   @LogExecutionTime()
@@ -397,56 +413,72 @@ export class FeatureRepository
     slug: string,
     project_id: string,
   ): Promise<Feature | null> {
-    const referenceCachedKey = `slug:${slug}:${project_id}`;
-    const item = await this.getWithReference(
-      referenceCachedKey,
-      (feature) => feature.id,
-      async () => {
-        return await this.rbacDBService.feature.findUnique({
-          where: {
-            project_id_slug: {
-              slug,
-              project_id,
+    try {
+      const referenceCachedKey = `slug:${slug}:${project_id}`;
+      const item = await this.getWithReference(
+        referenceCachedKey,
+        (feature) => feature.id,
+        async () => {
+          return await this.rbacDBService.feature.findUnique({
+            where: {
+              project_id_slug: {
+                slug,
+                project_id,
+              },
             },
-          },
-        });
-      },
-    );
-    return item ? FeatureMapper.toDomain(item) : null;
+          });
+        },
+      );
+      return item ? FeatureMapper.toDomain(item) : null;
+    } catch (e: any) {
+      throw new BusinessException(`400|${e?.message}`);
+    }
   }
 
   @LogExecutionTime()
   async create(feature: Feature): Promise<Feature> {
-    const prismaData = FeatureMapper.toPrismaCreate(feature);
+    try {
+      const prismaData = FeatureMapper.toPrismaCreate(feature);
 
-    const item = await this.rbacDBService.feature.create({
-      data: prismaData,
-    });
+      const item = await this.rbacDBService.feature.create({
+        data: prismaData,
+      });
 
-    if (!item) {
-      throw new BusinessException(ErrorEnum.RECORD_NOT_FOUND, 'Feature');
+      if (!item) {
+        throw new BusinessException(ErrorEnum.RECORD_NOT_FOUND, 'Feature');
+      }
+
+      return FeatureMapper.toDomain(item);
+    } catch (e: any) {
+      throw new BusinessException(`400|${e?.message}`);
     }
-
-    return FeatureMapper.toDomain(item);
   }
 
   @LogExecutionTime()
   async update(id: string, feature: Feature): Promise<Feature> {
-    const prismaData = FeatureMapper.toPrismaUpdate(feature);
-    const updatedFeature = await this.rbacDBService.feature.update({
-      where: { id },
-      data: prismaData,
-    });
-    await this.invalidateCache(id);
+    try {
+      const prismaData = FeatureMapper.toPrismaUpdate(feature);
+      const updatedFeature = await this.rbacDBService.feature.update({
+        where: { id },
+        data: prismaData,
+      });
+      await this.invalidateCache(id);
 
-    return FeatureMapper.toDomain(updatedFeature);
+      return FeatureMapper.toDomain(updatedFeature);
+    } catch (e: any) {
+      throw new BusinessException(`400|${e?.message}`);
+    }
   }
 
   @LogExecutionTime()
   async delete(id: string): Promise<void> {
-    await this.rbacDBService.feature.delete({
-      where: { id },
-    });
-    await this.invalidateCache(id);
+    try {
+      await this.rbacDBService.feature.delete({
+        where: { id },
+      });
+      await this.invalidateCache(id);
+    } catch (e: any) {
+      throw new BusinessException(`400|${e?.message}`);
+    }
   }
 }

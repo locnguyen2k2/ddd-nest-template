@@ -23,6 +23,8 @@ export class AttributeMapper {
       description: props.description,
       label: props.label,
       category: props.category,
+      created_at: props.created_at,
+      updated_at: props.updated_at,
     });
   }
 

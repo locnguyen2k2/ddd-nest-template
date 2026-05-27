@@ -96,57 +96,67 @@ export class ProjectRepository
   }
 
   async create(project: ProjectEntity): Promise<ProjectEntity> {
-    const toPrisma = ProjectMapper.toPrismaCreate(project);
-    const prj = await this.rbacDBService.project.create({
-      data: {
-        ...toPrisma,
-        id: project.id.value,
-      },
-    });
-    return ProjectMapper.toDomain(prj);
+    try {
+      const toPrisma = ProjectMapper.toPrismaCreate(project);
+      const prj = await this.rbacDBService.project.create({
+        data: {
+          ...toPrisma,
+          id: project.id.value,
+        },
+      });
+      return ProjectMapper.toDomain(prj);
+    } catch (e: any) { throw new BusinessException(`400|${e?.message}`) }
   }
 
   async findById(id: string): Promise<ProjectEntity | null> {
-    const prj = await this.getWithCache(
-      id,
-      async () =>
-        await this.rbacDBService.project.findFirst({
-          where: { id },
-          include: { department: true },
-        }),
-    );
-    if (!prj) {
-      return null;
-    }
-    return ProjectMapper.toDomain(prj);
+    try {
+      const prj = await this.getWithCache(
+        id,
+        async () =>
+          await this.rbacDBService.project.findFirst({
+            where: { id },
+            include: { department: true },
+          }),
+      );
+      if (!prj) {
+        return null;
+      }
+      return ProjectMapper.toDomain(prj);
+    } catch (e: any) { throw new BusinessException(`400|${e?.message}`) }
   }
 
   async findBySlug(
     slug: string,
     organization_id: string,
   ): Promise<ProjectEntity | null> {
-    const prj = await this.rbacDBService.project.findUnique({
-      where: { slug, organization_id },
-      include: { department: true },
-    });
+    try {
+      const prj = await this.rbacDBService.project.findUnique({
+        where: { slug, organization_id },
+        include: { department: true },
+      });
 
-    if (!prj) return null;
-    return ProjectMapper.toDomain(prj);
+      if (!prj) return null;
+      return ProjectMapper.toDomain(prj);
+    } catch (e: any) { throw new BusinessException(`400|${e?.message}`) }
   }
 
   async update(id: string, project: ProjectEntity): Promise<ProjectEntity> {
-    const toPrisma = ProjectMapper.toPrismaUpdate(project);
-    const prj = await this.rbacDBService.project.update({
-      where: { id },
-      data: toPrisma,
-    });
-    await this.invalidateCache(id);
-    return ProjectMapper.toDomain(prj);
+    try {
+      const toPrisma = ProjectMapper.toPrismaUpdate(project);
+      const prj = await this.rbacDBService.project.update({
+        where: { id },
+        data: toPrisma,
+      });
+      await this.invalidateCache(id);
+      return ProjectMapper.toDomain(prj);
+    } catch (e: any) { throw new BusinessException(`400|${e?.message}`) }
   }
 
   async delete(id: string): Promise<void> {
-    await this.rbacDBService.project.delete({ where: { id } });
-    await this.invalidateCache(id);
+    try {
+      await this.rbacDBService.project.delete({ where: { id } });
+      await this.invalidateCache(id);
+    } catch (e: any) { throw new BusinessException(`400|${e?.message}`) }
   }
 
   @LogExecutionTime()
@@ -200,12 +210,14 @@ export class ProjectRepository
   }
 
   async findOneByFeatureId(featureId: string): Promise<ProjectEntity | null> {
-    const prj = await this.rbacDBService.project.findFirst({
-      where: { features: { some: { id: featureId } } },
-    });
-    if (!prj) {
-      return null;
-    }
-    return ProjectMapper.toDomain(prj);
+    try {
+      const prj = await this.rbacDBService.project.findFirst({
+        where: { features: { some: { id: featureId } } },
+      });
+      if (!prj) {
+        return null;
+      }
+      return ProjectMapper.toDomain(prj);
+    } catch (e: any) { throw new BusinessException(`400|${e?.message}`) }
   }
 }

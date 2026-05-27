@@ -38,7 +38,6 @@ import { PolicyQueryHandler } from '../../application/services/policy/query.hand
 import { PolicyEvaluationService } from '../../application/services/policy/policy-evaluation.service';
 import { API_VERS, HeaderKeys, StorageKeys } from '@/common/constant';
 import { JwtAuthGuard } from '../guards/jwt-auth.guard';
-import { TenantContextGuard } from '../guards/tenant-context.guard';
 import { ClsService } from 'nestjs-cls';
 import { MyClsStore } from '@/common/interfaces/cls-store.interface';
 import { CheckAbac } from '@/common/decorators/check-abac.decorator';
@@ -46,7 +45,7 @@ import { PolicyMapper } from '../../infrastructure/persistence/mappers/policy.ma
 import { PermissionAction } from '@/common/enum';
 import { AbacGuard } from '../guards/abac.guard';
 import { HeadersAuthGuard } from '../guards/headers-auth.guard';
-import { HeaderKey, User } from '@/common/decorators';
+import { GetHeaderKey, HeaderKey, User } from '@/common/decorators';
 import { IPayload } from '../../domain/services/auth.service';
 
 @ApiTags('policies')
@@ -58,7 +57,7 @@ export class PolicyController {
     private readonly policyQueryHandler: PolicyQueryHandler,
     private readonly policyEvaluationService: PolicyEvaluationService,
     private readonly cls: ClsService<MyClsStore>,
-  ) {}
+  ) { }
 
   @Post('organizations/:orgId/evaluate')
   @ApiOperation({ summary: 'Evaluate policy decision' })
@@ -69,7 +68,7 @@ export class PolicyController {
     type: EvaluationResponseDto,
   })
   @HttpCode(HttpStatus.OK)
-  @UseGuards(JwtAuthGuard, TenantContextGuard)
+  @UseGuards(JwtAuthGuard,)
   async evaluate(
     @Body() dto: PolicyEvaluateDto,
     @User() user: IPayload,
@@ -91,11 +90,13 @@ export class PolicyController {
     type: PaginatePoliciesResponseDto,
   })
   @HeaderKey(HeaderKeys.ORG_ID)
-  @CheckAbac(PermissionAction.READ, 'Policy')
-  @UseGuards(HeadersAuthGuard, JwtAuthGuard, TenantContextGuard, AbacGuard)
+  @CheckAbac(PermissionAction.UPDATE, 'Organization')
+  @UseGuards(JwtAuthGuard, HeadersAuthGuard, AbacGuard)
   async pagination(
     @Query() listQuery: PaginatePoliciesQuery,
+    @Param('orgId') orgId: string,
   ): Promise<PaginatePoliciesResponseDto> {
+    listQuery.organization_id = orgId;
     return await this.policyQueryHandler.handlePaginate(listQuery);
   }
 
@@ -107,10 +108,12 @@ export class PolicyController {
     type: CursorPoliciesResponseDto,
   })
   @CheckAbac(PermissionAction.READ, 'Policy')
-  @UseGuards(HeadersAuthGuard, JwtAuthGuard, TenantContextGuard, AbacGuard)
+  @UseGuards(JwtAuthGuard, HeadersAuthGuard, AbacGuard)
   async cursorPagination(
     @Query() listQuery: CursorPoliciesQuery,
+    @GetHeaderKey(HeaderKeys.ORG_ID) orgId: string,
   ): Promise<CursorPoliciesResponseDto> {
+    listQuery.organization_id = orgId;
     const result =
       await this.policyQueryHandler.handleCursorPaginate(listQuery);
     return {
@@ -127,7 +130,7 @@ export class PolicyController {
     type: CursorResourcesResponseDto,
   })
   @HeaderKey(HeaderKeys.ORG_ID)
-  @UseGuards(HeadersAuthGuard, JwtAuthGuard, TenantContextGuard)
+  @UseGuards(JwtAuthGuard, HeadersAuthGuard,)
   async getResources(): Promise<CursorResourcesResponseDto> {
     const mockResources = [
       {
@@ -169,7 +172,7 @@ export class PolicyController {
   })
   @CheckAbac(PermissionAction.CREATE, 'Policy')
   @HeaderKey(HeaderKeys.ORG_ID)
-  @UseGuards(HeadersAuthGuard, JwtAuthGuard, TenantContextGuard, AbacGuard)
+  @UseGuards(JwtAuthGuard, HeadersAuthGuard, AbacGuard)
   @HttpCode(HttpStatus.CREATED)
   async create(@Body() dto: CreatePolicyDto): Promise<PolicyResponseDto> {
     const orgId = this.cls.get(StorageKeys.ORG_ID);
@@ -189,7 +192,7 @@ export class PolicyController {
     type: PolicyResponseDto,
   })
   @CheckAbac(PermissionAction.UPDATE, 'Policy')
-  @UseGuards(HeadersAuthGuard, JwtAuthGuard, TenantContextGuard, AbacGuard)
+  @UseGuards(JwtAuthGuard, HeadersAuthGuard, AbacGuard)
   async update(
     @Param('id') id: string,
     @Body() dto: UpdatePolicyDto,
@@ -212,7 +215,7 @@ export class PolicyController {
   })
   @HeaderKey(HeaderKeys.ORG_ID)
   @CheckAbac(PermissionAction.DELETE, 'Policy')
-  @UseGuards(HeadersAuthGuard, JwtAuthGuard, TenantContextGuard, AbacGuard)
+  @UseGuards(JwtAuthGuard, HeadersAuthGuard, AbacGuard)
   @HttpCode(HttpStatus.NO_CONTENT)
   async remove(@Param('id') id: string): Promise<void> {
     const orgId = this.cls.get(StorageKeys.ORG_ID);

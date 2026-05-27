@@ -23,6 +23,7 @@ import {
 import { Prisma } from '@internal/rbac/client';
 import { LogExecutionTime } from '@/common/decorators/log-execution.decorator';
 import { capitalize } from '@/utils/string';
+import { BusinessException } from '@/common/http/business-exception';
 
 @Injectable()
 export class PrismaPolicyRepository implements IPolicyRepository {
@@ -33,134 +34,140 @@ export class PrismaPolicyRepository implements IPolicyRepository {
 
   @LogExecutionTime()
   async cursorPagination(pageOptions: CursorPoliciesQuery) {
-    const filterOptions: any[] = [];
+    try {
+      const filterOptions: any[] = [];
 
-    if (pageOptions.action || pageOptions.resource) {
-      filterOptions.push({
-        OR: [
-          {
-            action: pageOptions.action || '*',
-            resource: pageOptions.resource || '*',
-          },
-          { action: '*', resource: pageOptions.resource || '*' },
-          { action: pageOptions.action || '*', resource: '*' },
-          { action: '*', resource: '*' },
-        ],
+      if (pageOptions.action || pageOptions.resource) {
+        filterOptions.push({
+          OR: [
+            {
+              action: pageOptions.action || '*',
+              resource: pageOptions.resource || '*',
+            },
+            { action: '*', resource: pageOptions.resource || '*' },
+            { action: pageOptions.action || '*', resource: '*' },
+            { action: '*', resource: '*' },
+          ],
+        });
+      }
+
+      if (pageOptions.organization_id) {
+        filterOptions.push({
+          OR: [
+            { organization_id: pageOptions.organization_id },
+            { organization_id: null },
+          ],
+        });
+      }
+
+      const { data = [], paginated } = await cursorHelper<
+        Prisma.PolicyGetPayload<{}>
+      >({
+        query: this.prisma.policy,
+        pageOptions,
+        filterOptions,
+        cursorField: SortableFieldEnum.CREATED_AT,
+        orderDirection: SortedEnum.DESC,
       });
-    }
 
-    if (pageOptions.organization_id) {
-      filterOptions.push({
-        OR: [
-          { organization_id: pageOptions.organization_id },
-          { organization_id: null },
-        ],
-      });
-    }
-
-    const { data = [], paginated } = await cursorHelper<
-      Prisma.PolicyGetPayload<{}>
-    >({
-      query: this.prisma.policy,
-      pageOptions,
-      filterOptions,
-      cursorField: SortableFieldEnum.CREATED_AT,
-      orderDirection: SortedEnum.DESC,
-    });
-
-    return {
-      data: data.map((item) => PolicyMapper.toDomain(item)),
-      paginated,
-    };
+      return {
+        data: data.map((item) => PolicyMapper.toDomain(item)),
+        paginated,
+      };
+    } catch (e: any) { throw new BusinessException(`400|${e?.message}`); }
   }
 
   @LogExecutionTime()
   async paginate(pageOptions: PaginatePoliciesQuery) {
-    const filterOptions: any[] = [];
+    try {
+      const filterOptions: any[] = [];
 
-    if (pageOptions.action || pageOptions.resource) {
-      filterOptions.push({
-        OR: [
-          {
-            action: pageOptions.action || '*',
-            resource: pageOptions.resource || '*',
-          },
-          { action: '*', resource: pageOptions.resource || '*' },
-          { action: pageOptions.action || '*', resource: '*' },
-          { action: '*', resource: '*' },
-        ],
+      if (pageOptions.action || pageOptions.resource) {
+        filterOptions.push({
+          OR: [
+            {
+              action: pageOptions.action || '*',
+              resource: pageOptions.resource || '*',
+            },
+            { action: '*', resource: pageOptions.resource || '*' },
+            { action: pageOptions.action || '*', resource: '*' },
+            { action: '*', resource: '*' },
+          ],
+        });
+      }
+
+      if (pageOptions.organization_id) {
+        filterOptions.push({
+          OR: [
+            { organization_id: pageOptions.organization_id },
+            { organization_id: null },
+          ],
+        });
+      }
+
+      const { data = [], paginated } = await paginateHelper<
+        Prisma.PolicyGetPayload<{}>
+      >({
+        query: this.prisma.policy,
+        pageOptions,
+        filterOptions,
       });
-    }
 
-    if (pageOptions.organization_id) {
-      filterOptions.push({
-        OR: [
-          { organization_id: pageOptions.organization_id },
-          { organization_id: null },
-        ],
-      });
-    }
-
-    const { data = [], paginated } = await paginateHelper<
-      Prisma.PolicyGetPayload<{}>
-    >({
-      query: this.prisma.policy,
-      pageOptions,
-      filterOptions,
-    });
-
-    return {
-      data: data.map((item) => PolicyMapper.toDomain(item)),
-      paginated,
-    };
+      return {
+        data: data.map((item) => PolicyMapper.toDomain(item)),
+        paginated,
+      };
+    } catch (e: any) { throw new BusinessException(`400|${e?.message}`); }
   }
 
   async decide(request: IAccessRequest): Promise<boolean> {
-    const { action, resource, organization_id, subject, environment } = request;
+    try {
+      const { action, resource, organization_id, subject, environment } = request;
 
-    const resourceType = PolicyEntity.getResourceType(resource);
-    const policies = await this.findMany({
-      action,
-      resource: resourceType,
-      organization_id,
-    });
-
-    if (policies.length === 0) {
-      return false;
-    }
-
-    let organization = request.organization;
-    if (!organization && organization_id) {
-      organization = await this.prisma.organization.findUnique({
-        where: { id: organization_id },
+      const resourceType = PolicyEntity.getResourceType(resource);
+      const policies = await this.findMany({
+        action,
+        resource: resourceType,
+        organization_id,
       });
-    }
 
-    const context = PolicyEntity.buildContext(
-      subject,
-      resource,
-      action,
-      organization_id,
-      environment,
-      organization,
-    );
-    console.dir(context, { depth: null });
-
-    const denyPolicies = policies.filter((p) => p.effect === Effect.DENY);
-    for (const policy of denyPolicies) {
-      if (policy.evaluate(context, this.ruleEvaluator)) {
+      if (policies.length === 0) {
         return false;
       }
-    }
 
-    const allowPolicies = policies.filter((p) => p.effect === Effect.ALLOW);
-    for (const policy of allowPolicies) {
-      if (policy.evaluate(context, this.ruleEvaluator)) {
-        return true;
+      let organization = request.organization;
+      if (!organization && organization_id) {
+        organization = await this.prisma.organization.findUnique({
+          where: { id: organization_id },
+        });
       }
-    }
 
-    return false;
+      const context = PolicyEntity.buildContext(
+        subject,
+        resource,
+        action,
+        organization_id,
+        environment,
+        organization,
+      );
+      console.dir(context, { depth: null });
+
+      const denyPolicies = policies.filter((p) => p.effect === Effect.DENY);
+      for (const policy of denyPolicies) {
+        if (policy.evaluate(context, this.ruleEvaluator)) {
+          return false;
+        }
+      }
+
+      const allowPolicies = policies.filter((p) => p.effect === Effect.ALLOW);
+      for (const policy of allowPolicies) {
+        if (policy.evaluate(context, this.ruleEvaluator)) {
+          return true;
+        }
+      }
+
+      return false;
+    } catch (e: any) { throw new BusinessException(`400|${e?.message}`); }
   }
 
   async findMany(filter: {
@@ -168,67 +175,77 @@ export class PrismaPolicyRepository implements IPolicyRepository {
     resource?: string;
     organization_id?: string;
   }): Promise<PolicyEntity[]> {
-    const where: any = {};
+    try {
+      const where: any = {};
 
-    if (filter.action || filter.resource) {
-      where.OR = [
-        {
-          action: filter.action || '*',
-          resource: capitalize(filter.resource || '') || '*',
-        },
-        { action: '*', resource: capitalize(filter.resource || '') || '*' },
-        { action: filter.action || '*', resource: '*' },
-        { action: '*', resource: '*' },
-      ];
-    }
+      if (filter.action || filter.resource) {
+        where.OR = [
+          {
+            action: filter.action || '*',
+            resource: capitalize(filter.resource || '') || '*',
+          },
+          { action: '*', resource: capitalize(filter.resource || '') || '*' },
+          { action: filter.action || '*', resource: '*' },
+          { action: '*', resource: '*' },
+        ];
+      }
 
-    if (filter.organization_id) {
-      where.AND = {
-        OR: [
-          { organization_id: filter.organization_id },
-          { organization_id: null },
-        ],
-      };
-    }
+      if (filter.organization_id) {
+        where.AND = {
+          OR: [
+            { organization_id: filter.organization_id },
+            { organization_id: null },
+          ],
+        };
+      }
 
-    const policies = await this.prisma.policy.findMany({
-      where,
-    });
+      const policies = await this.prisma.policy.findMany({
+        where,
+      });
 
-    return policies.map((p) => PolicyMapper.toDomain(p));
+      return policies.map((p) => PolicyMapper.toDomain(p));
+    } catch (e: any) { throw new BusinessException(`400|${e?.message}`); }
   }
 
   async create(policy: PolicyEntity): Promise<PolicyEntity> {
-    const toPrisma = PolicyMapper.toPrismaCreate(policy);
-    const created = await this.prisma.policy.create({
-      data: {
-        ...toPrisma,
-        id: policy.id.value,
-      },
-    });
-    return PolicyMapper.toDomain(created);
+    try {
+      const toPrisma = PolicyMapper.toPrismaCreate(policy);
+      const created = await this.prisma.policy.create({
+        data: {
+          ...toPrisma,
+          id: policy.id.value,
+        },
+      });
+      return PolicyMapper.toDomain(created);
+    } catch (e: any) { throw new BusinessException(`400|${e?.message}`); }
   }
 
   async update(id: string, policy: PolicyEntity): Promise<PolicyEntity> {
-    const toPrisma = PolicyMapper.toPrismaUpdate(policy);
-    const updated = await this.prisma.policy.update({
-      where: { id },
-      data: toPrisma,
-    });
-    return PolicyMapper.toDomain(updated);
+    try {
+      const toPrisma = PolicyMapper.toPrismaUpdate(policy);
+      const updated = await this.prisma.policy.update({
+        where: { id },
+        data: toPrisma,
+      });
+      return PolicyMapper.toDomain(updated);
+    } catch (e: any) { throw new BusinessException(`400|${e?.message}`); }
   }
 
   async delete(id: string): Promise<void> {
-    await this.prisma.policy.delete({
-      where: { id },
-    });
+    try {
+      await this.prisma.policy.delete({
+        where: { id },
+      });
+    } catch (e: any) { throw new BusinessException(`400|${e?.message}`); }
   }
 
   async findById(id: string): Promise<PolicyEntity | null> {
-    const policy = await this.prisma.policy.findUnique({
-      where: { id },
-    });
-    if (!policy) return null;
-    return PolicyMapper.toDomain(policy);
+    try {
+      const policy = await this.prisma.policy.findUnique({
+        where: { id },
+      });
+      if (!policy) return null;
+      return PolicyMapper.toDomain(policy);
+    } catch (e: any) { throw new BusinessException(`400|${e?.message}`); }
   }
 }

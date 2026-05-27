@@ -287,115 +287,168 @@ export class StaffRepository
 
   @LogExecutionTime()
   async paginate(pageOptions: PaginateStaffsQuery) {
-    const { data = [], paginated } = await paginateHelper<
-      Prisma.StaffGetPayload<{}>
-    >({
-      query: this.rbacDBService.staff,
-      pageOptions,
-    });
+    try {
+      const { data = [], paginated } = await paginateHelper<
+        Prisma.StaffGetPayload<{}>
+      >({
+        query: this.rbacDBService.staff,
+        pageOptions,
+      });
 
-    return {
-      data: data.map((item) => StaffMapper.toDomain(item)),
-      paginated,
-    };
+      return {
+        data: data.map((item) => StaffMapper.toDomain(item)),
+        paginated,
+      };
+    } catch (e: any) {
+      throw new BusinessException(`400|${e?.message}`);
+    }
   }
 
   @LogExecutionTime()
   async cursorPagination(pageOptions: CursorStaffsQuery) {
-    const { data = [], paginated } = await cursorHelper<
-      Prisma.StaffGetPayload<{}>
-    >({
-      query: this.rbacDBService.staff,
-      pageOptions,
-      cursorField: SortableFieldEnum.CREATED_AT,
-      orderDirection: SortedEnum.DESC,
-    });
+    try {
+      const { data = [], paginated } = await cursorHelper<
+        Prisma.StaffGetPayload<{}>
+      >({
+        query: this.rbacDBService.staff,
+        pageOptions,
+        cursorField: SortableFieldEnum.CREATED_AT,
+        orderDirection: SortedEnum.DESC,
+      });
 
-    return {
-      data: data.map((item) => StaffMapper.toDomain(item)),
-      paginated,
-    };
+      return {
+        data: data.map((item) => StaffMapper.toDomain(item)),
+        paginated,
+      };
+    } catch (e: any) {
+      throw new BusinessException(`400|${e?.message}`);
+    }
   }
 
   async findOneById(id: string): Promise<Staffs | null> {
-    const item = await this.getWithCache(`staffs:${id}`, async () => {
-      return this.rbacDBService.staff.findUnique({ where: { id } });
-    });
-    if (!item) return null;
-    return StaffMapper.toDomain(item);
+    try {
+      const item = await this.getWithCache(`staffs:${id}`, async () => {
+        return this.rbacDBService.staff.findUnique({ where: { id } });
+      });
+      if (!item) return null;
+      return StaffMapper.toDomain(item);
+    } catch (e: any) {
+      console.log(e?.message);
+      throw new BusinessException(`400|${e?.message}`);
+    }
   }
   async findOneUser(userId: string, orgId: string): Promise<Staffs | null> {
-    const item = await this.getWithCache(
-      `staffs:user:${userId}:org:${orgId}`,
-      async () => {
-        return this.rbacDBService.staff.findUnique({
-          where: {
-            user_id_organization_id: {
-              user_id: userId,
-              organization_id: orgId,
+    try {
+      const item = await this.getWithCache(
+        `staffs:user:${userId}:org:${orgId}`,
+        async () => {
+          return this.rbacDBService.staff.findUnique({
+            where: {
+              user_id_organization_id: {
+                user_id: userId,
+                organization_id: orgId,
+              },
             },
-          },
-        });
-      },
-    );
-    if (!item) return null;
-    return StaffMapper.toDomain(item);
+          });
+        },
+      );
+      if (!item) return null;
+      return StaffMapper.toDomain(item);
+    } catch (e: any) {
+      console.log(e?.message);
+      throw new BusinessException(`400|${e?.message}`);
+    }
   }
   async findByUserId(userId: string): Promise<Staffs[]> {
-    const items = await this.getWithCache(`staffs:user:${userId}`, async () => {
-      return this.rbacDBService.staff.findMany({ where: { user_id: userId } });
-    });
-    if (!items) return [];
-    return items.map((item) => StaffMapper.toDomain(item));
+    try {
+      const items = await this.getWithCache(`staffs:user:${userId}`, async () => {
+        return this.rbacDBService.staff.findMany({ where: { user_id: userId } });
+      });
+      if (!items) return [];
+      return items.map((item) => StaffMapper.toDomain(item));
+    } catch (e: any) {
+      console.log(e?.message);
+      throw new BusinessException(`400|${e?.message}`);
+    }
   }
   async findByUserIdAndOrgId(
     userId: string,
     orgId: string,
   ): Promise<Staffs | null> {
-    const items = await this.getWithCache(
-      `staffs:user:${userId}:org:${orgId}`,
-      async () => {
-        return this.rbacDBService.staff.findUnique({
-          where: {
-            user_id_organization_id: {
-              user_id: userId,
-              organization_id: orgId,
+    try {
+      const items = await this.getWithCache(
+        `staffs:user:${userId}:org:${orgId}`,
+        async () => {
+          return this.rbacDBService.staff.findUnique({
+            where: {
+              user_id_organization_id: {
+                user_id: userId,
+                organization_id: orgId,
+              },
             },
-          },
-        });
-      },
-    );
-    if (!items) return null;
-    return StaffMapper.toDomain(items);
+          });
+        },
+      );
+      if (!items) return null;
+      return StaffMapper.toDomain(items);
+    } catch (e: any) {
+      console.log(e?.message);
+      throw new BusinessException(`400|${e?.message}`);
+    }
   }
   async findByOrgId(orgId: string): Promise<Staffs[]> {
-    const items = await this.getWithCache(`staffs:org:${orgId}`, async () => {
-      return this.rbacDBService.staff.findMany({
-        where: { organization_id: orgId },
+    try {
+      const items = await this.getWithCache(`staffs:org:${orgId}`, async () => {
+        return this.rbacDBService.staff.findMany({
+          where: { organization_id: orgId },
+        });
       });
-    });
-    if (!items) return [];
-    return items.map((item) => StaffMapper.toDomain(item));
+      if (!items) return [];
+      return items.map((item) => StaffMapper.toDomain(item));
+    } catch (e: any) {
+      console.log(e?.message);
+      throw new BusinessException(`400|${e?.message}`);
+    }
   }
   async create(data: any): Promise<Staffs> {
-    const item = await this.rbacDBService.staff.create({ data });
-    await this.invalidateCache(`staffs:${item.id}`);
-    return StaffMapper.toDomain(item);
+    try {
+      const item = await this.rbacDBService.staff.create({ data });
+      await this.invalidateCache(`staffs:${item.id}`);
+      return StaffMapper.toDomain(item);
+    } catch (e: any) {
+      console.log(e?.message);
+      throw new BusinessException(`400|${e?.message}`);
+    }
   }
   async update(data: any): Promise<Staffs> {
-    const item = await this.rbacDBService.staff.update({
-      where: { id: data.id },
-      data,
-    });
-    await this.invalidateCache(`staffs:${item.id}`);
-    return StaffMapper.toDomain(item);
+    try {
+      const item = await this.rbacDBService.staff.update({
+        where: { id: data.id },
+        data,
+      });
+      await this.invalidateCache(`staffs:${item.id}`);
+      return StaffMapper.toDomain(item);
+    } catch (e: any) {
+      console.log(e?.message);
+      throw new BusinessException(`400|${e?.message}`);
+    }
   }
   async delete(id: string) {
-    await this.rbacDBService.staff.delete({ where: { id } });
-    await this.invalidateCache(`staffs:${id}`);
+    try {
+      await this.rbacDBService.staff.delete({ where: { id } });
+      await this.invalidateCache(`staffs:${id}`);
+    } catch (e: any) {
+      console.log(e?.message);
+      throw new BusinessException(`400|${e?.message}`);
+    }
   }
   async deleteByUserId(userId: string) {
-    await this.rbacDBService.staff.deleteMany({ where: { user_id: userId } });
-    await this.invalidateCache(`staffs:user:${userId}`);
+    try {
+      await this.rbacDBService.staff.deleteMany({ where: { user_id: userId } });
+      await this.invalidateCache(`staffs:user:${userId}`);
+    } catch (e: any) {
+      console.log(e?.message);
+      throw new BusinessException(`400|${e?.message}`);
+    }
   }
 }

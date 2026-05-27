@@ -45,4 +45,9 @@ export class UserQueryHandler {
 
     return UserMapper.toResponseDto(user, orgsToPrisma);
   }
+
+  @LogExecutionTime()
+  async findByIdWithOrganizations(id: string) {
+    return this.userRepository.findByIdWithOrganizations(id);
+  }
 }
