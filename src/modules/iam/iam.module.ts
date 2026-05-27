@@ -39,7 +39,6 @@ import { OrgSerevice } from './domain/services/organization.service';
 import { POLICY_REPO } from './domain/repositories/policy.repository';
 import { PrismaPolicyRepository } from './infrastructure/persistence/repositories/policy.repository';
 import { AbacGuard } from './presentation/guards/abac.guard';
-import { TenantContextGuard } from './presentation/guards/tenant-context.guard';
 import {
   AUTH_WRAPPER_CMD_HANDLER,
   AuthWrapperCmdHandler,
@@ -91,12 +90,14 @@ import { StaffQueryHandler } from './application/services/staffs/query.handler';
 import { StaffController } from './presentation/controllers/staff.controller';
 import { MailerModule } from '@nestjs-modules/mailer';
 import { LogsModule } from '../system/logs/logs.module';
+import { HeadersAuthGuard } from './presentation/guards/headers-auth.guard';
 
 const abacProviders = [
   PrismaPolicyRepository,
   PolicyQueryService,
   PolicyEvaluationService,
   AbacGuard,
+  HeadersAuthGuard,
   PolicyCommandHandler,
   PolicyQueryHandler,
   {
@@ -117,7 +118,6 @@ const organizationProviders = [
   OrganizationRepository,
   OrganizationEventPublisher,
   OrgSerevice,
-  TenantContextGuard,
   {
     provide: ORGANIZATION_REPO,
     useClass: OrganizationRepository,
@@ -214,12 +214,20 @@ const roleProviders = [
   RoleRepository,
   { provide: ROLE_REPO, useClass: RoleRepository },
 ];
+const policyProviders = [
+  PolicyCommandHandler,
+  PolicyQueryHandler,
+  PrismaPolicyRepository,
+  PolicyEvaluationService,
+  { provide: POLICY_REPO, useClass: PrismaPolicyRepository },
+]
 
-const featureExports = [FeatureRepository];
+const featureExports = [FeatureRepository, FeatureQueryHandler, FeatureCommandHandler];
 const organizationExports = [
   OrganizationRepository,
   OrgSerevice,
-  TenantContextGuard,
+  OrganizationCommandHandler,
+  OrganizationQueryHandler,
 ];
 const projectExports = [
   ProjectRepository,
@@ -237,6 +245,7 @@ const abacExports = [
   PrismaPolicyRepository,
   PolicyEvaluationService,
   AbacGuard,
+  HeadersAuthGuard,
 ];
 const staffExports = [StaffRepository];
 const departmentExports = [
@@ -270,6 +279,7 @@ const environmentExports = [
   EnvironmentQueryHandler,
 ];
 const roleExports = [RoleRepository, RoleCommandHandler, RoleQueryHandler];
+const policyExports = [PrismaPolicyRepository, PolicyCommandHandler, PolicyQueryHandler, PolicyQueryService];
 
 @Module({
   imports: [MailerModule, LogsModule],
@@ -303,6 +313,7 @@ const roleExports = [RoleRepository, RoleCommandHandler, RoleQueryHandler];
     ...subscriptionProviders,
     ...environmentProviders,
     ...roleProviders,
+    ...policyProviders,
   ],
   exports: [
     ...featureExports,
@@ -319,6 +330,7 @@ const roleExports = [RoleRepository, RoleCommandHandler, RoleQueryHandler];
     ...subscriptionExports,
     ...environmentExports,
     ...roleExports,
+    ...policyExports,
   ],
 })
 export class IamModule { }

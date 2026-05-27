@@ -25,6 +25,8 @@ export class OrganizationMapper {
         description: prismaOrganization.description || undefined,
         created_at: prismaOrganization.created_at,
         updated_at: prismaOrganization.updated_at,
+        created_by: prismaOrganization.created_by || undefined,
+        updated_by: prismaOrganization.updated_by || undefined,
         attributes: Attributes.create(prismaOrganization.attributes),
       });
     } catch (e: any) {

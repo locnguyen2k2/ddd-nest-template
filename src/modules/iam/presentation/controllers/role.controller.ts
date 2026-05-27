@@ -33,9 +33,8 @@ import {
 import { RoleMapper } from '@/modules/iam/infrastructure/persistence/mappers/role.mapper';
 import { API_VERS, HeaderKeys, StorageKeys } from '@/common/constant';
 import { JwtAuthGuard } from '../guards/jwt-auth.guard';
-import { GetHeaderKey, HeaderKey, Permissions } from '@/common/decorators';
+import { GetHeaderKey, HeaderKey } from '@/common/decorators';
 import { PermissionAction } from '@/common/enum';
-import { TenantContextGuard } from '../guards/tenant-context.guard';
 import { AbacGuard } from '../guards/abac.guard';
 import { ClsService } from 'nestjs-cls';
 import { MyClsStore } from '@/common/interfaces/cls-store.interface';
@@ -50,13 +49,13 @@ const name = 'roles';
 
 @ApiTags(name)
 @Controller(API_VERS.V1 + `/${name}`)
-@UseGuards(JwtAuthGuard, TenantContextGuard)
+@UseGuards(JwtAuthGuard)
 export class RoleController {
   constructor(
     private readonly commandHandler: RoleCommandHandler,
     private readonly queryHandler: RoleQueryHandler,
     private readonly cls: ClsService<MyClsStore>,
-  ) {}
+  ) { }
 
   @Post()
   @ApiOperation({ summary: 'Create a new role' })
@@ -69,7 +68,7 @@ export class RoleController {
   @ApiResponse({ status: 409, description: 'Role with slug already exists' })
   @HeaderKey(HeaderKeys.ORG_ID)
   @CheckAbac(PermissionAction.CREATE, 'Role')
-  @UseGuards(JwtAuthGuard, HeadersAuthGuard, TenantContextGuard, AbacGuard)
+  @UseGuards(JwtAuthGuard, HeadersAuthGuard, AbacGuard)
   async create(@Body() createRoleDto: CreateRoleDto): Promise<RoleResponseDto> {
     const orgId = this.cls.get(StorageKeys.ORG_ID);
     const command: CreateRoleArgs = {
@@ -91,7 +90,7 @@ export class RoleController {
   @ApiResponse({ status: 404, description: 'Role not found' })
   @HeaderKey(HeaderKeys.ORG_ID)
   @CheckAbac(PermissionAction.READ, 'Role')
-  @UseGuards(JwtAuthGuard, HeadersAuthGuard, TenantContextGuard, AbacGuard)
+  @UseGuards(JwtAuthGuard, HeadersAuthGuard, AbacGuard)
   async getById(@Param('id') id: string): Promise<RoleResponseDto> {
     const orgId = this.cls.get(StorageKeys.ORG_ID);
     const query: GetRoleByIdQuery = { id, organization_id: orgId };
@@ -115,7 +114,7 @@ export class RoleController {
   @ApiResponse({ status: 404, description: 'Role not found' })
   @HeaderKey(HeaderKeys.ORG_ID)
   @CheckAbac(PermissionAction.READ, 'Role')
-  @UseGuards(JwtAuthGuard, HeadersAuthGuard, TenantContextGuard, AbacGuard)
+  @UseGuards(JwtAuthGuard, HeadersAuthGuard, AbacGuard)
   async getBySlug(@Param('slug') slug: string): Promise<RoleResponseDto> {
     const orgId = this.cls.get(StorageKeys.ORG_ID);
     const query: GetRoleBySlugQuery = { slug, organization_id: orgId };
@@ -185,7 +184,7 @@ export class RoleController {
   @ApiResponse({ status: 409, description: 'Role with slug already exists' })
   @HeaderKey(HeaderKeys.ORG_ID)
   @CheckAbac(PermissionAction.UPDATE, 'Role')
-  @UseGuards(JwtAuthGuard, HeadersAuthGuard, TenantContextGuard, AbacGuard)
+  @UseGuards(JwtAuthGuard, HeadersAuthGuard, AbacGuard)
   async update(
     @Param('id') id: string,
     @Body() updateRoleDto: UpdateRoleDto,
@@ -208,7 +207,7 @@ export class RoleController {
   @HttpCode(HttpStatus.NO_CONTENT)
   @HeaderKey(HeaderKeys.ORG_ID)
   @CheckAbac(PermissionAction.DELETE, 'Role')
-  @UseGuards(JwtAuthGuard, HeadersAuthGuard, TenantContextGuard, AbacGuard)
+  @UseGuards(JwtAuthGuard, HeadersAuthGuard, AbacGuard)
   async delete(@Param('id') id: string): Promise<void> {
     const orgId = this.cls.get(StorageKeys.ORG_ID);
     const command: DeleteRoleArgs = {

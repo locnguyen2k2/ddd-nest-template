@@ -1,7 +1,7 @@
-import { Controller, Get, Param, Query, HttpStatus, HttpCode } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import { Controller, Get, Param, Query, HttpStatus, HttpCode, Headers, UseGuards } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiResponse, ApiHeaders } from '@nestjs/swagger';
 import { LogQueryHandler } from '../../application/services/log/query.handler';
-import { API_VERS } from '@/common/constant';
+import { API_VERS, HeaderKeys } from '@/common/constant';
 import {
   PaginateLogsQuery,
   CursorLogsQuery,
@@ -12,8 +12,15 @@ import {
   CursorLogsResponseDto,
 } from './dtos/res/logs-res.dto';
 import { LogMapper } from '../../infrastructure/persistence/mappers/log.mapper';
+import { HeadersAuthGuard } from '@/modules/iam/presentation/guards/headers-auth.guard';
+import { GetHeaderKey, HeaderKey, } from '@/common/decorators';
+import { JwtAuthGuard } from '@/modules/iam/presentation/guards/jwt-auth.guard';
+import { AbacGuard } from '@/modules/iam/presentation/guards/abac.guard';
+import { CheckAbac } from '@/common/decorators/check-abac.decorator';
+import { PermissionAction } from '@/common/enum';
 
-@ApiTags('system/logs')
+const name = 'Logs';
+@ApiTags(`system/${name.toLowerCase()}`)
 @Controller(API_VERS.V1 + '/system/logs')
 export class LogsController {
   constructor(private readonly logQueryHandler: LogQueryHandler) { }
@@ -25,8 +32,19 @@ export class LogsController {
     description: 'Logs retrieved successfully',
     type: PaginateLogsResponseDto,
   })
+  @ApiHeaders([
+    {
+      name: 'organization-id',
+      description: 'Organization ID for scoping the logs',
+      required: false,
+    }
+  ])
+  @HeaderKey(HeaderKeys.ORG_ID)
+  @CheckAbac(PermissionAction.UPDATE, 'Organization')
+  @UseGuards(JwtAuthGuard, HeadersAuthGuard, AbacGuard)
   @HttpCode(HttpStatus.OK)
-  async pagination(@Query() query: PaginateLogsQuery): Promise<PaginateLogsResponseDto> {
+  async pagination(@Query() query: PaginateLogsQuery, @GetHeaderKey(HeaderKeys.ORG_ID) orgId: string): Promise<PaginateLogsResponseDto> {
+    query.org_id = orgId;
     const result = await this.logQueryHandler.handlePaginate(query);
     return {
       data: result.data.map((log) => LogMapper.toResponseDto(log)),
@@ -41,8 +59,19 @@ export class LogsController {
     description: 'Logs retrieved successfully',
     type: CursorLogsResponseDto,
   })
+  @ApiHeaders([
+    {
+      name: 'organization-id',
+      description: 'Organization ID for scoping the logs',
+      required: false,
+    }
+  ])
+  @HeaderKey(HeaderKeys.ORG_ID)
+  @CheckAbac(PermissionAction.UPDATE, 'Organization')
+  @UseGuards(JwtAuthGuard, HeadersAuthGuard, AbacGuard)
   @HttpCode(HttpStatus.OK)
-  async cursorPagination(@Query() query: CursorLogsQuery): Promise<CursorLogsResponseDto> {
+  async cursorPagination(@Query() query: CursorLogsQuery, @GetHeaderKey(HeaderKeys.ORG_ID) orgId: string): Promise<CursorLogsResponseDto> {
+    query.org_id = orgId;
     const result = await this.logQueryHandler.handleCursorPaginate(query);
     return {
       data: result.data.map((log) => LogMapper.toResponseDto(log)),

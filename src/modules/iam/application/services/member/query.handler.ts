@@ -15,7 +15,7 @@ export class MemberQueryHandler {
   constructor(
     @Inject(MEMBER_REPO)
     private readonly memberRepository: IMemberRepository,
-  ) {}
+  ) { }
 
   async handleGetMemberById(query: GetMemberByIdQuery): Promise<Member | null> {
     return await this.memberRepository.findById(query.id);
@@ -27,7 +27,7 @@ export class MemberQueryHandler {
     return await this.memberRepository.findByProjectId(query.project_id);
   }
 
-  async handleGetMemberByStaffId(
+  async handleGetByStaffId(
     query: GetMemberByStaffIdQuery,
   ): Promise<Member[]> {
     return await this.memberRepository.findByStaffId(query.staff_id);

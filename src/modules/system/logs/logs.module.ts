@@ -1,12 +1,14 @@
-import { Module } from '@nestjs/common';
+import { forwardRef, Module } from '@nestjs/common';
 import { LogsController } from './presentation/controllers/logs.controller';
 import { LogCmdHandler } from './application/services/log/command.handler';
 import { LogQueryHandler } from './application/services/log/query.handler';
 import { PrismaLogRepository } from './infrastructure/persistence/repositories/log.repository';
 import { LOG_REPO } from './domain/repositories/log.repository';
 import { PersistentLoggingInterceptor } from './presentation/interceptors/persistent-logging.interceptor';
+import { IamModule } from '@/modules/iam/iam.module';
 
 @Module({
+  imports: [forwardRef(() => IamModule)],
   controllers: [LogsController],
   providers: [
     LogCmdHandler,
@@ -20,4 +22,4 @@ import { PersistentLoggingInterceptor } from './presentation/interceptors/persis
   ],
   exports: [LogCmdHandler, LogQueryHandler, PersistentLoggingInterceptor],
 })
-export class LogsModule {}
+export class LogsModule { }

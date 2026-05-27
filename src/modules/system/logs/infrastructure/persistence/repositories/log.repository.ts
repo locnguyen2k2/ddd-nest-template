@@ -49,6 +49,15 @@ export class PrismaLogRepository implements ILogRepository {
   async paginate(pageOptions: PaginateLogsQuery) {
     const { data = [], paginated } = await paginateHelper<any>({
       query: this.mongodb.logs,
+      filterOptions: [
+        {
+          attributes: {
+            equals: {
+              organization_id: pageOptions.org_id,
+            },
+          },
+        }
+      ],
       pageOptions,
     });
 
@@ -62,6 +71,15 @@ export class PrismaLogRepository implements ILogRepository {
     const { data = [], paginated } = await cursorHelper<any>({
       query: this.mongodb.logs,
       pageOptions,
+      filterOptions: [
+        {
+          attributes: {
+            equals: {
+              organization_id: pageOptions.org_id,
+            },
+          },
+        }
+      ],
       cursorField: SortableFieldEnum.CREATED_AT,
       orderDirection: SortedEnum.DESC,
     });

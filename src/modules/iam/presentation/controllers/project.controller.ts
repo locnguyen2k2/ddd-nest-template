@@ -40,7 +40,6 @@ import {
 import { ProjectMapper } from '../../infrastructure/persistence/mappers/project.mapper';
 import { PermissionAction } from '@/common/enum';
 import { JwtAuthGuard } from '../guards/jwt-auth.guard';
-import { TenantContextGuard } from '../guards/tenant-context.guard';
 import { AbacGuard } from '../guards/abac.guard';
 import { CheckAbac } from '../../../../common/decorators/check-abac.decorator';
 import { GetHeaderKey, HeaderKey, User } from '@/common/decorators';
@@ -63,7 +62,7 @@ export class ProjectController {
     private readonly projectCmdHandler: ProjectCmdHandler,
     private readonly prjectQueryHandler: ProjectQueryHandler,
     private readonly cls: ClsService<MyClsStore>,
-  ) {}
+  ) { }
 
   @Get('percent-growth')
   @ApiOperation({ summary: 'Get project percent growth' })
@@ -102,7 +101,7 @@ export class ProjectController {
   })
   @HeaderKey(HeaderKeys.ORG_ID)
   @CheckAbac(PermissionAction.CREATE, 'project')
-  @UseGuards(JwtAuthGuard, HeadersAuthGuard, TenantContextGuard, AbacGuard)
+  @UseGuards(JwtAuthGuard, HeadersAuthGuard, AbacGuard)
   async create(
     @Body() createProjectDto: CreateProjectDto,
     @User() user: IPayload,
@@ -132,7 +131,7 @@ export class ProjectController {
   })
   @HeaderKey(HeaderKeys.ORG_ID)
   @CheckAbac(PermissionAction.READ, 'project')
-  @UseGuards(JwtAuthGuard, HeadersAuthGuard, TenantContextGuard, AbacGuard)
+  @UseGuards(JwtAuthGuard, HeadersAuthGuard, AbacGuard)
   async getById(@Param('id') id: string): Promise<ProjectResponseDto> {
     const orgId = this.cls.get(StorageKeys.ORG_ID);
     const query: GetProjectByIdQuery = { id, organization_id: orgId };
@@ -165,7 +164,7 @@ export class ProjectController {
   })
   @HeaderKey(HeaderKeys.ORG_ID)
   @CheckAbac(PermissionAction.READ, 'project')
-  @UseGuards(JwtAuthGuard, HeadersAuthGuard, TenantContextGuard, AbacGuard)
+  @UseGuards(JwtAuthGuard, HeadersAuthGuard, AbacGuard)
   async getBySlug(@Param('slug') slug: string): Promise<ProjectResponseDto> {
     const orgId = this.cls.get(StorageKeys.ORG_ID);
     const query: GetProjectBySlugQuery = { slug, organization_id: orgId };
@@ -192,11 +191,11 @@ export class ProjectController {
   })
   @HeaderKey(HeaderKeys.ORG_ID)
   @CheckAbac(PermissionAction.READ, 'project')
-  @UseGuards(JwtAuthGuard, HeadersAuthGuard, TenantContextGuard, AbacGuard)
+  @UseGuards(JwtAuthGuard, HeadersAuthGuard, AbacGuard)
   async paginate(
     @Query() listQuery: PaginateProjectsQuery,
+    @GetHeaderKey(HeaderKeys.ORG_ID) orgId: string,
   ): Promise<PaginateProjectsResponseDto> {
-    const orgId = this.cls.get(StorageKeys.ORG_ID);
     const query: PaginateProjectsQuery = {
       ...listQuery,
       organization_id: orgId,
@@ -219,7 +218,7 @@ export class ProjectController {
   })
   @HeaderKey(HeaderKeys.ORG_ID)
   // @CheckAbac(PermissionAction.READ, 'project')
-  @UseGuards(JwtAuthGuard, HeadersAuthGuard, TenantContextGuard)
+  @UseGuards(JwtAuthGuard, HeadersAuthGuard,)
   async cursorPagination(
     @Query() listQuery: CursorProjectsQuery,
   ): Promise<CursorProjectsResponseDto> {
@@ -256,7 +255,7 @@ export class ProjectController {
   @ApiHeader({ name: HeaderKeys.PROJECT_ID, required: true })
   @HeaderKey(HeaderKeys.PROJECT_ID)
   @CheckAbac(PermissionAction.UPDATE, 'project')
-  @UseGuards(JwtAuthGuard, HeadersAuthGuard, TenantContextGuard, AbacGuard)
+  @UseGuards(JwtAuthGuard, HeadersAuthGuard, AbacGuard)
   async update(
     @Param('id') id: string,
     @Body() updateProjectDto: UpdateProjectDto,
@@ -283,7 +282,7 @@ export class ProjectController {
   })
   @HeaderKey(HeaderKeys.ORG_ID)
   @CheckAbac(PermissionAction.DELETE, 'project')
-  @UseGuards(JwtAuthGuard, HeadersAuthGuard, TenantContextGuard, AbacGuard)
+  @UseGuards(JwtAuthGuard, HeadersAuthGuard, AbacGuard)
   async delete(@Param('id') id: string): Promise<void> {
     const orgId = this.cls.get(StorageKeys.ORG_ID);
     const command: DeleteProjectArgs = {

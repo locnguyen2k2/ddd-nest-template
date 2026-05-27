@@ -19,7 +19,7 @@ export class OrganizationQueryHandler {
   constructor(
     @Inject(ORGANIZATION_REPO)
     private readonly organizationRepository: IOrganizationRepository,
-  ) {}
+  ) { }
 
   private readonly percentGrowthCalc = {
     [Period.MONTH]: async (user_id: string) =>
@@ -28,6 +28,11 @@ export class OrganizationQueryHandler {
 
   async percentGrowth(user_id: string, period?: string): Promise<number> {
     return await this.percentGrowthCalc[period || Period.MONTH](user_id);
+  }
+
+  @LogExecutionTime()
+  async organizationHasUser(orgId: string, userId: string): Promise<boolean> {
+    return await this.organizationRepository.organizationHasUser(orgId, userId);
   }
 
   @LogExecutionTime()
@@ -86,7 +91,7 @@ export class OrganizationQueryHandler {
     return null;
   }
 
-  async handleGetOrganizationById(
+  async handleGetById(
     query: GetOrganizationByIdQuery,
   ): Promise<Organization | null> {
     return await this.organizationRepository.findById(query.id);

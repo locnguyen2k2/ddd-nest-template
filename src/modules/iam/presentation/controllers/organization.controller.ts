@@ -50,7 +50,6 @@ import { User, HeaderKey } from '@/common/decorators';
 import { HeadersAuthGuard } from '../guards/headers-auth.guard';
 import { CheckAbac } from '../../../../common/decorators/check-abac.decorator';
 import { AbacGuard } from '../guards/abac.guard';
-import { TenantContextGuard } from '../guards/tenant-context.guard';
 import { PermissionAction } from '@/common/enum';
 import { StatsPercentInfo } from '@/common/interfaces/stats.interface';
 
@@ -62,7 +61,7 @@ export class OrganizationController {
   constructor(
     private readonly commandHandler: OrganizationCommandHandler,
     private readonly queryHandler: OrganizationQueryHandler,
-  ) {}
+  ) { }
 
   @Get('percent-growth')
   @ApiBearerAuth()
@@ -238,11 +237,11 @@ export class OrganizationController {
   @ApiHeader({ name: HeaderKeys.ORG_ID, required: true })
   @HeaderKey(HeaderKeys.ORG_ID)
   @CheckAbac('READ', 'Organization')
-  @UseGuards(JwtAuthGuard, HeadersAuthGuard, TenantContextGuard, AbacGuard)
+  @UseGuards(JwtAuthGuard, HeadersAuthGuard, AbacGuard)
   async getById(@Param('id') id: string): Promise<OrgBaseResDto> {
     const query: GetOrganizationByIdQuery = { id };
     const organization =
-      await this.queryHandler.handleGetOrganizationById(query);
+      await this.queryHandler.handleGetById(query);
 
     if (!organization) {
       throw new Error('Organization not found');
@@ -263,7 +262,7 @@ export class OrganizationController {
   @ApiHeader({ name: HeaderKeys.ORG_ID, required: true })
   @HeaderKey(HeaderKeys.ORG_ID)
   @CheckAbac('READ', 'Organization')
-  @UseGuards(JwtAuthGuard, HeadersAuthGuard, TenantContextGuard, AbacGuard)
+  @UseGuards(JwtAuthGuard, HeadersAuthGuard, AbacGuard)
   async getBySlug(@Param('slug') slug: string): Promise<OrgBaseResDto> {
     const query: GetOrganizationBySlugQuery = { slug };
     const organization =
@@ -293,7 +292,7 @@ export class OrganizationController {
   @ApiHeader({ name: HeaderKeys.ORG_ID, required: true })
   @HeaderKey(HeaderKeys.ORG_ID)
   @CheckAbac('UPDATE', 'Organization')
-  @UseGuards(JwtAuthGuard, HeadersAuthGuard, TenantContextGuard, AbacGuard)
+  @UseGuards(JwtAuthGuard, HeadersAuthGuard, AbacGuard)
   async update(
     @Param('id') id: string,
     @Body() updateOrganizationDto: UpdateOrganizationDto,
@@ -319,7 +318,7 @@ export class OrganizationController {
   @ApiHeader({ name: HeaderKeys.ORG_ID, required: true })
   @HeaderKey(HeaderKeys.ORG_ID)
   @CheckAbac('DELETE', 'Organization')
-  @UseGuards(JwtAuthGuard, HeadersAuthGuard, TenantContextGuard, AbacGuard)
+  @UseGuards(JwtAuthGuard, HeadersAuthGuard, AbacGuard)
   async delete(@Param('id') id: string): Promise<void> {
     const command: DeleteOrganizationArgs = { id };
     await this.commandHandler.handleDeleteOrganization(command);
@@ -334,7 +333,7 @@ export class OrganizationController {
     status: 200,
     description: 'User attributes updated successfully',
   })
-  @UseGuards(JwtAuthGuard, TenantContextGuard, AbacGuard)
+  @UseGuards(JwtAuthGuard, AbacGuard)
   async updateUserAttributes(
     @Param('orgId') orgId: string,
     @Param('userId') userId: string,
