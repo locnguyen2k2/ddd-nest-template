@@ -8,6 +8,7 @@ import {
   IPaginate,
   ICursor,
 } from '@/shared/domain/repositories/base.repository';
+import { StatsGrowInfo } from '@/common/interfaces/stats.interface';
 
 export const ORGANIZATION_REPO = 'ORGANIZATION_REPO';
 
@@ -47,7 +48,11 @@ export interface IOrganizationRepository
   ): Promise<CursorPageDto<Organization>>;
   findStaffs(userId: string): Promise<Organization[]>;
 
-  percentByMonth(user_id: string): Promise<number>;
+  growthByMonth(user_id: string): Promise<{ date: Date; count: number }[]>;
+  growthByYear(organization_id: string): Promise<{ date: Date; count: number }[]>;
+  growthByWeek(organization_id: string): Promise<{ date: Date; count: number }[]>;
+  growthByDay(organization_id: string): Promise<{ date: Date; count: number }[]>;
+
   countBeforeByMonth(user_id: string): Promise<number>;
   countByMonth(user_id: string): Promise<number>;
 }

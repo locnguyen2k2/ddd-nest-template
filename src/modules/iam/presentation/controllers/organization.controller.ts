@@ -51,7 +51,7 @@ import { HeadersAuthGuard } from '../guards/headers-auth.guard';
 import { CheckAbac } from '../../../../common/decorators/check-abac.decorator';
 import { AbacGuard } from '../guards/abac.guard';
 import { PermissionAction } from '@/common/enum';
-import { StatsPercentInfo } from '@/common/interfaces/stats.interface';
+import { StatsGrowInfo, StatsPercentInfo } from '@/common/interfaces/stats.interface';
 
 const name = 'organizations';
 
@@ -62,6 +62,17 @@ export class OrganizationController {
     private readonly commandHandler: OrganizationCommandHandler,
     private readonly queryHandler: OrganizationQueryHandler,
   ) { }
+
+  @Get('growth')
+  @ApiOperation({ summary: 'Get orgs growth stats' })
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  async growth(
+    @User() { sub: userId }: IPayload,
+    @Query('period') period?: string,
+  ): Promise<StatsGrowInfo> {
+    return await this.queryHandler.growth(userId, period);
+  }
 
   @Get('percent-growth')
   @ApiBearerAuth()
@@ -77,7 +88,7 @@ export class OrganizationController {
     @Query('period') period: string,
     @User() user: IPayload,
   ): Promise<StatsPercentInfo> {
-    return await this.queryHandler.handlePercentByMonth(user.sub, period);
+    return await this.queryHandler.percentGrowth(user.sub, period);
   }
 
   @Get()
@@ -218,10 +229,11 @@ export class OrganizationController {
   @UseGuards(JwtAuthGuard, AbacGuard)
   async create(
     @Body() createOrganizationDto: CreateOrganizationDto,
+    @User() user: IPayload,
   ): Promise<OrgBaseResDto> {
     const command: CreateOrganizationArgs = createOrganizationDto;
     const organization =
-      await this.commandHandler.handleCreateOrganization(command);
+      await this.commandHandler.handleCreateOrganization(user, command);
     return OrganizationMapper.toResponseDto(organization);
   }
 

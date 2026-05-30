@@ -41,7 +41,41 @@ export class FeatureQueryHandler {
     organization_id: string,
     period?: string,
   ): Promise<StatsGrowInfo> {
-    return await this.statsGrowth[period || Period.MONTH](organization_id);
+    const data = await this.statsGrowth[period || Period.MONTH](organization_id);
+    if (data.length === 0) {
+      return {
+        data: {
+          labels: [],
+          values: [],
+        },
+        title: 'Feature Growth',
+        from: new Date().toISOString(),
+        to: new Date().toISOString(),
+        max: { label: '', value: 0 },
+        min: { label: '', value: 0 },
+      };
+    }
+    let max = { label: '', value: 0 };
+    let min = { label: '', value: 0 };
+    data.forEach((item) => {
+      if (item.count > max.value) {
+        max = { label: new Date(item.date).toISOString(), value: item.count };
+      }
+      if (item.count < min.value) {
+        min = { label: new Date(item.date).toISOString(), value: item.count };
+      }
+    });
+    return {
+      data: {
+        labels: data.map((item) => new Date(item.date).toISOString()),
+        values: data.map((item) => item.count),
+      },
+      title: 'Feature Growth',
+      from: new Date(data[0].date).toISOString(),
+      to: new Date(data[data.length - 1].date).toISOString(),
+      max,
+      min,
+    };
   }
 
   async percentGrowth(

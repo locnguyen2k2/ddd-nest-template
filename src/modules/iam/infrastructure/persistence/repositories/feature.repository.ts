@@ -97,18 +97,9 @@ export class FeatureRepository
     }
   }
 
-  async growthByMonth(organization_id: string): Promise<StatsGrowInfo> {
+  async growthByMonth(organization_id: string): Promise<{ date: Date; count: number }[]> {
     try {
-      const result: StatsGrowInfo = {
-        data: {
-          labels: [],
-          values: [],
-        },
-        title: '',
-        from: '',
-        to: '',
-      };
-      const data = await this.rbacDBService.$queryRaw<
+      return await this.rbacDBService.$queryRaw<
         { date: Date; count: number }[]
       >`
                 WITH month_info AS ( 
@@ -135,18 +126,6 @@ export class FeatureRepository
                 GROUP BY DATE(u.created_at), "organization_id"
                 ORDER BY DATE(u.created_at);
             `;
-      if (data.length === 0) {
-        return result;
-      }
-      return {
-        data: {
-          labels: data.map((item) => item.date.toISOString()),
-          values: data.map((item) => item.count),
-        },
-        title: '',
-        from: data[0].date.toISOString(),
-        to: data[data.length - 1].date.toISOString(),
-      };
     } catch (e: any) {
       throw new BusinessException(
         ErrorEnum.REQUEST_FAILED_TO_EXECUTE,
@@ -155,18 +134,9 @@ export class FeatureRepository
     }
   }
 
-  async growthByYear(organization_id: string): Promise<StatsGrowInfo> {
+  async growthByYear(organization_id: string): Promise<{ date: Date; count: number }[]> {
     try {
-      const result: StatsGrowInfo = {
-        data: {
-          labels: [],
-          values: [],
-        },
-        title: '',
-        from: '',
-        to: '',
-      };
-      const data = await this.rbacDBService.$queryRaw<
+      return await this.rbacDBService.$queryRaw<
         { date: Date; count: number }[]
       >`
             SELECT
@@ -180,30 +150,6 @@ export class FeatureRepository
             GROUP BY DATE_TRUNC('month', "Feature"."created_at"), "organization_id"
             ORDER BY DATE_TRUNC('month', "Feature"."created_at");
             `;
-      if (data.length === 0) {
-        return result;
-      }
-      let max = { label: '', value: 0 };
-      let min = { label: '', value: 0 };
-      data.forEach((item) => {
-        if (item.count > max.value) {
-          max = { label: new Date(item.date).toISOString(), value: item.count };
-        }
-        if (item.count < min.value) {
-          min = { label: new Date(item.date).toISOString(), value: item.count };
-        }
-      });
-      return {
-        data: {
-          labels: data.map((item) => new Date(item.date).toISOString()),
-          values: data.map((item) => item.count),
-        },
-        title: 'Year Growth',
-        from: new Date(data[0].date).toISOString(),
-        to: new Date(data[data.length - 1].date).toISOString(),
-        max,
-        min,
-      };
     } catch (e: any) {
       throw new BusinessException(
         ErrorEnum.REQUEST_FAILED_TO_EXECUTE,
@@ -212,18 +158,9 @@ export class FeatureRepository
     }
   }
 
-  async growthByWeek(organization_id: string): Promise<StatsGrowInfo> {
+  async growthByWeek(organization_id: string): Promise<{ date: Date; count: number }[]> {
     try {
-      const result: StatsGrowInfo = {
-        data: {
-          labels: [],
-          values: [],
-        },
-        title: 'Week Growth',
-        from: '',
-        to: '',
-      };
-      const data = await this.rbacDBService.$queryRaw<
+      return await this.rbacDBService.$queryRaw<
         { date: Date; count: number }[]
       >`
             SELECT
@@ -237,20 +174,6 @@ export class FeatureRepository
             GROUP BY DATE("Feature"."created_at"), "organization_id"
             ORDER BY DATE("Feature"."created_at");
             `;
-      if (data.length === 0) {
-        return result;
-      }
-      return {
-        data: {
-          labels: data.map((item) => item.date.toISOString()),
-          values: data.map((item) => item.count),
-        },
-        title: 'Week Growth',
-        from: data[0].date.toISOString(),
-        to: data[data.length - 1].date.toISOString(),
-        max: { label: '', value: 0 },
-        min: { label: '', value: 0 },
-      };
     } catch (e: any) {
       throw new BusinessException(
         ErrorEnum.REQUEST_FAILED_TO_EXECUTE,
@@ -259,20 +182,9 @@ export class FeatureRepository
     }
   }
 
-  async growthByDay(organization_id: string): Promise<StatsGrowInfo> {
+  async growthByDay(organization_id: string): Promise<{ date: Date; count: number }[]> {
     try {
-      const result: StatsGrowInfo = {
-        data: {
-          labels: [],
-          values: [],
-        },
-        title: 'Day Growth',
-        from: '',
-        to: '',
-        max: { label: '', value: 0 },
-        min: { label: '', value: 0 },
-      };
-      const data = await this.rbacDBService.$queryRaw<
+      return await this.rbacDBService.$queryRaw<
         { date: Date; count: number }[]
       >`
             SELECT
@@ -286,31 +198,6 @@ export class FeatureRepository
             GROUP BY date_trunc('hour', "Feature"."created_at"), "organization_id"
             ORDER BY date_trunc('hour', "Feature"."created_at");
             `;
-
-      if (data.length === 0) {
-        return result;
-      }
-      let max = { label: '', value: 0 };
-      let min = { label: '', value: 0 };
-      return {
-        data: {
-          labels: data.map((item) => {
-            if (item.count > max.value) {
-              max = { label: item.date.toISOString(), value: item.count };
-            }
-            if (item.count < min.value) {
-              min = { label: item.date.toISOString(), value: item.count };
-            }
-            return item.date.toISOString();
-          }),
-          values: data.map((item) => item.count),
-        },
-        title: 'Day Growth',
-        from: data[0].date.toISOString(),
-        to: data[data.length - 1].date.toISOString(),
-        max,
-        min,
-      };
     } catch (e: any) {
       throw new BusinessException(
         ErrorEnum.REQUEST_FAILED_TO_EXECUTE,

@@ -19,7 +19,7 @@ export class MemberCommandHandler {
   constructor(
     @Inject(MEMBER_REPO)
     private readonly memberRepo: IMemberRepository,
-  ) {}
+  ) { }
 
   async handleCreateMember(command: CreateMemberArgs): Promise<Member> {
     const existing = await this.memberRepo.findByStaffId(command.staff_id);

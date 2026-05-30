@@ -15,10 +15,10 @@ export interface IFeatureRepository
   delete(id: string): Promise<void>;
   findByProjectId(prjId: string): Promise<Feature[]>;
 
-  growthByMonth(organization_id: string): Promise<StatsGrowInfo>;
-  growthByYear(organization_id: string): Promise<StatsGrowInfo>;
-  growthByWeek(organization_id: string): Promise<StatsGrowInfo>;
-  growthByDay(organization_id: string): Promise<StatsGrowInfo>;
+  growthByMonth(user_id: string): Promise<{ date: Date; count: number }[]>;
+  growthByYear(organization_id: string): Promise<{ date: Date; count: number }[]>;
+  growthByWeek(organization_id: string): Promise<{ date: Date; count: number }[]>;
+  growthByDay(organization_id: string): Promise<{ date: Date; count: number }[]>;
 
   countBeforeByMonth(org_id: string): Promise<number>;
   countByMonth(org_id: string): Promise<number>;

@@ -12,15 +12,17 @@ import { IOrganizationRepository } from '@/modules/iam/domain/repositories/organ
 import { uuidv7 } from 'uuidv7';
 import { BusinessException } from '@/common/http/business-exception';
 import { ErrorEnum } from '@/common/exception.enum';
+import { IPayload } from '@/modules/iam/domain/services/auth.service';
 
 @Injectable()
 export class OrganizationCommandHandler {
   constructor(
     @Inject(ORGANIZATION_REPO)
     private readonly organizationRepo: IOrganizationRepository,
-  ) {}
+  ) { }
 
   async handleCreateOrganization(
+    user: IPayload,
     command: CreateOrganizationArgs,
   ): Promise<Organization> {
     const existingOrganization = await this.organizationRepo.findBySlug(
@@ -46,6 +48,7 @@ export class OrganizationCommandHandler {
       name: command.name,
       slug: slug,
       description: command.description,
+      created_by: user.sub,
     });
 
     return await this.organizationRepo.create(organization);

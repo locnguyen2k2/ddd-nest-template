@@ -12,7 +12,7 @@ import {
   PaginateOrganizationsQuery,
 } from '@/modules/iam/presentation/dtos/req/organization.dto';
 import { Period } from '@/common/enum';
-import { StatsPercentInfo } from '@/common/interfaces/stats.interface';
+import { StatsGrowInfo, StatsPercentInfo } from '@/common/interfaces/stats.interface';
 
 @Injectable()
 export class OrganizationQueryHandler {
@@ -23,10 +23,49 @@ export class OrganizationQueryHandler {
 
   private readonly percentGrowthCalc = {
     [Period.MONTH]: async (user_id: string) =>
-      this.organizationRepository.percentByMonth(user_id),
+      this.handlePercentByMonth(user_id),
   };
 
-  async percentGrowth(user_id: string, period?: string): Promise<number> {
+  private readonly statsGrowth = {
+    [Period.WEEK]: async (uid: string) =>
+      this.organizationRepository.growthByWeek(uid),
+    [Period.MONTH]: async (uid: string) =>
+      this.organizationRepository.growthByMonth(uid),
+    [Period.DAY]: async (uid: string) =>
+      this.organizationRepository.growthByDay(uid),
+    [Period.YEAR]: async (uid: string) =>
+      this.organizationRepository.growthByYear(uid),
+  };
+
+  async growth(
+    userId: string,
+    period?: string,
+  ): Promise<StatsGrowInfo> {
+    const data = await this.statsGrowth[period || Period.MONTH](userId);
+    if (data.length === 0) {
+      return {
+        data: {
+          labels: [],
+          values: [],
+        },
+        title: 'Organization Growth',
+        from: new Date().toISOString(),
+        to: new Date().toISOString(),
+      };
+    }
+    return {
+      data: {
+        labels: data.map((item) => item.date.toISOString()),
+        values: data.map((item) => item.count),
+      },
+      title: 'Organization Growth',
+      from: data[0].date.toISOString(),
+      to: data[data.length - 1].date.toISOString(),
+    };
+  }
+
+
+  async percentGrowth(user_id: string, period?: string): Promise<StatsPercentInfo> {
     return await this.percentGrowthCalc[period || Period.MONTH](user_id);
   }
 
@@ -38,7 +77,6 @@ export class OrganizationQueryHandler {
   @LogExecutionTime()
   async handlePercentByMonth(
     userId: string,
-    period: string,
   ): Promise<StatsPercentInfo> {
     let result: StatsPercentInfo = {
       percent_growth: 0,

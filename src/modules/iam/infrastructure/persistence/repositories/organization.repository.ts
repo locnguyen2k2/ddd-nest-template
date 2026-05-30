@@ -21,7 +21,6 @@ import {
   PaginateOrganizationsQuery,
 } from '@/modules/iam/presentation/dtos/req/organization.dto';
 import { Prisma } from '@internal/rbac/client';
-import { Period } from '@/common/enum';
 import { StatsGrowInfo } from '@/common/interfaces/stats.interface';
 
 @Injectable()
@@ -42,21 +41,144 @@ export class OrganizationRepository
     super(redisConfig, cachePort);
   }
 
-  async percentByMonth(user_id: string): Promise<number> {
-    try {
-      const [beforeCount, currentCount] = await Promise.all([
-        this.countBeforeByMonth(user_id),
-        this.countByMonth(user_id),
-      ]);
-      if (beforeCount === 0) {
-        return 100;
-      }
-      console.log('beforeCount', beforeCount, 'currentCount', currentCount);
-      return (currentCount - beforeCount) / beforeCount;
-    } catch (error) {
-      console.error(error);
-      return 0;
+  async growthByMonth(user_id: string): Promise<{ date: Date; count: number }[]> {
+    const result: StatsGrowInfo = {
+      data: {
+        labels: [],
+        values: [],
+      },
+      title: '',
+      from: '',
+      to: '',
     }
+    return await this.rbacDBService.$queryRaw<
+      { date: Date; count: number }[]
+    >`
+                WITH month_info AS ( 
+                    SELECT
+                        DATE_TRUNC('month', CURRENT_DATE)::date AS month_start,
+                        (DATE_TRUNC('month', CURRENT_DATE) + INTERVAL '1 month - 1 day')::date AS month_end
+                ),
+                month_days AS (
+                    SELECT (month_end - month_start + 1) AS days_in_month
+                    FROM month_info
+                ),
+                range_start AS (
+                    SELECT CURRENT_DATE - (days_in_month - 1) * INTERVAL '1 day' AS start_date
+                    FROM month_days
+                )
+                SELECT
+                    DATE(org.created_at) AS date,
+                    COUNT(*)::int AS count
+                FROM "Organization" org
+                LEFT JOIN "Staff" on "Staff"."organization_id" = org."id"
+                JOIN range_start r ON org.created_at >= r.start_date
+                WHERE DATE(org.created_at) <= CURRENT_DATE AND "Staff"."user_id" = ${user_id}::uuid
+                GROUP BY DATE(org.created_at), org."id"
+                ORDER BY DATE(org.created_at);
+            `;
+  }
+  async growthByYear(user_id: string): Promise<{ date: Date; count: number }[]> {
+    return await this.rbacDBService.$queryRaw<
+      { date: Date; count: number }[]
+    >`
+                WITH month_info AS ( 
+                    SELECT
+                        DATE_TRUNC('month', CURRENT_DATE)::date AS month_start,
+                        (DATE_TRUNC('month', CURRENT_DATE) + INTERVAL '1 month - 1 day')::date AS month_end
+                ),
+                month_days AS (
+                    SELECT (month_end - month_start + 1) AS days_in_month
+                    FROM month_info
+                ),
+                range_start AS (
+                    SELECT CURRENT_DATE - (days_in_month - 1) * INTERVAL '1 day' AS start_date
+                    FROM month_days
+                )
+                SELECT
+                    DATE(org.created_at) AS date,
+                    COUNT(*)::int AS count
+                FROM "Organization" org
+                LEFT JOIN "Staff" on "Staff"."organization_id" = org."id"
+                JOIN range_start r ON org.created_at >= r.start_date
+                WHERE DATE(org.created_at) <= CURRENT_DATE AND "Staff"."user_id" = ${user_id}::uuid
+                GROUP BY DATE(org.created_at), org."id"
+                ORDER BY DATE(org.created_at);
+            `;
+  }
+  async growthByWeek(user_id: string): Promise<{ date: Date; count: number }[]> {
+    const result: StatsGrowInfo = {
+      data: {
+        labels: [],
+        values: [],
+      },
+      title: '',
+      from: '',
+      to: '',
+    }
+    return await this.rbacDBService.$queryRaw<
+      { date: Date; count: number }[]
+    >`
+                WITH month_info AS ( 
+                    SELECT
+                        DATE_TRUNC('month', CURRENT_DATE)::date AS month_start,
+                        (DATE_TRUNC('month', CURRENT_DATE) + INTERVAL '1 month - 1 day')::date AS month_end
+                ),
+                month_days AS (
+                    SELECT (month_end - month_start + 1) AS days_in_month
+                    FROM month_info
+                ),
+                range_start AS (
+                    SELECT CURRENT_DATE - (days_in_month - 1) * INTERVAL '1 day' AS start_date
+                    FROM month_days
+                )
+                SELECT
+                    DATE(org.created_at) AS date,
+                    COUNT(*)::int AS count
+                FROM "Organization" org
+                LEFT JOIN "Staff" on "Staff"."organization_id" = org."id"
+                JOIN range_start r ON org.created_at >= r.start_date
+                WHERE DATE(org.created_at) <= CURRENT_DATE AND "Staff"."user_id" = ${user_id}::uuid
+                GROUP BY DATE(org.created_at), org."id"
+                ORDER BY DATE(org.created_at);
+            `;
+  }
+  async growthByDay(user_id: string): Promise<{ date: Date; count: number }[]> {
+    const result: StatsGrowInfo = {
+      data: {
+        labels: [],
+        values: [],
+      },
+      title: '',
+      from: '',
+      to: '',
+    }
+    return await this.rbacDBService.$queryRaw<
+      { date: Date; count: number }[]
+    >`
+                WITH month_info AS ( 
+                    SELECT
+                        DATE_TRUNC('month', CURRENT_DATE)::date AS month_start,
+                        (DATE_TRUNC('month', CURRENT_DATE) + INTERVAL '1 month - 1 day')::date AS month_end
+                ),
+                month_days AS (
+                    SELECT (month_end - month_start + 1) AS days_in_month
+                    FROM month_info
+                ),
+                range_start AS (
+                    SELECT CURRENT_DATE - (days_in_month - 1) * INTERVAL '1 day' AS start_date
+                    FROM month_days
+                )
+                SELECT
+                    DATE(org.created_at) AS date,
+                    COUNT(*)::int AS count
+                FROM "Organization" org
+                LEFT JOIN "Staff" on "Staff"."organization_id" = org."id"
+                JOIN range_start r ON org.created_at >= r.start_date
+                WHERE DATE(org.created_at) <= CURRENT_DATE AND "Staff"."user_id" = ${user_id}::uuid
+                GROUP BY DATE(org.created_at), org."id"
+                ORDER BY DATE(org.created_at);
+            `;
   }
 
   async countBeforeByMonth(user_id: string): Promise<number> {
